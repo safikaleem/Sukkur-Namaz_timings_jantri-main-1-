@@ -4,6 +4,7 @@ import '../models/namaz_timing.dart';
 import '../utils/app_theme.dart';
 import '../widgets/dr_slogan_footer.dart';
 import '../widgets/dr_slogan_header.dart';
+import '../widgets/sukkur_header.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 
@@ -72,7 +73,6 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
     _monthData = TimingsData.instance.month(_selectedMonth);
 
     final isRtl = settings.isRtl;
-    final isSindhi = settings.isSindhi;
     final screenWidth = MediaQuery.of(context).size.width;
     final scale = (screenWidth / 360.0).clamp(0.85, 1.25);
 
@@ -140,12 +140,29 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                   Icon(Icons.calendar_month_rounded, color: AppTheme.accent, size: 16),
                   const SizedBox(width: 8),
                   Text(
-                    '${isSindhi ? _monthNamesSindhi[_selectedMonth] : (settings.isArabic ? _monthNamesArabic[_selectedMonth] : (isRtl ? _monthNamesUrdu[_selectedMonth] : _monthNames[_selectedMonth]))}  ${today.year}',
+                    '${settings.translate(_monthNames[_selectedMonth], _monthNamesUrdu[_selectedMonth], _monthNamesSindhi[_selectedMonth], _monthNamesArabic[_selectedMonth])}  ${today.year}',
                     style: TextStyle(
                       fontSize: isRtl ? 18 : 15,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.accent,
                       fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // City sits at the far end of the strip, opposite the month.
+                  // Expanded (not Spacer + Flexible) so the free space belongs
+                  // to the text and TextAlign.end pushes it fully to the edge.
+                  Expanded(
+                    child: Text(
+                      locationLabel(settings),
+                      textAlign: TextAlign.end,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: isRtl ? 18 : 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.accent,
+                        fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                      ),
                     ),
                   ),
                 ],
@@ -544,7 +561,8 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
             return DropdownMenuItem<int>(
               value: m,
               child: Text(
-                settings.isSindhi ? _monthNamesSindhi[m] : (settings.isRtl ? _monthNamesUrdu[m] : _monthNames[m]),
+                settings.translate(_monthNames[m], _monthNamesUrdu[m],
+                    _monthNamesSindhi[m], _monthNamesArabic[m]),
                 style: TextStyle(
                   fontFamily: AppTheme.getFontForLanguage(context, settings.language),
                 ),

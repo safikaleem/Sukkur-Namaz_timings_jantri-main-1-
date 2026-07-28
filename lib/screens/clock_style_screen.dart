@@ -186,9 +186,6 @@ class _ClockStyleScreenState extends State<ClockStyleScreen>
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isUrdu = settings.isUrdu;
-    final isSindhi = settings.isSindhi;
-    final isArabic = settings.isArabic;
     final previewDec = _previewDecoration(isDark);
     final accent = _themeAccent(_stagedTheme);
     final previewIsDark = _isPreviewDark(isDark);
@@ -251,16 +248,14 @@ class _ClockStyleScreenState extends State<ClockStyleScreen>
                         accent: accent,
                         now: _now,
                         isDark: isDark,
-                        isUrdu: isUrdu,
-                        isSindhi: isSindhi,
-                        isArabic: isArabic,
+                        settings: settings,
                       ),
 
                       const SizedBox(height: 28),
 
                       // ── Display Theme section ────────────────────────
                       _SectionHeader(
-                        isSindhi ? 'ڊسپلي ٿيم' : (isUrdu ? 'ڈسپلے تھیم' : 'Display Theme'),
+                        settings.translate('Display Theme', 'ڈسپلے تھیم', 'ڊسپلي ٿيم', 'سمة العرض'),
                         isDark,
                         accent,
                       ),
@@ -278,8 +273,7 @@ class _ClockStyleScreenState extends State<ClockStyleScreen>
                               def: t,
                               isDark: isDark,
                               isSelected: isSelected,
-                              isUrdu: isUrdu,
-                              isSindhi: isSindhi,
+                              settings: settings,
                               onTap: () {
                                 setState(() => _stagedTheme = t.theme);
                                 _fadeCtrl
@@ -295,7 +289,7 @@ class _ClockStyleScreenState extends State<ClockStyleScreen>
 
                       // ── Clock Style section ─────────────────────────
                       _SectionHeader(
-                        isSindhi ? 'گهڙيءَ جو انداز' : (isUrdu ? 'گھڑی کا انداز' : 'Clock Style'),
+                        settings.translate('Clock Style', 'گھڑی کا انداز', 'گهڙيءَ جو انداز', 'نمط الساعة'),
                         isDark,
                         accent,
                       ),
@@ -314,8 +308,7 @@ class _ClockStyleScreenState extends State<ClockStyleScreen>
                               def: c,
                               isDark: isDark,
                               isSelected: isSelected,
-                              isUrdu: isUrdu,
-                              isSindhi: isSindhi,
+                              settings: settings,
                               accent: clockAccent,
                               now: _now,
                               onTap: () {
@@ -399,8 +392,7 @@ class _ClockCard extends StatelessWidget {
   final _ClockDef def;
   final bool isDark;
   final bool isSelected;
-  final bool isUrdu;
-  final bool isSindhi;
+  final SettingsProvider settings;
   final Color accent;
   final DateTime now;
   final VoidCallback onTap;
@@ -409,8 +401,7 @@ class _ClockCard extends StatelessWidget {
     required this.def,
     required this.isDark,
     required this.isSelected,
-    required this.isUrdu,
-    required this.isSindhi,
+    required this.settings,
     required this.accent,
     required this.now,
     required this.onTap,
@@ -461,7 +452,7 @@ class _ClockCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              isSindhi ? def.sindhiLabel : (isUrdu ? def.urduLabel : def.label),
+              settings.translate(def.label, def.urduLabel, def.sindhiLabel, def.label),
               style: TextStyle(
                 fontSize: 11,
                 fontWeight:
@@ -491,9 +482,7 @@ class _LivePreviewCard extends StatelessWidget {
   final Color accent;
   final DateTime now;
   final bool isDark;
-  final bool isUrdu;
-  final bool isSindhi;
-  final bool isArabic;
+  final SettingsProvider settings;
 
   const _LivePreviewCard({
     required this.previewDecoration,
@@ -503,16 +492,14 @@ class _LivePreviewCard extends StatelessWidget {
     required this.accent,
     required this.now,
     required this.isDark,
-    required this.isUrdu,
-    required this.isSindhi,
-    required this.isArabic,
+    required this.settings,
   });
 
   /// Compute real next prayer from today's timings.
   ({String name, String localizedName, String time, Duration remaining})? _nextPrayer() {
     final today = TimingsData.instance.timingFor(now);
     if (today == null) return null;
-    final lang = isSindhi ? 'sindhi' : (isUrdu ? 'urdu' : (isArabic ? 'arabic' : 'english'));
+    final lang = settings.language;
     for (final p in today.allTimings) {
       final dt = p.toDateTime();
       if (dt.isAfter(now)) {
@@ -548,13 +535,13 @@ class _LivePreviewCard extends StatelessWidget {
 
     // Real nav items matching the app
     final navItems = [
-      (Icons.access_time_rounded,          isSindhi ? 'وقت' : (isUrdu ? 'اوقات' : 'Times'),      true),
-      (Icons.today_rounded,                isSindhi ? 'اڄ' : (isUrdu ? 'آج' : 'Today'),          false),
-      (Icons.view_list_rounded,            isSindhi ? 'مهاني' : (isUrdu ? 'ماہانہ' : 'Monthly'), false),
-      (Icons.notifications_active_rounded, isSindhi ? 'ياددهاني' : (isUrdu ? 'اطلاعات' : 'Reminders'), false),
-      (Icons.explore_rounded,              isSindhi ? 'قبلو' : (isUrdu ? 'قبلہ' : 'Qibla'),      false),
-      (Icons.menu_book_rounded,            isSindhi ? 'هدايت' : (isUrdu ? 'ہدایت' : 'Instructions'),  false),
-      (Icons.fingerprint_rounded,          isSindhi ? 'تسبیح' : (isUrdu ? 'تسبیح' : 'Tasbeeh'),  false),
+      (Icons.access_time_rounded,          settings.translate('Times', 'اوقات', 'وقت', 'الأوقات'),      true),
+      (Icons.today_rounded,                settings.translate('Today', 'آج', 'اڄ', 'اليوم'),          false),
+      (Icons.view_list_rounded,            settings.translate('Monthly', 'ماہانہ', 'مهاني', 'شهري'), false),
+      (Icons.notifications_active_rounded, settings.translate('Reminders', 'اطلاعات', 'ياددهاني', 'التذكيرات'), false),
+      (Icons.explore_rounded,              settings.translate('Qibla', 'قبلہ', 'قبلو', 'القبلة'),      false),
+      (Icons.menu_book_rounded,            settings.translate('Instructions', 'ہدایت', 'هدايت', 'التعليمات'),  false),
+      (Icons.fingerprint_rounded,          settings.translate('Tasbeeh', 'تسبیح', 'تسبیح', 'تسبيح'),  false),
     ];
 
     return AnimatedContainer(
@@ -602,7 +589,7 @@ class _LivePreviewCard extends StatelessWidget {
                     Icon(Icons.push_pin_rounded, size: 14, color: accent),
                     const SizedBox(width: 5),
                     Text(
-                      isSindhi ? 'سکر' : (isUrdu ? 'سکھر' : (isArabic ? 'سكر' : 'Sukkur')),
+                      settings.translate('Sukkur', 'سکھر', 'سکر', 'سكر'),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -657,7 +644,7 @@ class _LivePreviewCard extends StatelessWidget {
                 ),
               ] else
                 Text(
-                  isSindhi ? 'نمازون مڪمل' : (isUrdu ? 'نمازیں مکمل' : 'Prayers done'),
+                  settings.translate('Prayers done', 'نمازیں مکمل', 'نمازون مڪمل', 'الصلوات المكتملة'),
                   style: TextStyle(
                     fontSize: 13,
                     color: previewIsDark ? Colors.white38 : Colors.black38,
@@ -740,16 +727,14 @@ class _ThemeCard extends StatelessWidget {
   final _ThemeDef def;
   final bool isDark;
   final bool isSelected;
-  final bool isUrdu;
-  final bool isSindhi;
+  final SettingsProvider settings;
   final VoidCallback onTap;
 
   const _ThemeCard({
     required this.def,
     required this.isDark,
     required this.isSelected,
-    required this.isUrdu,
-    required this.isSindhi,
+    required this.settings,
     required this.onTap,
   });
 
@@ -811,7 +796,7 @@ class _ThemeCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              isSindhi ? def.sindhiLabel : (isUrdu ? def.urduLabel : def.label),
+              settings.translate(def.label, def.urduLabel, def.sindhiLabel, def.label),
               style: TextStyle(
                 fontSize: 12,
                 fontWeight:

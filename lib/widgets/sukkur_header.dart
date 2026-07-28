@@ -1,6 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
+import 'pin_icon.dart';
+
+/// The city shown in the header and in the monthly month strip: just the city
+/// name, or the chosen city when the app is in world-location mode.
+String locationLabel(SettingsProvider settings) {
+  if (settings.locationMode == LocationMode.world && settings.cityName != null) {
+    return settings.cityName!;
+  }
+  return settings.translate('Sukkur', 'سکھر', 'سکر', 'سكر');
+}
 
 class SukkurHeader extends StatelessWidget {
   const SukkurHeader({super.key});
@@ -10,29 +20,22 @@ class SukkurHeader extends StatelessWidget {
     final settings = context.watch<SettingsProvider>();
     final isRtl = settings.isRtl;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    String title = settings.translate(
-      'Sukkur, Sindh, Pakistan', 
-      'سکھر، سندھ، پاکستان', 
-      'سکر، سنڌ، پاڪستان', 
-      'سكر، السند، باكستان'
-    );
-    if (settings.locationMode == LocationMode.world && settings.cityName != null) {
-      title = settings.cityName!;
-    }
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          settings.locationMode == LocationMode.world ? Icons.location_on : Icons.push_pin,
-          size: 20,
-          color: isDark ? Colors.white70 : Colors.black87,
-        ),
+        if (settings.locationMode == LocationMode.world)
+          Icon(
+            Icons.location_on,
+            size: 20,
+            color: isDark ? Colors.white70 : Colors.black87,
+          )
+        else
+          const PinIcon(size: 20),
         const SizedBox(width: 6),
         Flexible(
           child: Text(
-            title,
+            locationLabel(settings),
             style: TextStyle(
               fontSize: isRtl ? 28 : 24,
               fontWeight: FontWeight.bold,

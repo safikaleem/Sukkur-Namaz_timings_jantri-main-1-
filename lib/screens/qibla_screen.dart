@@ -176,8 +176,6 @@ class _QiblaScreenState extends State<QiblaScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final settings = context.watch<SettingsProvider>();
-    final isUrdu = settings.isUrdu;
-    final isSindhi = settings.isSindhi;
     final screenH = MediaQuery.of(context).size.height;
     final isSmall = screenH < 700;
 
@@ -346,6 +344,7 @@ class _LoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -358,9 +357,11 @@ class _LoadingView extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            isSindhi
-                ? 'لوڪيشن معلوم ٿي رهي آهي…'
-                : (isUrdu ? 'لوکیشن معلوم ہو رہی ہے…' : 'Detecting your location…'),
+            settings.translate(
+                'Detecting your location…',
+                'لوکیشن معلوم ہو رہی ہے…',
+                'لوڪيشن معلوم ٿي رهي آهي…',
+                'جارٍ تحديد موقعك…'),
             style: TextStyle(
               fontSize: 15,
               color: isDark ? Colors.white54 : Colors.black54,
@@ -497,6 +498,7 @@ class _LiveCompassView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
     final h = heading ?? 0.0;
     final rawInt = h.round() % 360;
     final headingInt = rawInt < 0 ? rawInt + 360 : rawInt;
@@ -615,7 +617,7 @@ class _LiveCompassView extends StatelessWidget {
                             width: 1.5),
                       ),
                       child: Text(
-                        isSindhi ? '✓  توهان قبلي رو آهيو' : (isUrdu ? '✓  آپ قبلہ رو ہیں' : '✓  Facing Qibla'),
+                        settings.translate('✓  Facing Qibla', '✓  آپ قبلہ رو ہیں', '✓  توهان قبلي رو آهيو', '✓  مواجه للقبلة'),
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -656,13 +658,13 @@ class _LiveCompassView extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _InfoTile(
-                  label: isSindhi ? 'توهان جو رخ' : (isUrdu ? 'آپ کا رخ' : 'Heading'),
+                  label: settings.translate('Heading', 'آپ کا رخ', 'توهان جو رخ', 'الاتجاه'),
                   value: loading ? '—' : '$headingInt°',
                   isDark: isDark,
                 ),
                 const SizedBox(width: 16),
                 _InfoTile(
-                  label: isSindhi ? 'قبلو' : (isUrdu ? 'قبلہ' : 'Qibla'),
+                  label: settings.translate('Qibla', 'قبلہ', 'قبلو', 'القبلة'),
                   value: '$qiblaInt°',
                   isDark: isDark,
                   highlight: true,
@@ -732,6 +734,7 @@ class _NoSensorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -761,7 +764,7 @@ class _NoSensorView extends StatelessWidget {
               ),
             ),
             Text(
-              isSindhi ? 'اتر کان قبلي جي سمت' : (isUrdu ? 'شمال سے قبلہ کی سمت' : 'Qibla from North'),
+              settings.translate('Qibla from North', 'شمال سے قبلہ کی سمت', 'اتر کان قبلي جي سمت', 'القبلة من الشمال'),
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,

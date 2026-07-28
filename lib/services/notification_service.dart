@@ -1,6 +1,7 @@
+import '../l10n/world_translations.dart';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint, visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -329,59 +330,19 @@ class NotificationService {
         final tzDateTime = tz.TZDateTime.from(prayerDt, tz.local);
         final notifId = (_baseIds[prayer.name] ?? 0) + dayOffset;
 
-        final isSindhi = prefs.getBool('is_sindhi') ?? false;
-        final isUrdu = prefs.getBool('is_urdu') ?? false;
-        final isArabic = prefs.getBool('is_arabic') ?? false;
         final langCode = prefs.getString('language_code') ?? 'english';
+        final isSukkurMode =
+            (prefs.getString('location_mode') ?? 'sukkur') == 'sukkur';
         final rawTime = _formatTime12Hour(prayer.time, prayer.isPm).replaceAll(' ', '');
 
-        final String title;
-        String body;
-
-        if (isSindhi) {
-          title = '\u200Fسکر صلاۃ ($rawTime)';
-          final prayerNameSindhi = prayer.localizedName('sindhi');
-          body = '\u200F<b>$prayerNameSindhi</b> جو وقت شروع ٿي ويو آهي';
-        } else if (isUrdu) {
-          title = '\u200Fسکھر صلاۃ ($rawTime)';
-          final prayerNameUrdu = _urduNames[prayer.name] ?? prayer.urduName;
-          body = '\u200F<b>$prayerNameUrdu</b> کا وقت شروع ہو گیا ہے';
-        } else if (isArabic) {
-          title = '\u200Fصلاة سكر ($rawTime)';
-          final prayerNameArabic = _arabicNames[prayer.name] ?? prayer.name;
-          body = '\u200Fبدأ وقت <b>$prayerNameArabic</b>';
-        } else {
-          // \u202A = LEFT-TO-RIGHT EMBEDDING: forces LTR notification layout
-          // regardless of phone system language (e.g. phone set to Urdu/Sindhi).
-          // This ensures large icon always appears on the LEFT for English.
-          title = '\u202ASukkur Salah ($rawTime)';
-          final prayerNameEnglish = prayer.name;
-          // Same text style as before — bold name, pipe, Urdu suffix
-          body = '\u202A<b>$prayerNameEnglish</b> | کا وقت شروع ہو گیا ہے';
-        }
-
-        // Apply custom formatting for Sunrise (Tulu Aftab) and Mamnoo Waqt
-        if (prayer.name == 'Tulu Aftab') {
-          if (isSindhi) {
-            body = '\u200F<b>سج اڀرڻ</b> جو وقت شروع ٿي ويو آهي\n(نماز جو ممنوع وقت)';
-          } else if (isUrdu) {
-            body = '\u200F<b>طلوع آفتاب</b> کا وقت شروع ہو گیا ہے\n(نماز کا ممنوع وقت)';
-          } else if (isArabic) {
-            body = '\u200Fبدأ وقت <b>شروق الشمس</b>\n(الوقت الممنوع للصلاة)';
-          } else {
-            body = '\u202A<b>Sunrise</b> | کا وقت شروع ہو گیا ہے\n(نماز کا ممنوع وقت)';
-          }
-        } else if (prayer.name == 'Ishraq') {
-          if (isSindhi) {
-            body = '\u200F<b>اشراق</b> جو وقت شروع ٿي ويو آهي\n(هاڻي نماز پڙهي سگهو ٿا)';
-          } else if (isUrdu) {
-            body = '\u200F<b>اشراق</b> کا وقت شروع ہو گیا ہے\n(اب نماز پڑھ سکتے ہیں)';
-          } else if (isArabic) {
-            body = '\u200Fبدأ وقت <b>الإشراق</b>\n(الآن يمكن أداء الصلاة)';
-          } else {
-            body = '\u202A<b>Ishraq</b> | کا وقت شروع ہو گیا ہے\n(اب نماز پڑھ سکتے ہیں)';
-          }
-        }
+        final alert = prayerAlert(
+          prayer: prayer,
+          language: langCode,
+          isSukkurMode: isSukkurMode,
+          rawTime: rawTime,
+        );
+        final String title = alert.$1;
+        final String body = alert.$2;
 
         // Guard each schedule individually so one bad entry (e.g. a malformed
         // time) skips a single notification instead of aborting the batch and
@@ -392,7 +353,7 @@ class NotificationService {
             title,
             body,
             tzDateTime,
-            _detailsFor(mode, selectedAzanIndex, isRtl: isSindhi || isUrdu || isArabic),
+            _detailsFor(mode, selectedAzanIndex, isRtl: rtlLanguages.contains(langCode)),
             androidScheduleMode: scheduleMode,
             uiLocalNotificationDateInterpretation:
                 UILocalNotificationDateInterpretation.absoluteTime,
@@ -735,19 +696,23 @@ class NotificationService {
         // Reminder ids live in the 9000+ range to avoid clashing with prayers.
         final id = 9000 + (i * 10) + dayOffset;
 
-        final isArabic = prefs.getBool('is_arabic') ?? false;
-        final isSindhi = prefs.getBool('is_sindhi') ?? false;
-        final isUrdu = prefs.getBool('is_urdu') ?? false;
+        final reminderLang = prefs.getString('language_code') ?? 'english';
         final String reminderTitle = (label == null || label.isEmpty)
-            ? (isArabic ? 'تذكير' : (isSindhi ? 'ياد دهاني' : (isUrdu ? 'یاد دہانی' : 'Reminder')))
+            ? translateFor(reminderLang, 'Reminder', 'یاد دہانی', 'ياد دهاني',
+                'تذكير')
             : label;
-        final String reminderBodyText = _reminderBody(prayerName!, offset, isSindhi, isUrdu, isArabic);
+        final String reminderBodyText =
+            _reminderBody(prayerName!, offset, reminderLang);
 
         try {
         await _plugin!.zonedSchedule(
           id,
-          (isSindhi || isUrdu || isArabic) ? '\u200F$reminderTitle' : reminderTitle,
-          (isSindhi || isUrdu || isArabic) ? '\u200F$reminderBodyText' : reminderBodyText,
+          rtlLanguages.contains(reminderLang)
+              ? '\u200F$reminderTitle'
+              : reminderTitle,
+          rtlLanguages.contains(reminderLang)
+              ? '\u200F$reminderBodyText'
+              : reminderBodyText,
           tzDt,
           NotificationDetails(
             android: AndroidNotificationDetails(
@@ -779,7 +744,84 @@ class NotificationService {
     }
   }
 
-  String _reminderBody(String prayer, int offset, bool isSindhi, bool isUrdu, bool isArabic) {
+  /// Title and body for a prayer-time alert.
+  ///
+  /// English in Sukkur mode keeps its long-standing mixed format - the English
+  /// prayer name followed by the Urdu suffix - because that pairing belongs to
+  /// the Jantri. Every other combination, including English once a world city
+  /// is selected, is rendered wholly in the selected language.
+  @visibleForTesting
+  (String, String) prayerAlert({
+    required PrayerTime prayer,
+    required String language,
+    required bool isSukkurMode,
+    required String rawTime,
+  }) {
+    final isRtl = rtlLanguages.contains(language);
+    // U+200F forces RTL layout; U+202A forces LTR, so the large icon stays on
+    // the expected side whatever the phone's system language is.
+    final mark = isRtl ? '\u200F' : '\u202A';
+
+    final title = '$mark${translateFor(
+      language,
+      'Sukkur Salah',
+      'سکھر صلاۃ',
+      'سکر صلاۃ',
+      'صلاة سكر',
+    )} ($rawTime)';
+
+    if (language == 'english' && isSukkurMode) {
+      final legacy = switch (prayer.name) {
+        'Tulu Aftab' =>
+          '$mark<b>Sunrise</b> | کا وقت شروع ہو گیا ہے\n(نماز کا ممنوع وقت)',
+        'Ishraq' =>
+          '$mark<b>Ishraq</b> | کا وقت شروع ہو گیا ہے\n(اب نماز پڑھ سکتے ہیں)',
+        _ => '$mark<b>${prayer.name}</b> | کا وقت شروع ہو گیا ہے',
+      };
+      return (title, legacy);
+    }
+
+    final name = switch (language) {
+      'urdu' => _urduNames[prayer.name] ?? prayer.urduName,
+      'arabic' => _arabicNames[prayer.name] ?? prayer.name,
+      'sindhi' => prayer.localizedName('sindhi'),
+      'english' => prayer.name == 'Tulu Aftab' ? 'Sunrise' : prayer.name,
+      _ => worldTranslations[language]?[prayer.name] ?? prayer.name,
+    };
+
+    final started = translateFor(
+      language,
+      '{prayer} time has started',
+      '{prayer} کا وقت شروع ہو گیا ہے',
+      '{prayer} جو وقت شروع ٿي ويو آهي',
+      'بدأ وقت {prayer}',
+    ).replaceAll('{prayer}', '<b>$name</b>');
+
+    final suffix = switch (prayer.name) {
+      'Tulu Aftab' => '\n${translateFor(
+          language,
+          '(Forbidden time for prayer)',
+          '(نماز کا ممنوع وقت)',
+          '(نماز جو ممنوع وقت)',
+          '(الوقت الممنوع للصلاة)',
+        )}',
+      'Ishraq' => '\n${translateFor(
+          language,
+          '(You can pray now)',
+          '(اب نماز پڑھ سکتے ہیں)',
+          '(هاڻي نماز پڙهي سگهو ٿا)',
+          '(الآن يمكن أداء الصلاة)',
+        )}',
+      _ => '',
+    };
+
+    return (title, '$mark$started$suffix');
+  }
+
+  @visibleForTesting
+  String reminderBodyForTest(String p, int o, String l) => _reminderBody(p, o, l);
+
+  String _reminderBody(String prayer, int offset, String language) {
     const urdu = {
       'Intiha e Sehar': 'انتہائے سحر',
       'Fajar': 'فجر',
@@ -829,13 +871,29 @@ class NotificationService {
       'Dhuhr': 'الظهر',
       'Asr': 'العصر',
     };
-    if (isArabic) {
+    if (language == 'arabic') {
       final p = arabic[prayer] ?? prayer;
       if (offset == 0) return 'عند $p';
       final abs = offset.abs();
       return offset < 0 ? 'قبل $p بـ $abs دقيقة' : 'بعد $p بـ $abs دقيقة';
     }
-    if (isSindhi) {
+    if (worldTranslations.containsKey(language)) {
+      final p = worldTranslations[language]?[prayer] ?? prayer;
+      final abs = offset.abs();
+      final template = offset == 0
+          ? translateFor(language, 'At {prayer} time', '', '')
+          : translateFor(
+              language,
+              offset < 0
+                  ? '{minutes} minutes before {prayer}'
+                  : '{minutes} minutes after {prayer}',
+              '',
+              '');
+      return template
+          .replaceAll('{prayer}', p)
+          .replaceAll('{minutes}', '$abs');
+    }
+    if (language == 'sindhi') {
       final p = sindhi[prayer] ?? prayer;
       if (offset == 0) return '$p جو وقت';
       final abs = offset.abs();
@@ -929,21 +987,23 @@ class NotificationService {
     );
 
     final language = prefs.getString('language_code') ?? 'english';
-    String title = '\u200FTest Notification 🔔';
-    String body = '\u200FIf you see and hear this, your notifications are working perfectly!';
-    
-    if (language == 'urdu') {
-      title = '\u200Fٹیسٹ نوٹیفکیشن 🔔';
-      body = '\u200Fاگر آپ یہ دیکھ اور سن رہے ہیں، تو آپ کی اطلاعات بالکل ٹھیک کام کر رہی ہیں!';
-    } else if (language == 'sindhi') {
-      title = '\u200Fٽيسٽ نوٽيفڪيشن 🔔';
-      body = '\u200Fجيڪڏهن توهان اهو ڏسي ۽ ٻڌي رهيا آهيو، ته توهان جا نوٽيفڪيشن بلڪل صحيح ڪم ڪري رهيا آهن!';
-    } else if (language == 'arabic') {
-      title = '\u200Fإشعار تجريبي 🔔';
-      body = '\u200Fإذا رأيت هذا وسمعته، فإن إشعاراتك تعمل بشكل مثالي!';
-    }
+    final isRtl = rtlLanguages.contains(language);
+    final mark = isRtl ? '\u200F' : '\u202A';
 
-    final isRtl = language == 'urdu' || language == 'sindhi' || language == 'arabic';
+    final title = '$mark${translateFor(
+      language,
+      'Test Notification',
+      'ٹیسٹ نوٹیفکیشن',
+      'ٽيسٽ نوٽيفڪيشن',
+      'إشعار تجريبي',
+    )} 🔔';
+    final body = '$mark${translateFor(
+      language,
+      'If you see and hear this, your notifications are working perfectly!',
+      'اگر آپ یہ دیکھ اور سن رہے ہیں، تو آپ کی اطلاعات بالکل ٹھیک کام کر رہی ہیں!',
+      'جيڪڏهن توهان اهو ڏسي ۽ ٻڌي رهيا آهيو، ته توهان جا نوٽيفڪيشن بلڪل صحيح ڪم ڪري رهيا آهن!',
+      'إذا رأيت هذا وسمعته، فإن إشعاراتك تعمل بشكل مثالي!',
+    )}';
     try {
       await _plugin!.show(
         99999,

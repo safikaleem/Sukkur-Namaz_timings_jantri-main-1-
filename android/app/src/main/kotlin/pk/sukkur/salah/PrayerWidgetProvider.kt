@@ -986,11 +986,40 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         if (language == "arabic") {
             val label = if (isElapsed) "منذ" else "حتى"
             return "$label $prayerName"
-        } else {
-            val label = if (isElapsed) "since" else "until"
+        }
+        if (language == "persian") {
+            val label = if (isElapsed) "از" else "تا"
+            return "$prayerName $label"
+        }
+        if (language == "bengali") {
+            val label = if (isElapsed) "থেকে" else "পর্যন্ত"
+            return "$prayerName $label"
+        }
+        if (language == "hindi") {
+            val label = if (isElapsed) "से" else "तक"
+            return "$prayerName $label"
+        }
+        if (language == "turkish") {
+            val label = if (isElapsed) "geçti" else "kaldı"
+            return "$prayerName'a $label"
+        }
+        if (language == "indonesian") {
+            val label = if (isElapsed) "sejak" else "menuju"
             return "$label $prayerName"
         }
+        if (language == "french") {
+            val label = if (isElapsed) "depuis" else "avant"
+            return "$label $prayerName"
+        }
+        val label = if (isElapsed) "since" else "until"
+        return "$label $prayerName"
     }
+
+    // Languages written right to left. Persian belongs here for the same
+    // reason Urdu and Arabic do - it is written in Arabic script.
+    private fun isRtlLanguage(language: String): Boolean =
+        language == "urdu" || language == "sindhi" ||
+        language == "arabic" || language == "persian"
 
     private fun getDayName(dayOfWeek: Int, language: String): String {
         if (language == "sindhi") {
@@ -1028,6 +1057,78 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
                 Calendar.SUNDAY    -> "الأحد"
                 else               -> ""
             }
+        }
+        if (language == "persian") {
+            return when (dayOfWeek) {
+                Calendar.MONDAY    -> "دوشنبه"
+                Calendar.TUESDAY   -> "سه‌شنبه"
+                Calendar.WEDNESDAY -> "چهارشنبه"
+                Calendar.THURSDAY  -> "پنج‌شنبه"
+                Calendar.FRIDAY    -> "جمعه"
+                Calendar.SATURDAY  -> "شنبه"
+                Calendar.SUNDAY    -> "یکشنبه"
+                else               -> ""
+            }
+        }
+        if (language == "bengali") {
+            return when (dayOfWeek) {
+                Calendar.MONDAY    -> "সোমবার"
+                Calendar.TUESDAY   -> "মঙ্গলবার"
+                Calendar.WEDNESDAY -> "বুধবার"
+                Calendar.THURSDAY  -> "বৃহস্পতিবার"
+                Calendar.FRIDAY    -> "শুক্রবার"
+                Calendar.SATURDAY  -> "শনিবার"
+                Calendar.SUNDAY    -> "রবিবার"
+                else               -> ""
+            }
+        }
+        if (language == "hindi") {
+            return when (dayOfWeek) {
+                Calendar.MONDAY    -> "सोमवार"
+                Calendar.TUESDAY   -> "मंगलवार"
+                Calendar.WEDNESDAY -> "बुधवार"
+                Calendar.THURSDAY  -> "गुरुवार"
+                Calendar.FRIDAY    -> "शुक्रवार"
+                Calendar.SATURDAY  -> "शनिवार"
+                Calendar.SUNDAY    -> "रविवार"
+                else               -> ""
+            }
+        }
+        if (language == "turkish") {
+            return when (dayOfWeek) {
+                Calendar.MONDAY    -> "Pazartesi"
+                Calendar.TUESDAY   -> "Salı"
+                Calendar.WEDNESDAY -> "Çarşamba"
+                Calendar.THURSDAY  -> "Perşembe"
+                Calendar.FRIDAY    -> "Cuma"
+                Calendar.SATURDAY  -> "Cumartesi"
+                Calendar.SUNDAY    -> "Pazar"
+                else               -> ""
+            }
+        }
+        if (language == "indonesian") {
+            return when (dayOfWeek) {
+                Calendar.MONDAY    -> "Senin"
+                Calendar.TUESDAY   -> "Selasa"
+                Calendar.WEDNESDAY -> "Rabu"
+                Calendar.THURSDAY  -> "Kamis"
+                Calendar.FRIDAY    -> "Jumat"
+                Calendar.SATURDAY  -> "Sabtu"
+                Calendar.SUNDAY    -> "Minggu"
+                else               -> ""
+            }
+        }
+        if (language == "french") {
+            return when (dayOfWeek) {
+                Calendar.MONDAY    -> "Lundi"
+                Calendar.TUESDAY   -> "Mardi"
+                Calendar.WEDNESDAY -> "Mercredi"
+                Calendar.THURSDAY  -> "Jeudi"
+                Calendar.FRIDAY    -> "Vendredi"
+                Calendar.SATURDAY  -> "Samedi"
+                Calendar.SUNDAY    -> "Dimanche"
+                else               -> ""
+            }
         } else {
             return when (dayOfWeek) {
                 Calendar.MONDAY    -> "Monday"
@@ -1044,7 +1145,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
 
     private fun setLayoutDirection(views: RemoteViews, rootId: Int, language: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            val dir = if (language == "urdu" || language == "sindhi" || language == "arabic") View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
+            val dir = if (isRtlLanguage(language)) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
             views.setInt(rootId, "setLayoutDirection", dir)
         }
     }
@@ -1466,11 +1567,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
 
         for (i in 1..12) {
             val angle = Math.PI / 6 * (i - 3)
-            val numStr = if (language == "urdu" || language == "sindhi" || language == "arabic") {
-                toArabicNumerals(i)
-            } else {
-                i.toString()
-            }
+            val numStr = toLocalizedNumerals(i, language)
 
             val tickOuter = radius
             val tickInner = radius - 8f * context.resources.displayMetrics.density

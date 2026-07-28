@@ -71,7 +71,6 @@ class AnnouncementService {
     String? title,
   ) async {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
-    final isUrdu = settings.isUrdu;
     final messenger = ScaffoldMessenger.of(context);
 
     BuildContext? loadingCtx;
@@ -128,7 +127,8 @@ class AnnouncementService {
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path)],
-          text: title ?? (isUrdu ? 'رمضان المبارک کا ٹائم ٹیبل' : 'Ramzan Timetable'),
+          text: title ??
+              settings.translate('Ramzan Timetable', 'رمضان المبارک کا ٹائم ٹیبل', 'Ramzan Timetable', 'Ramzan Timetable'),
         ),
       );
     } catch (e) {
@@ -139,9 +139,7 @@ class AnnouncementService {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            isUrdu
-                ? 'فائل محفوظ یا شیئر کرنے میں خرابی پیش آئی: $e'
-                : 'Error sharing/saving image: $e',
+            '${settings.translate('Error sharing/saving image:', 'فائل محفوظ یا شیئر کرنے میں خرابی پیش آئی:', 'Error sharing/saving image:', 'Error sharing/saving image:')} $e',
             style: TextStyle(fontFamily: AppTheme.getFontForLanguage(context, settings.language)),
           ),
           backgroundColor: Colors.red,
@@ -166,9 +164,9 @@ class AnnouncementService {
     final String? title = data['title'] as String?;
     final String? description = data['description'] as String?;
 
-    final String closeText = isUrdu ? 'بند کریں' : 'Close';
-    final String actionText = isUrdu ? 'تفصیلات دیکھیں' : 'View Details';
-    final String shareText = isUrdu ? 'محفوظ / شیئر کریں' : 'Save / Share';
+    final String closeText = settings.translate('Close', 'بند کریں', 'Close', 'Close');
+    final String actionText = settings.translate('View Details', 'تفصیلات دیکھیں', 'View Details', 'View Details');
+    final String shareText = settings.translate('Save / Share', 'محفوظ / شیئر کریں', 'Save / Share', 'Save / Share');
 
     return showDialog<void>(
       context: context,

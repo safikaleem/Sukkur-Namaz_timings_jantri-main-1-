@@ -1,3 +1,5 @@
+import '../l10n/world_translations.dart';
+
 class DayTiming {
   final int day;
 
@@ -149,7 +151,9 @@ class PrayerTime {
       }
     }
     if (language == 'urdu') return urduName;
-    return name;
+    // World languages resolve through the shared dictionary; anything it does
+    // not cover falls back to the English name.
+    return worldTranslations[language]?[name] ?? name;
   }
 
   DateTime toDateTime({DateTime? date, bool isPm = false}) {

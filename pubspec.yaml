@@ -61,6 +61,7 @@ flutter:
 
   assets:
     - assets/quran_pdfs/
+    - assets/quran_translations/
     - assets/quran_images/
     - assets/data/timings.json
     - assets/images/

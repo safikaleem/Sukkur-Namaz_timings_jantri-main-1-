@@ -18,6 +18,7 @@ import 'screens/tasbeeh_screen.dart';
 import 'screens/hidayat_screen.dart';
 import 'screens/quran_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'widgets/translation_reader.dart' show purgeLegacySurahCache;
 import 'utils/app_theme.dart';
 import 'widgets/settings_drawer.dart';
 import 'package:workmanager/workmanager.dart';
@@ -113,6 +114,13 @@ void main() {
       } catch (e, s) {
         _reportError(e, s);
       }
+    }
+
+    // Drop the old per-surah blobs from SharedPreferences. Not awaited: it is
+    // housekeeping and must not hold up first paint.
+    if (!kIsWeb) {
+      purgeLegacySurahCache()
+          .catchError((Object e, StackTrace s) => _reportError(e, s));
     }
 
     runApp(

@@ -53,6 +53,15 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   _DrawerItem(
                     icon: Icons.push_pin_rounded,
                     label: settings.translate('Sukkur', 'سکھر', 'سکر', 'سكر'),
+                    // Same wording as the onboarding screen, so the attribution
+                    // reads identically everywhere. Arabic already uses الشيخ
+                    // in place of "Hazrat" and carries no صاحب.
+                    subtitle: '(${settings.translate(
+                      'Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu Jantri',
+                      'بمطابق حضرت ڈاکٹر حفیظ اللہ صاحب قدس اللہ سرہ جنتری',
+                      'حضرت ڊاڪٽر حفيظ الله صاحب قدس الله سره جي جنتري مطابق',
+                      'بناءً على تقويم الشيخ الدكتور حفيظ الله قدس الله سره',
+                    )})',
                     onTap: widget.onTapSukkur,
                   ),
                   _DrawerItem(
@@ -853,9 +862,15 @@ class _DrawerHeader extends StatelessWidget {
 class _DrawerItem extends StatelessWidget {
   final IconData? icon;
   final String label;
+  final String? subtitle;
   final VoidCallback? onTap;
 
-  const _DrawerItem({this.icon, required this.label, this.onTap});
+  const _DrawerItem({
+    this.icon,
+    required this.label,
+    this.subtitle,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -875,13 +890,31 @@ class _DrawerItem extends StatelessWidget {
             ] else
               const SizedBox(width: 36),
             Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: isRtl ? 17 : 14,
-                  color: isDark ? const Color(0xDEFFFFFF) : Colors.black87,
-                  fontWeight: FontWeight.w400,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: isRtl ? 17 : 14,
+                      color: isDark ? const Color(0xDEFFFFFF) : Colors.black87,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  if (subtitle != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        subtitle!,
+                        style: TextStyle(
+                          fontSize: isRtl ? 13 : 11,
+                          height: 1.3,
+                          color: isDark ? Colors.white54 : Colors.black54,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
@@ -1484,8 +1517,6 @@ class _LanguageSectionState extends State<_LanguageSection> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isSindhi = widget.settings.isSindhi;
-    final isArabic = widget.settings.isArabic;
     final isRtl = widget.settings.isRtl;
 
     return Column(
@@ -1503,7 +1534,7 @@ class _LanguageSectionState extends State<_LanguageSection> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    isRtl ? (isSindhi ? 'ٻولي' : (isArabic ? 'اللغة' : 'زبان')) : 'Language',
+                    widget.settings.translate('Language', 'زبان', 'ٻولي', 'اللغة'),
                     style: TextStyle(
                       fontSize: isRtl ? 17 : 14,
                       color: isDark ? const Color(0xDEFFFFFF) : Colors.black87,
@@ -1511,7 +1542,10 @@ class _LanguageSectionState extends State<_LanguageSection> {
                   ),
                 ),
                 Text(
-                  widget.settings.translate('English', 'اردو', 'سنڌي', 'عربي'),
+                  // The selected language's own name - never translate() here,
+                  // which would resolve against the selected language itself
+                  // and fall back to 'English' for every world language.
+                  widget.settings.languageName,
                   style: TextStyle(
                     fontSize: isRtl ? 15 : 12,
                     color: AppTheme.accent,
@@ -1541,67 +1575,16 @@ class _LanguageSectionState extends State<_LanguageSection> {
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
+              // Driven off SettingsProvider.languageNames so the picker and the
+              // header label can never disagree about a language's name.
               children: [
-                _LangOption(
-                  label: 'English',
-                  selected: widget.settings.language == 'english',
-                  isDark: isDark,
-                  onTap: () => widget.settings.setLanguage('english'),
-                ),
-                _LangOption(
-                  label: 'اردو',
-                  selected: widget.settings.language == 'urdu',
-                  isDark: isDark,
-                  onTap: () => widget.settings.setLanguage('urdu'),
-                ),
-                _LangOption(
-                  label: 'سنڌي',
-                  selected: widget.settings.language == 'sindhi',
-                  isDark: isDark,
-                  onTap: () => widget.settings.setLanguage('sindhi'),
-                ),
-                _LangOption(
-                  label: 'عربي',
-                  selected: widget.settings.language == 'arabic',
-                  isDark: isDark,
-                  onTap: () => widget.settings.setLanguage('arabic'),
-                ),
-                _LangOption(
-                  label: 'বাংলা',
-                  selected: widget.settings.language == 'bengali',
-                  isDark: isDark,
-                  onTap: () => widget.settings.setLanguage('bengali'),
-                ),
-                _LangOption(
-                  label: 'Indonesia',
-                  selected: widget.settings.language == 'indonesian',
-                  isDark: isDark,
-                  onTap: () => widget.settings.setLanguage('indonesian'),
-                ),
-                _LangOption(
-                  label: 'Türkçe',
-                  selected: widget.settings.language == 'turkish',
-                  isDark: isDark,
-                  onTap: () => widget.settings.setLanguage('turkish'),
-                ),
-                _LangOption(
-                  label: 'Français',
-                  selected: widget.settings.language == 'french',
-                  isDark: isDark,
-                  onTap: () => widget.settings.setLanguage('french'),
-                ),
-                _LangOption(
-                  label: 'हिन्दी',
-                  selected: widget.settings.language == 'hindi',
-                  isDark: isDark,
-                  onTap: () => widget.settings.setLanguage('hindi'),
-                ),
-                _LangOption(
-                  label: 'فارسی',
-                  selected: widget.settings.language == 'persian',
-                  isDark: isDark,
-                  onTap: () => widget.settings.setLanguage('persian'),
-                ),
+                for (final entry in SettingsProvider.languageNames.entries)
+                  _LangOption(
+                    label: entry.value,
+                    selected: widget.settings.language == entry.key,
+                    isDark: isDark,
+                    onTap: () => widget.settings.setLanguage(entry.key),
+                  ),
               ],
             ),
           ),

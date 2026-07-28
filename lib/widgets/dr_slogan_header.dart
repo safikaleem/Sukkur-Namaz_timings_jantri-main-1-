@@ -18,6 +18,14 @@ class DrSloganHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
+
+    // The Jantri attribution belongs to the Sukkur timings only. Guarding here
+    // rather than at each call site means it can never reappear on a screen
+    // that forgets to check, and covers any screen added later.
+    if (settings.locationMode != LocationMode.sukkur) {
+      return const SizedBox.shrink();
+    }
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final resolvedTextColor = textColor ?? (isDark ? Colors.white : Colors.black87);
     final resolvedSubColor = subColor ?? (isDark ? Colors.white60 : Colors.black54);

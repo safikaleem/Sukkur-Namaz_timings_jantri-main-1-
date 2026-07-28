@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sukkur_prayer_timings/l10n/world_translations.dart';
 import '../services/notification_service.dart';
@@ -144,21 +145,19 @@ class SettingsProvider extends ChangeNotifier {
   bool get isUrdu => _language == 'urdu';
   bool get isSindhi => _language == 'sindhi';
   bool get isArabic => _language == 'arabic';
-  bool get isRtl => _language == 'urdu' || _language == 'sindhi' || _language == 'arabic';
+  bool get isRtl => rtlLanguages.contains(_language);
 
-  String translate(String en, String ur, String sd, [String? ar]) {
-    if (_language == 'sindhi') return sd;
-    if (_language == 'urdu') return ur;
-    if (_language == 'arabic') return ar ?? ur;
-    if (_language == 'english') return en;
-    
-    // Fallback dictionary for new world languages
-    if (worldTranslations.containsKey(_language)) {
-      return worldTranslations[_language]?[en] ?? en;
-    }
-    
-    return en;
-  }
+  /// Every selectable language mapped to its own native name. The picker must
+  /// read the selected language's name from here, never through [translate],
+  /// which resolves against the *currently selected* language and so would
+  /// fall back to 'English' for every world language.
+  static const Map<String, String> languageNames = languageNamesMap;
+
+  /// Native name of the language currently in use.
+  String get languageName => languageNames[_language] ?? 'English';
+
+  String translate(String en, String ur, String sd, [String? ar]) =>
+      translateFor(_language, en, ur, sd, ar);
 
   bool get notificationsEnabled => _notificationsEnabled;
   bool get hasCompletedSetup => _hasCompletedSetup;
@@ -175,6 +174,21 @@ class SettingsProvider extends ChangeNotifier {
   double? get latitude => _latitude;
   double? get longitude => _longitude;
   String? get cityName => _cityName;
+
+  /// BCP-47 code for the current app language, for asking the platform
+  /// geocoder to return place names in the user's own script.
+  String get localeIdentifier => const {
+        'urdu': 'ur',
+        'sindhi': 'sd',
+        'arabic': 'ar',
+        'bengali': 'bn',
+        'indonesian': 'id',
+        'turkish': 'tr',
+        'french': 'fr',
+        'hindi': 'hi',
+        'persian': 'fa',
+      }[_language] ??
+      'en';
   String get calculationMethod => _calculationMethod;
   String get asrMethod => _asrMethod;
 
@@ -610,16 +624,42 @@ class SettingsProvider extends ChangeNotifier {
     _language = langCode;
     notifyListeners();
     Future.delayed(const Duration(milliseconds: 150), () async {
-      WidgetService.updateWidget();
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('language_code', langCode);
       await prefs.setBool('is_urdu', langCode == 'urdu');
       await prefs.setBool('is_sindhi', langCode == 'sindhi');
       await prefs.setBool('is_arabic', langCode == 'arabic');
+      // A world city was geocoded in the previous language, so re-resolve it
+      // before refreshing the widgets - otherwise it stays in the old script.
+      await _relocaliseCityName();
+      WidgetService.updateWidget();
       if (_notificationsEnabled) {
         await NotificationService.instance.scheduleWeeklyNotifications();
       }
     });
+  }
+
+  /// Re-geocodes the saved world coordinates so the stored city name follows
+  /// the current app language. No-op outside world mode; keeps the existing
+  /// name if the device geocoder has no localised entry or fails.
+  Future<void> _relocaliseCityName() async {
+    if (_locationMode != LocationMode.world) return;
+    final lat = _latitude, lng = _longitude;
+    if (lat == null || lng == null) return;
+    try {
+      await setLocaleIdentifier(localeIdentifier);
+      final placemarks = await placemarkFromCoordinates(lat, lng);
+      if (placemarks.isEmpty) return;
+      final p = placemarks.first;
+      final city = p.locality ?? p.subAdministrativeArea ?? p.administrativeArea;
+      if (city == null || city.isEmpty || city == _cityName) return;
+      _cityName = city;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('city_name', city);
+      notifyListeners();
+    } catch (_) {
+      // Geocoder unavailable - leave the previous name in place.
+    }
   }
 
   Future<void> setIsUrdu(bool value) async {

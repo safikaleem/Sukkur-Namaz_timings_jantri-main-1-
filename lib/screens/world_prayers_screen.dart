@@ -56,7 +56,13 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
 
       Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
       
-      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      // Ask the platform geocoder for the place name in the user's own
+      // language/script instead of always returning English.
+      await setLocaleIdentifier(settings.localeIdentifier);
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
       String city = 'Unknown Location';
       if (placemarks.isNotEmpty) {
         final p = placemarks.first;
@@ -95,12 +101,12 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(settings.translate(
-              'Please select Sukkur from the side bar!',
-              'براہ کرم سائیڈ بار سے سکھر منتخب کریں!',
-              'مھرباني ڪري سائيڊ بار مان سکر چونڊيو!',
-              'يرجى تحديد سكر من القائمة الجانبية!'
+              'Select Sukkur timings from the side bar — Sukkur (Jantri Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu)',
+              'سائیڈ بار سے سکھر کے اوقات منتخب کریں — سکھر (جنتری حضرت ڈاکٹر حفیظ اللہ صاحب قَدَّسَ اللہ سِرَّہُ)',
+              'سائيڊ بار مان سکر جا وقت چونڊيو — سکر (جنتري حضرت ڊاڪٽر حفيظ الله صاحب قَدَّسَ اللهُ سِرَّهُ)',
+              'اختر أوقات سكر من القائمة الجانبية — سكر (تقويم الشيخ الدكتور حفيظ الله قَدَّسَ اللهُ سِرَّهُ)'
             )),
-            duration: const Duration(seconds: 4),
+            duration: const Duration(seconds: 6),
           ),
         );
       }
@@ -112,10 +118,14 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
     });
 
     try {
+      await setLocaleIdentifier(settings.localeIdentifier);
       List<Location> locations = await locationFromAddress(query);
       if (locations.isNotEmpty) {
         final loc = locations.first;
-        List<Placemark> placemarks = await placemarkFromCoordinates(loc.latitude, loc.longitude);
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+          loc.latitude,
+          loc.longitude,
+        );
         String city = query;
         if (placemarks.isNotEmpty) {
           final p = placemarks.first;

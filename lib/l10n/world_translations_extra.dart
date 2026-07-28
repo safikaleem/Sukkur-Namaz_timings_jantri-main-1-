@@ -1,0 +1,681 @@
+/// Strings the app passes to translate() that the original per-language
+/// dictionaries in world_translations.dart never covered. Kept in a separate
+/// file so the existing dictionaries stay untouched; both are merged into
+/// `worldTranslations` at startup.
+///
+/// These were machine-translated and should be reviewed by native speakers
+/// before release - the meaning is right, but phrasing may want polish.
+library;
+
+/// Prayer-name aliases used by the notification scheduler and older data
+/// files. Each maps to a key the dictionaries already translate, so the alias
+/// always agrees with the canonical entry.
+const Map<String, String> prayerNameAliases = {
+  'Fajr': 'Fajar',
+  'Dhuhr': 'Zuhar',
+  'Zuhr': 'Zuhar',
+};
+
+const Map<String, Map<String, String>> additionalTranslations = {
+  'bengali': {
+    'Reminder': 'রিমাইন্ডার',
+    '{prayer} time has started': '{prayer} এর সময় শুরু হয়েছে',
+    '(Forbidden time for prayer)': '(নামাজের নিষিদ্ধ সময়)',
+    '(You can pray now)': '(এখন নামাজ পড়তে পারেন)',
+    'Test Notification': 'পরীক্ষামূলক বিজ্ঞপ্তি',
+    'If you see and hear this, your notifications are working perfectly!':
+        'আপনি যদি এটি দেখতে ও শুনতে পান, তবে আপনার বিজ্ঞপ্তি ঠিকভাবে কাজ করছে!',
+    'Select Sukkur timings from the side bar — Sukkur (Jantri Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu)':
+        'সাইড বার থেকে সুক্কুরের সময় নির্বাচন করুন — সুক্কুর (জান্ত্রি হযরত ডক্টর হাফিজুল্লাহ সাহেব কাদ্দাসাল্লাহু সিররাহু)',
+    'All prayers done for today': 'আজকের সব নামাজ সম্পন্ন',
+    'Analog': 'অ্যানালগ',
+    'Arba (1/4)': 'রুবা (১/৪)',
+    'At {prayer} time': '{prayer}-এর সময়',
+    'Ayahs': 'আয়াত',
+    'Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu Jantri':
+        'হযরত ডক্টর হাফিজুল্লাহ সাহেব কাদ্দাসাল্লাহু সিররাহু জান্ত্রি অনুসারে',
+    'Beginning of the Para': 'পারার শুরু',
+    'Clock Style': 'ঘড়ির ধরন',
+    'Could Not Get Location': 'অবস্থান পাওয়া যায়নি',
+    'Could not load the translation.': 'অনুবাদ লোড করা যায়নি।',
+    'Could not load the translation. Please check your internet connection.':
+        'অনুবাদ লোড করা যায়নি। অনুগ্রহ করে আপনার ইন্টারনেট সংযোগ পরীক্ষা করুন।',
+    'Could not open this Parah.': 'এই পারা খোলা যায়নি।',
+    'Could not play audio': 'অডিও চালানো যায়নি',
+    'Detecting your location…': 'আপনার অবস্থান শনাক্ত করা হচ্ছে…',
+    'Digital': 'ডিজিটাল',
+    'Dismiss': 'বাতিল করুন',
+    'Display Theme': 'ডিসপ্লে থিম',
+    'Error sharing/saving image:': 'ছবি শেয়ার/সংরক্ষণে ত্রুটি:',
+    'First quarter': 'প্রথম চতুর্থাংশ',
+    'Half': 'অর্ধেক',
+    'Heading': 'আপনার দিক',
+    'Label (optional)': 'লেবেল (ঐচ্ছিক)',
+    'Loading translation...': 'অনুবাদ লোড হচ্ছে...',
+    'Location Permission Needed': 'অবস্থানের অনুমতি প্রয়োজন',
+    'Location Services Off': 'লোকেশন সার্ভিস বন্ধ',
+    'Madani': 'মাদানী',
+    'Makki': 'মাক্কী',
+    'Mint': 'মিন্ট',
+    'Minus': 'বিয়োগ',
+    'Minutes': 'মিনিট',
+    'Needed to accurately calculate prayer times and find the Qibla direction.':
+        'নামাজের সঠিক সময় গণনা এবং কিবলার দিক নির্ণয়ের জন্য প্রয়োজন।',
+    'Needed to bypass battery savers so alerts ring exactly on time.':
+        'ব্যাটারি সেভার এড়িয়ে ঠিক সময়ে সতর্কতা বাজানোর জন্য প্রয়োজন।',
+    'Needed to send you Adhan and prayer time alerts on time.':
+        'আজান ও নামাজের সময়ের সতর্কতা সময়মতো পাঠানোর জন্য প্রয়োজন।',
+    'Nisf (1/2)': 'নিসফ (১/২)',
+    'No Parah found': 'কোনো পারা পাওয়া যায়নি',
+    'No Surahs found': 'কোনো সূরা পাওয়া যায়নি',
+    'No data available': 'কোনো তথ্য নেই',
+    'No favorites yet.\nTap ♡ on any Surah or Parah.':
+        'এখনও কোনো পছন্দ নেই।\nযেকোনো সূরা বা পারায় ♡ চাপুন।',
+    'No reminders yet': 'এখনও কোনো রিমাইন্ডার নেই',
+    'None': 'কোনোটিই নয়',
+    'Notification now shows a single icon on the right side for Urdu and Sindhi (RTL), matching the natural reading direction.':
+        'উর্দু ও সিন্ধি (ডান-থেকে-বাম) ভাষায় বিজ্ঞপ্তিতে এখন ডান পাশে একটি আইকন দেখায়, যা স্বাভাবিক পড়ার দিকের সাথে মেলে।',
+    'Notifications are turned off for this app. Prayer alerts will not appear until you enable them in system settings.':
+        'এই অ্যাপের জন্য বিজ্ঞপ্তি বন্ধ আছে। সিস্টেম সেটিংসে চালু না করা পর্যন্ত নামাজের সতর্কতা দেখা যাবে না।',
+    'PRAYER TIMINGS CUSTOMIZATION': 'নামাজের সময় কাস্টমাইজেশন',
+    'Parahs': 'পারা',
+    'Permission Permanently Denied': 'অনুমতি স্থায়ীভাবে অস্বীকৃত',
+    'Permission Required': 'অনুমতি প্রয়োজন',
+    'Please enable GPS / Location Services on your device.':
+        'অনুগ্রহ করে আপনার ডিভাইসে জিপিএস / লোকেশন সার্ভিস চালু করুন।',
+    'Please go to app settings and enable location permission.':
+        'অনুগ্রহ করে অ্যাপ সেটিংসে গিয়ে অবস্থানের অনুমতি চালু করুন।',
+    'Prayers done': 'নামাজ সম্পন্ন',
+    'Qibla from North': 'উত্তর থেকে কিবলার দিক',
+    'Ramzan Timetable': 'রমজানের সময়সূচী',
+    'Required Permissions': 'প্রয়োজনীয় অনুমতি',
+    'Round': 'গোলাকার',
+    'Save / Share': 'সংরক্ষণ / শেয়ার',
+    'Search Page No (1-549)...': 'পৃষ্ঠা নম্বর খুঁজুন (১-৫৪৯)...',
+    'Select Quarter': 'চতুর্থাংশ নির্বাচন করুন',
+    'Share Sukkur Salah with your friends and family':
+        'আপনার বন্ধু ও পরিবারের সাথে সুক্কুর সালাহ শেয়ার করুন',
+    'Slasa (3/4)': 'সালাসা (৩/৪)',
+    'Something went wrong. Please try again.':
+        'কিছু একটা ভুল হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।',
+    'Sukkur Prayer Times': 'সুক্কুর নামাজের সময়',
+    'Sukkur Salah': 'সুক্কুর সালাহ',
+    'Sukkur Salah – Namaz timings for Sukkur. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah':
+        'সুক্কুর সালাহ – সুক্কুরের নামাজের সময়। এখনই ডাউনলোড করুন:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+    'Sukkur, Sindh, Pakistan': 'সুক্কুর, সিন্ধু, পাকিস্তান',
+    'Surahs': 'সূরা',
+    'Tap + to add a custom reminder before or after any prayer.':
+        'যেকোনো নামাজের আগে বা পরে রিমাইন্ডার যোগ করতে + চাপুন।',
+    'Third quarter': 'তৃতীয় চতুর্থাংশ',
+    'To get the most out of Sukkur Salah, we need a few permissions.':
+        'সুক্কুর সালাহ পুরোপুরি ব্যবহার করতে আমাদের কয়েকটি অনুমতি প্রয়োজন।',
+    'To set the phone to Silent mode automatically, this app needs "Do Not Disturb" (Notification Policy Access) permission. Please grant it in the next settings screen.':
+        'ফোন স্বয়ংক্রিয়ভাবে সাইলেন্ট করতে এই অ্যাপের "ডু নট ডিস্টার্ব" (বিজ্ঞপ্তি নীতি অ্যাক্সেস) অনুমতি প্রয়োজন। পরবর্তী সেটিংস স্ক্রিনে এটি দিন।',
+    'Translation: Hazrat Mufti Taqi Usmani Hafizahullah':
+        'অনুবাদ: হযরত মুফতি তাকি উসমানি হাফিজাহুল্লাহ',
+    'Use Vibrate Instead': 'পরিবর্তে কম্পন ব্যবহার করুন',
+    'Vibration': 'কম্পন',
+    'View Details': 'বিস্তারিত দেখুন',
+    'Your current location is needed to calculate the accurate Qibla direction.':
+        'সঠিক কিবলার দিক নির্ণয়ে আপনার বর্তমান অবস্থান প্রয়োজন।',
+    'e.g. Prepare for Fajr': 'যেমন ফজরের জন্য প্রস্তুতি',
+    'of': 'এর মধ্যে',
+    '{minutes} minutes after {prayer}': '{prayer}-এর {minutes} মিনিট পরে',
+    '{minutes} minutes before {prayer}': '{prayer}-এর {minutes} মিনিট আগে',
+    'جنتری': 'জান্ত্রি',
+    'حضرت ڈاکٹر حفیظ اللہ صاحب': 'হযরত ডক্টর হাফিজুল্লাহ সাহেব',
+    'قَدَّسَ اللہ سِرَّہُ': 'কাদ্দাসাল্লাহু সিররাহু',
+    '✓  Facing Qibla': '✓  আপনি কিবলামুখী',
+  },
+  'indonesian': {
+    'Reminder': 'Pengingat',
+    '{prayer} time has started': 'Waktu {prayer} telah masuk',
+    '(Forbidden time for prayer)': '(Waktu terlarang untuk salat)',
+    '(You can pray now)': '(Anda boleh salat sekarang)',
+    'Test Notification': 'Notifikasi Uji Coba',
+    'If you see and hear this, your notifications are working perfectly!':
+        'Jika Anda melihat dan mendengar ini, notifikasi Anda berfungsi dengan sempurna!',
+    'Select Sukkur timings from the side bar — Sukkur (Jantri Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu)':
+        'Pilih jadwal Sukkur dari bilah samping — Sukkur (Jantri Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu)',
+    'All prayers done for today': 'Semua salat hari ini telah selesai',
+    'Analog': 'Analog',
+    'Arba (1/4)': "Rubu' (1/4)",
+    'At {prayer} time': 'Saat waktu {prayer}',
+    'Ayahs': 'Ayat',
+    'Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu Jantri':
+        'Berdasarkan Jantri Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu',
+    'Beginning of the Para': 'Awal Juz',
+    'Clock Style': 'Gaya Jam',
+    'Could Not Get Location': 'Tidak Dapat Memperoleh Lokasi',
+    'Could not load the translation.': 'Tidak dapat memuat terjemahan.',
+    'Could not load the translation. Please check your internet connection.':
+        'Tidak dapat memuat terjemahan. Silakan periksa koneksi internet Anda.',
+    'Could not open this Parah.': 'Tidak dapat membuka Juz ini.',
+    'Could not play audio': 'Tidak dapat memutar audio',
+    'Detecting your location…': 'Mendeteksi lokasi Anda…',
+    'Digital': 'Digital',
+    'Dismiss': 'Tutup',
+    'Display Theme': 'Tema Tampilan',
+    'Error sharing/saving image:': 'Gagal membagikan/menyimpan gambar:',
+    'First quarter': 'Seperempat pertama',
+    'Half': 'Setengah',
+    'Heading': 'Arah Anda',
+    'Label (optional)': 'Label (opsional)',
+    'Loading translation...': 'Memuat terjemahan...',
+    'Location Permission Needed': 'Izin Lokasi Diperlukan',
+    'Location Services Off': 'Layanan Lokasi Mati',
+    'Madani': 'Madaniyah',
+    'Makki': 'Makkiyah',
+    'Mint': 'Mint',
+    'Minus': 'Kurang',
+    'Minutes': 'Menit',
+    'Needed to accurately calculate prayer times and find the Qibla direction.':
+        'Diperlukan untuk menghitung waktu salat secara akurat dan menentukan arah kiblat.',
+    'Needed to bypass battery savers so alerts ring exactly on time.':
+        'Diperlukan untuk melewati penghemat baterai agar notifikasi berbunyi tepat waktu.',
+    'Needed to send you Adhan and prayer time alerts on time.':
+        'Diperlukan untuk mengirim azan dan pengingat waktu salat tepat waktu.',
+    'Nisf (1/2)': 'Nisf (1/2)',
+    'No Parah found': 'Juz tidak ditemukan',
+    'No Surahs found': 'Surah tidak ditemukan',
+    'No data available': 'Tidak ada data',
+    'No favorites yet.\nTap ♡ on any Surah or Parah.':
+        'Belum ada favorit.\nKetuk ♡ pada Surah atau Juz mana pun.',
+    'No reminders yet': 'Belum ada pengingat',
+    'None': 'Tidak ada',
+    'Notification now shows a single icon on the right side for Urdu and Sindhi (RTL), matching the natural reading direction.':
+        'Notifikasi kini menampilkan satu ikon di sisi kanan untuk bahasa Urdu dan Sindhi (RTL), sesuai arah baca alaminya.',
+    'Notifications are turned off for this app. Prayer alerts will not appear until you enable them in system settings.':
+        'Notifikasi untuk aplikasi ini dimatikan. Pengingat salat tidak akan muncul sampai Anda mengaktifkannya di pengaturan sistem.',
+    'PRAYER TIMINGS CUSTOMIZATION': 'PENYESUAIAN WAKTU SALAT',
+    'Parahs': 'Juz',
+    'Permission Permanently Denied': 'Izin Ditolak Permanen',
+    'Permission Required': 'Izin Diperlukan',
+    'Please enable GPS / Location Services on your device.':
+        'Silakan aktifkan GPS / Layanan Lokasi di perangkat Anda.',
+    'Please go to app settings and enable location permission.':
+        'Silakan buka pengaturan aplikasi dan aktifkan izin lokasi.',
+    'Prayers done': 'Salat selesai',
+    'Qibla from North': 'Kiblat dari Utara',
+    'Ramzan Timetable': 'Jadwal Ramadan',
+    'Required Permissions': 'Izin yang Diperlukan',
+    'Round': 'Bulat',
+    'Save / Share': 'Simpan / Bagikan',
+    'Search Page No (1-549)...': 'Cari No Halaman (1-549)...',
+    'Select Quarter': 'Pilih Seperempat',
+    'Share Sukkur Salah with your friends and family':
+        'Bagikan Sukkur Salah kepada teman dan keluarga Anda',
+    'Slasa (3/4)': 'Tsulutsah (3/4)',
+    'Something went wrong. Please try again.':
+        'Terjadi kesalahan. Silakan coba lagi.',
+    'Sukkur Prayer Times': 'Jadwal Salat Sukkur',
+    'Sukkur Salah': 'Sukkur Salah',
+    'Sukkur Salah – Namaz timings for Sukkur. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah':
+        'Sukkur Salah – Jadwal salat untuk Sukkur. Unduh sekarang:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+    'Sukkur, Sindh, Pakistan': 'Sukkur, Sindh, Pakistan',
+    'Surahs': 'Surah',
+    'Tap + to add a custom reminder before or after any prayer.':
+        'Ketuk + untuk menambahkan pengingat sebelum atau sesudah salat mana pun.',
+    'Third quarter': 'Tiga perempat',
+    'To get the most out of Sukkur Salah, we need a few permissions.':
+        'Untuk memaksimalkan Sukkur Salah, kami memerlukan beberapa izin.',
+    'To set the phone to Silent mode automatically, this app needs "Do Not Disturb" (Notification Policy Access) permission. Please grant it in the next settings screen.':
+        'Untuk menyenyapkan ponsel secara otomatis, aplikasi ini memerlukan izin "Jangan Ganggu" (Akses Kebijakan Notifikasi). Berikan izin tersebut di layar pengaturan berikutnya.',
+    'Translation: Hazrat Mufti Taqi Usmani Hafizahullah':
+        'Terjemahan: Hazrat Mufti Taqi Usmani Hafizahullah',
+    'Use Vibrate Instead': 'Gunakan Getaran Saja',
+    'Vibration': 'Getaran',
+    'View Details': 'Lihat Detail',
+    'Your current location is needed to calculate the accurate Qibla direction.':
+        'Lokasi Anda saat ini diperlukan untuk menghitung arah kiblat yang akurat.',
+    'e.g. Prepare for Fajr': 'mis. Bersiap untuk Subuh',
+    'of': 'dari',
+    '{minutes} minutes after {prayer}': '{minutes} menit setelah {prayer}',
+    '{minutes} minutes before {prayer}': '{minutes} menit sebelum {prayer}',
+    'جنتری': 'Jantri',
+    'حضرت ڈاکٹر حفیظ اللہ صاحب': 'Hazrat Dr Hafeezullah Sahib',
+    'قَدَّسَ اللہ سِرَّہُ': 'Qaddasallahu sirrahu',
+    '✓  Facing Qibla': '✓  Menghadap Kiblat',
+  },
+  'turkish': {
+    'Reminder': 'Hatırlatıcı',
+    '{prayer} time has started': '{prayer} vakti girdi',
+    '(Forbidden time for prayer)': '(Namaz kılmanın yasak olduğu vakit)',
+    '(You can pray now)': '(Artık namaz kılabilirsiniz)',
+    'Test Notification': 'Test Bildirimi',
+    'If you see and hear this, your notifications are working perfectly!':
+        'Bunu görüyor ve duyuyorsanız, bildirimleriniz sorunsuz çalışıyor demektir!',
+    'Select Sukkur timings from the side bar — Sukkur (Jantri Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu)':
+        'Sukkur vakitlerini yan menüden seçin — Sukkur (Jantri Hazret Dr Hafizullah Sahib Kaddesallahu sırrahu)',
+    'All prayers done for today': 'Bugünün tüm namazları kılındı',
+    'Analog': 'Analog',
+    'Arba (1/4)': 'Rubu (1/4)',
+    'At {prayer} time': '{prayer} vaktinde',
+    'Ayahs': 'Ayetler',
+    'Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu Jantri':
+        'Hazret Dr Hafizullah Sahib Kaddesallahu sırrahu Jantri’ye göre',
+    'Beginning of the Para': 'Cüzün başlangıcı',
+    'Clock Style': 'Saat Stili',
+    'Could Not Get Location': 'Konum Alınamadı',
+    'Could not load the translation.': 'Çeviri yüklenemedi.',
+    'Could not load the translation. Please check your internet connection.':
+        'Çeviri yüklenemedi. Lütfen internet bağlantınızı kontrol edin.',
+    'Could not open this Parah.': 'Bu cüz açılamadı.',
+    'Could not play audio': 'Ses çalınamadı',
+    'Detecting your location…': 'Konumunuz belirleniyor…',
+    'Digital': 'Dijital',
+    'Dismiss': 'Kapat',
+    'Display Theme': 'Görünüm Teması',
+    'Error sharing/saving image:': 'Görsel paylaşılırken/kaydedilirken hata:',
+    'First quarter': 'İlk çeyrek',
+    'Half': 'Yarım',
+    'Heading': 'Yönünüz',
+    'Label (optional)': 'Etiket (isteğe bağlı)',
+    'Loading translation...': 'Çeviri yükleniyor...',
+    'Location Permission Needed': 'Konum İzni Gerekli',
+    'Location Services Off': 'Konum Servisleri Kapalı',
+    'Madani': 'Medenî',
+    'Makki': 'Mekkî',
+    'Mint': 'Nane',
+    'Minus': 'Eksi',
+    'Minutes': 'Dakika',
+    'Needed to accurately calculate prayer times and find the Qibla direction.':
+        'Namaz vakitlerini doğru hesaplamak ve kıble yönünü bulmak için gereklidir.',
+    'Needed to bypass battery savers so alerts ring exactly on time.':
+        'Uyarıların tam zamanında çalması için pil tasarrufunu aşmak amacıyla gereklidir.',
+    'Needed to send you Adhan and prayer time alerts on time.':
+        'Ezan ve namaz vakti uyarılarını zamanında göndermek için gereklidir.',
+    'Nisf (1/2)': 'Nısıf (1/2)',
+    'No Parah found': 'Cüz bulunamadı',
+    'No Surahs found': 'Sure bulunamadı',
+    'No data available': 'Veri yok',
+    'No favorites yet.\nTap ♡ on any Surah or Parah.':
+        'Henüz favori yok.\nHerhangi bir sure veya cüzde ♡ simgesine dokunun.',
+    'No reminders yet': 'Henüz hatırlatıcı yok',
+    'None': 'Hiçbiri',
+    'Notification now shows a single icon on the right side for Urdu and Sindhi (RTL), matching the natural reading direction.':
+        'Bildirim artık Urduca ve Sindhi (sağdan sola) için doğal okuma yönüne uygun olarak sağ tarafta tek bir simge gösteriyor.',
+    'Notifications are turned off for this app. Prayer alerts will not appear until you enable them in system settings.':
+        'Bu uygulama için bildirimler kapalı. Sistem ayarlarından açmadıkça namaz uyarıları görünmeyecek.',
+    'PRAYER TIMINGS CUSTOMIZATION': 'NAMAZ VAKİTLERİ ÖZELLEŞTİRMESİ',
+    'Parahs': 'Cüzler',
+    'Permission Permanently Denied': 'İzin Kalıcı Olarak Reddedildi',
+    'Permission Required': 'İzin Gerekli',
+    'Please enable GPS / Location Services on your device.':
+        'Lütfen cihazınızda GPS / Konum Servislerini etkinleştirin.',
+    'Please go to app settings and enable location permission.':
+        'Lütfen uygulama ayarlarına gidip konum iznini etkinleştirin.',
+    'Prayers done': 'Kılınan namazlar',
+    'Qibla from North': 'Kuzeyden kıble',
+    'Ramzan Timetable': 'Ramazan İmsakiyesi',
+    'Required Permissions': 'Gerekli İzinler',
+    'Round': 'Yuvarlak',
+    'Save / Share': 'Kaydet / Paylaş',
+    'Search Page No (1-549)...': 'Sayfa No Ara (1-549)...',
+    'Select Quarter': 'Çeyrek Seçin',
+    'Share Sukkur Salah with your friends and family':
+        'Sukkur Salah’ı arkadaşlarınız ve ailenizle paylaşın',
+    'Slasa (3/4)': 'Selase (3/4)',
+    'Something went wrong. Please try again.':
+        'Bir şeyler ters gitti. Lütfen tekrar deneyin.',
+    'Sukkur Prayer Times': 'Sukkur Namaz Vakitleri',
+    'Sukkur Salah': 'Sukkur Salah',
+    'Sukkur Salah – Namaz timings for Sukkur. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah':
+        'Sukkur Salah – Sukkur için namaz vakitleri. Hemen indirin:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+    'Sukkur, Sindh, Pakistan': 'Sukkur, Sindh, Pakistan',
+    'Surahs': 'Sureler',
+    'Tap + to add a custom reminder before or after any prayer.':
+        'Herhangi bir namazdan önce veya sonra hatırlatıcı eklemek için + simgesine dokunun.',
+    'Third quarter': 'Üçüncü çeyrek',
+    'To get the most out of Sukkur Salah, we need a few permissions.':
+        'Sukkur Salah’tan en iyi şekilde yararlanmak için birkaç izne ihtiyacımız var.',
+    'To set the phone to Silent mode automatically, this app needs "Do Not Disturb" (Notification Policy Access) permission. Please grant it in the next settings screen.':
+        'Telefonu otomatik olarak sessize almak için bu uygulamanın "Rahatsız Etmeyin" (Bildirim İlkesi Erişimi) iznine ihtiyacı var. Lütfen bir sonraki ayarlar ekranında bu izni verin.',
+    'Translation: Hazrat Mufti Taqi Usmani Hafizahullah':
+        'Çeviri: Hazret Müftü Taki Osmani Hafizahullah',
+    'Use Vibrate Instead': 'Bunun Yerine Titreşimi Kullan',
+    'Vibration': 'Titreşim',
+    'View Details': 'Ayrıntıları Görüntüle',
+    'Your current location is needed to calculate the accurate Qibla direction.':
+        'Doğru kıble yönünü hesaplamak için mevcut konumunuz gereklidir.',
+    'e.g. Prepare for Fajr': 'ör. Sabah namazına hazırlan',
+    'of': '/',
+    '{minutes} minutes after {prayer}': '{prayer} vaktinden {minutes} dakika sonra',
+    '{minutes} minutes before {prayer}': '{prayer} vaktinden {minutes} dakika önce',
+    'جنتری': 'Jantri',
+    'حضرت ڈاکٹر حفیظ اللہ صاحب': 'Hazret Dr Hafizullah Sahib',
+    'قَدَّسَ اللہ سِرَّہُ': 'Kaddesallahu sırrahu',
+    '✓  Facing Qibla': '✓  Kıbleye dönüksünüz',
+  },
+  'french': {
+    'Reminder': 'Rappel',
+    '{prayer} time has started': "L'heure de {prayer} a commencé",
+    '(Forbidden time for prayer)': '(Heure interdite pour la prière)',
+    '(You can pray now)': '(Vous pouvez prier maintenant)',
+    'Test Notification': 'Notification de test',
+    'If you see and hear this, your notifications are working perfectly!':
+        'Si vous voyez et entendez ceci, vos notifications fonctionnent parfaitement !',
+    'Select Sukkur timings from the side bar — Sukkur (Jantri Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu)':
+        'Sélectionnez les horaires de Sukkur dans le menu latéral — Sukkur (Jantri Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu)',
+    'All prayers done for today': 'Toutes les prières du jour sont accomplies',
+    'Analog': 'Analogique',
+    'Arba (1/4)': "Roub' (1/4)",
+    'At {prayer} time': "À l'heure de {prayer}",
+    'Ayahs': 'Versets',
+    'Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu Jantri':
+        "D'après le Jantri de Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu",
+    'Beginning of the Para': 'Début du Juz',
+    'Clock Style': "Style d'horloge",
+    'Could Not Get Location': "Impossible d'obtenir la position",
+    'Could not load the translation.': 'Impossible de charger la traduction.',
+    'Could not load the translation. Please check your internet connection.':
+        'Impossible de charger la traduction. Veuillez vérifier votre connexion Internet.',
+    'Could not open this Parah.': "Impossible d'ouvrir ce Juz.",
+    'Could not play audio': "Impossible de lire l'audio",
+    'Detecting your location…': 'Détection de votre position…',
+    'Digital': 'Numérique',
+    'Dismiss': 'Ignorer',
+    'Display Theme': "Thème d'affichage",
+    'Error sharing/saving image:':
+        "Erreur lors du partage/de l'enregistrement de l'image :",
+    'First quarter': 'Premier quart',
+    'Half': 'Moitié',
+    'Heading': 'Votre cap',
+    'Label (optional)': 'Libellé (facultatif)',
+    'Loading translation...': 'Chargement de la traduction...',
+    'Location Permission Needed': 'Autorisation de localisation requise',
+    'Location Services Off': 'Services de localisation désactivés',
+    'Madani': 'Médinoise',
+    'Makki': 'Mecquoise',
+    'Mint': 'Menthe',
+    'Minus': 'Moins',
+    'Minutes': 'Minutes',
+    'Needed to accurately calculate prayer times and find the Qibla direction.':
+        'Nécessaire pour calculer précisément les heures de prière et trouver la direction de la Qibla.',
+    'Needed to bypass battery savers so alerts ring exactly on time.':
+        "Nécessaire pour contourner les économiseurs de batterie afin que les alertes sonnent à l'heure exacte.",
+    'Needed to send you Adhan and prayer time alerts on time.':
+        "Nécessaire pour vous envoyer l'Adhan et les alertes de prière à l'heure.",
+    'Nisf (1/2)': 'Nisf (1/2)',
+    'No Parah found': 'Aucun Juz trouvé',
+    'No Surahs found': 'Aucune sourate trouvée',
+    'No data available': 'Aucune donnée disponible',
+    'No favorites yet.\nTap ♡ on any Surah or Parah.':
+        'Aucun favori pour le moment.\nAppuyez sur ♡ sur une sourate ou un Juz.',
+    'No reminders yet': 'Aucun rappel pour le moment',
+    'None': 'Aucun',
+    'Notification now shows a single icon on the right side for Urdu and Sindhi (RTL), matching the natural reading direction.':
+        "La notification affiche désormais une seule icône à droite pour l'ourdou et le sindhi (RTL), conformément au sens de lecture naturel.",
+    'Notifications are turned off for this app. Prayer alerts will not appear until you enable them in system settings.':
+        "Les notifications sont désactivées pour cette application. Les alertes de prière n'apparaîtront pas tant que vous ne les aurez pas activées dans les paramètres système.",
+    'PRAYER TIMINGS CUSTOMIZATION': 'PERSONNALISATION DES HEURES DE PRIÈRE',
+    'Parahs': 'Juz',
+    'Permission Permanently Denied': 'Autorisation refusée définitivement',
+    'Permission Required': 'Autorisation requise',
+    'Please enable GPS / Location Services on your device.':
+        'Veuillez activer le GPS / les services de localisation sur votre appareil.',
+    'Please go to app settings and enable location permission.':
+        "Veuillez ouvrir les paramètres de l'application et activer l'autorisation de localisation.",
+    'Prayers done': 'Prières accomplies',
+    'Qibla from North': 'Qibla depuis le nord',
+    'Ramzan Timetable': 'Horaires du Ramadan',
+    'Required Permissions': 'Autorisations requises',
+    'Round': 'Rond',
+    'Save / Share': 'Enregistrer / Partager',
+    'Search Page No (1-549)...': 'Rechercher le n° de page (1-549)...',
+    'Select Quarter': 'Sélectionner le quart',
+    'Share Sukkur Salah with your friends and family':
+        'Partagez Sukkur Salah avec vos amis et votre famille',
+    'Slasa (3/4)': 'Thoulth (3/4)',
+    'Something went wrong. Please try again.':
+        "Une erreur s'est produite. Veuillez réessayer.",
+    'Sukkur Prayer Times': 'Horaires de prière de Sukkur',
+    'Sukkur Salah': 'Sukkur Salah',
+    'Sukkur Salah – Namaz timings for Sukkur. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah':
+        'Sukkur Salah – Horaires de prière pour Sukkur. Téléchargez maintenant :\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+    'Sukkur, Sindh, Pakistan': 'Sukkur, Sindh, Pakistan',
+    'Surahs': 'Sourates',
+    'Tap + to add a custom reminder before or after any prayer.':
+        'Appuyez sur + pour ajouter un rappel avant ou après une prière.',
+    'Third quarter': 'Troisième quart',
+    'To get the most out of Sukkur Salah, we need a few permissions.':
+        'Pour profiter pleinement de Sukkur Salah, nous avons besoin de quelques autorisations.',
+    'To set the phone to Silent mode automatically, this app needs "Do Not Disturb" (Notification Policy Access) permission. Please grant it in the next settings screen.':
+        "Pour mettre le téléphone en mode silencieux automatiquement, cette application a besoin de l'autorisation « Ne pas déranger » (accès à la politique de notification). Veuillez l'accorder dans l'écran de paramètres suivant.",
+    'Translation: Hazrat Mufti Taqi Usmani Hafizahullah':
+        'Traduction : Hazrat Mufti Taqi Usmani Hafizahullah',
+    'Use Vibrate Instead': 'Utiliser le vibreur à la place',
+    'Vibration': 'Vibration',
+    'View Details': 'Voir les détails',
+    'Your current location is needed to calculate the accurate Qibla direction.':
+        'Votre position actuelle est nécessaire pour calculer précisément la direction de la Qibla.',
+    'e.g. Prepare for Fajr': 'ex. Se préparer pour le Fajr',
+    'of': 'sur',
+    '{minutes} minutes after {prayer}': '{minutes} minutes après {prayer}',
+    '{minutes} minutes before {prayer}': '{minutes} minutes avant {prayer}',
+    'جنتری': 'Jantri',
+    'حضرت ڈاکٹر حفیظ اللہ صاحب': 'Hazrat Dr Hafeezullah Sahib',
+    'قَدَّسَ اللہ سِرَّہُ': 'Qaddasallahu sirrahu',
+    '✓  Facing Qibla': '✓  Vous êtes face à la Qibla',
+  },
+  'hindi': {
+    'Reminder': 'अनुस्मारक',
+    '{prayer} time has started': '{prayer} का समय शुरू हो गया है',
+    '(Forbidden time for prayer)': '(नमाज़ का मना समय)',
+    '(You can pray now)': '(अब नमाज़ पढ़ सकते हैं)',
+    'Test Notification': 'परीक्षण सूचना',
+    'If you see and hear this, your notifications are working perfectly!':
+        'अगर आप इसे देख और सुन रहे हैं, तो आपकी सूचनाएँ बिल्कुल ठीक काम कर रही हैं!',
+    'Select Sukkur timings from the side bar — Sukkur (Jantri Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu)':
+        'साइड बार से सुक्कुर का समय चुनें — सुक्कुर (जंत्री हज़रत डॉ. हफ़ीज़ुल्लाह साहब क़द्दसल्लाहु सिर्रहु)',
+    'All prayers done for today': 'आज की सभी नमाज़ें पूरी हुईं',
+    'Analog': 'एनालॉग',
+    'Arba (1/4)': 'रुबा (1/4)',
+    'At {prayer} time': '{prayer} के समय',
+    'Ayahs': 'आयतें',
+    'Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu Jantri':
+        'हज़रत डॉ. हफ़ीज़ुल्लाह साहब क़द्दसल्लाहु सिर्रहु की जंत्री के अनुसार',
+    'Beginning of the Para': 'पारे की शुरुआत',
+    'Clock Style': 'घड़ी की शैली',
+    'Could Not Get Location': 'स्थान प्राप्त नहीं हो सका',
+    'Could not load the translation.': 'अनुवाद लोड नहीं हो सका।',
+    'Could not load the translation. Please check your internet connection.':
+        'अनुवाद लोड नहीं हो सका। कृपया अपना इंटरनेट कनेक्शन जाँचें।',
+    'Could not open this Parah.': 'यह पारा नहीं खुल सका।',
+    'Could not play audio': 'ऑडियो नहीं चल सका',
+    'Detecting your location…': 'आपका स्थान पता लगाया जा रहा है…',
+    'Digital': 'डिजिटल',
+    'Dismiss': 'खारिज करें',
+    'Display Theme': 'डिस्प्ले थीम',
+    'Error sharing/saving image:': 'छवि साझा/सहेजने में त्रुटि:',
+    'First quarter': 'पहला चौथाई',
+    'Half': 'आधा',
+    'Heading': 'आपका रुख़',
+    'Label (optional)': 'लेबल (वैकल्पिक)',
+    'Loading translation...': 'अनुवाद लोड हो रहा है...',
+    'Location Permission Needed': 'स्थान की अनुमति आवश्यक',
+    'Location Services Off': 'लोकेशन सेवाएँ बंद हैं',
+    'Madani': 'मदनी',
+    'Makki': 'मक्की',
+    'Mint': 'मिंट',
+    'Minus': 'घटाएँ',
+    'Minutes': 'मिनट',
+    'Needed to accurately calculate prayer times and find the Qibla direction.':
+        'नमाज़ के सही समय की गणना और क़िबला की दिशा जानने के लिए आवश्यक है।',
+    'Needed to bypass battery savers so alerts ring exactly on time.':
+        'बैटरी सेवर को दरकिनार कर अलर्ट ठीक समय पर बजाने के लिए आवश्यक है।',
+    'Needed to send you Adhan and prayer time alerts on time.':
+        'अज़ान और नमाज़ के समय के अलर्ट समय पर भेजने के लिए आवश्यक है।',
+    'Nisf (1/2)': 'निस्फ़ (1/2)',
+    'No Parah found': 'कोई पारा नहीं मिला',
+    'No Surahs found': 'कोई सूरह नहीं मिली',
+    'No data available': 'कोई डेटा उपलब्ध नहीं',
+    'No favorites yet.\nTap ♡ on any Surah or Parah.':
+        'अभी कोई पसंदीदा नहीं।\nकिसी भी सूरह या पारे पर ♡ दबाएँ।',
+    'No reminders yet': 'अभी कोई अनुस्मारक नहीं',
+    'None': 'कोई नहीं',
+    'Notification now shows a single icon on the right side for Urdu and Sindhi (RTL), matching the natural reading direction.':
+        'अब सूचना उर्दू और सिंधी (दाएँ से बाएँ) के लिए दाईं ओर एक ही आइकन दिखाती है, जो स्वाभाविक पढ़ने की दिशा से मेल खाती है।',
+    'Notifications are turned off for this app. Prayer alerts will not appear until you enable them in system settings.':
+        'इस ऐप के लिए सूचनाएँ बंद हैं। जब तक आप उन्हें सिस्टम सेटिंग्स में चालू नहीं करते, नमाज़ के अलर्ट नहीं दिखेंगे।',
+    'PRAYER TIMINGS CUSTOMIZATION': 'नमाज़ के समय का अनुकूलन',
+    'Parahs': 'पारे',
+    'Permission Permanently Denied': 'अनुमति स्थायी रूप से अस्वीकृत',
+    'Permission Required': 'अनुमति आवश्यक',
+    'Please enable GPS / Location Services on your device.':
+        'कृपया अपने डिवाइस पर जीपीएस / लोकेशन सेवाएँ चालू करें।',
+    'Please go to app settings and enable location permission.':
+        'कृपया ऐप सेटिंग्स में जाकर स्थान की अनुमति चालू करें।',
+    'Prayers done': 'नमाज़ें पूरी',
+    'Qibla from North': 'उत्तर से क़िबला की दिशा',
+    'Ramzan Timetable': 'रमज़ान समय-सारणी',
+    'Required Permissions': 'आवश्यक अनुमतियाँ',
+    'Round': 'गोल',
+    'Save / Share': 'सहेजें / साझा करें',
+    'Search Page No (1-549)...': 'पृष्ठ संख्या खोजें (1-549)...',
+    'Select Quarter': 'चौथाई चुनें',
+    'Share Sukkur Salah with your friends and family':
+        'सुक्कुर सलाह को अपने दोस्तों और परिवार के साथ साझा करें',
+    'Slasa (3/4)': 'सलासा (3/4)',
+    'Something went wrong. Please try again.':
+        'कुछ गड़बड़ हो गई। कृपया फिर से प्रयास करें।',
+    'Sukkur Prayer Times': 'सुक्कुर नमाज़ का समय',
+    'Sukkur Salah': 'सुक्कुर सलाह',
+    'Sukkur Salah – Namaz timings for Sukkur. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah':
+        'सुक्कुर सलाह – सुक्कुर के लिए नमाज़ का समय। अभी डाउनलोड करें:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+    'Sukkur, Sindh, Pakistan': 'सुक्कुर, सिंध, पाकिस्तान',
+    'Surahs': 'सूरतें',
+    'Tap + to add a custom reminder before or after any prayer.':
+        'किसी भी नमाज़ से पहले या बाद अनुस्मारक जोड़ने के लिए + दबाएँ।',
+    'Third quarter': 'तीसरा चौथाई',
+    'To get the most out of Sukkur Salah, we need a few permissions.':
+        'सुक्कुर सलाह का पूरा लाभ लेने के लिए हमें कुछ अनुमतियाँ चाहिए।',
+    'To set the phone to Silent mode automatically, this app needs "Do Not Disturb" (Notification Policy Access) permission. Please grant it in the next settings screen.':
+        'फ़ोन को स्वतः साइलेंट करने के लिए इस ऐप को "डू नॉट डिस्टर्ब" (सूचना नीति एक्सेस) अनुमति चाहिए। कृपया अगली सेटिंग्स स्क्रीन पर यह अनुमति दें।',
+    'Translation: Hazrat Mufti Taqi Usmani Hafizahullah':
+        'अनुवाद: हज़रत मुफ़्ती तक़ी उस्मानी हफ़िज़हुल्लाह',
+    'Use Vibrate Instead': 'इसके बजाय कंपन का उपयोग करें',
+    'Vibration': 'कंपन',
+    'View Details': 'विवरण देखें',
+    'Your current location is needed to calculate the accurate Qibla direction.':
+        'सटीक क़िबला दिशा की गणना के लिए आपका वर्तमान स्थान आवश्यक है।',
+    'e.g. Prepare for Fajr': 'जैसे फ़ज्र की तैयारी करें',
+    'of': 'में से',
+    '{minutes} minutes after {prayer}': '{prayer} के {minutes} मिनट बाद',
+    '{minutes} minutes before {prayer}': '{prayer} से {minutes} मिनट पहले',
+    'جنتری': 'जंत्री',
+    'حضرت ڈاکٹر حفیظ اللہ صاحب': 'हज़रत डॉ. हफ़ीज़ुल्लाह साहब',
+    'قَدَّسَ اللہ سِرَّہُ': 'क़द्दसल्लाहु सिर्रहु',
+    '✓  Facing Qibla': '✓  आप क़िबला की ओर हैं',
+  },
+  'persian': {
+    'Reminder': 'یادآور',
+    '{prayer} time has started': 'وقت {prayer} فرا رسید',
+    '(Forbidden time for prayer)': '(وقت ممنوع برای نماز)',
+    '(You can pray now)': '(اکنون می‌توانید نماز بخوانید)',
+    'Test Notification': 'اعلان آزمایشی',
+    'If you see and hear this, your notifications are working perfectly!':
+        'اگر این را می‌بینید و می‌شنوید، اعلان‌های شما به‌درستی کار می‌کنند!',
+    'Select Sukkur timings from the side bar — Sukkur (Jantri Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu)':
+        'اوقات سکر را از نوار کناری انتخاب کنید — سکر (جنتری حضرت دکتر حفیظ‌الله صاحب قَدَّسَ اللهُ سِرَّهُ)',
+    'All prayers done for today': 'همه نمازهای امروز خوانده شد',
+    'Analog': 'عقربه‌ای',
+    'Arba (1/4)': 'ربع (۱/۴)',
+    'At {prayer} time': 'در وقت {prayer}',
+    'Ayahs': 'آیات',
+    'Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu Jantri':
+        'بر اساس جنتری حضرت دکتر حفیظ‌الله صاحب قدس‌الله سره',
+    'Beginning of the Para': 'آغاز جزء',
+    'Clock Style': 'سبک ساعت',
+    'Could Not Get Location': 'موقعیت به دست نیامد',
+    'Could not load the translation.': 'ترجمه بارگذاری نشد.',
+    'Could not load the translation. Please check your internet connection.':
+        'ترجمه بارگذاری نشد. لطفاً اتصال اینترنت خود را بررسی کنید.',
+    'Could not open this Parah.': 'این جزء باز نشد.',
+    'Could not play audio': 'صدا پخش نشد',
+    'Detecting your location…': 'در حال یافتن موقعیت شما…',
+    'Digital': 'دیجیتال',
+    'Dismiss': 'رد کردن',
+    'Display Theme': 'پوسته نمایش',
+    'Error sharing/saving image:': 'خطا در اشتراک‌گذاری/ذخیره تصویر:',
+    'First quarter': 'ربع اول',
+    'Half': 'نصف',
+    'Heading': 'جهت شما',
+    'Label (optional)': 'برچسب (اختیاری)',
+    'Loading translation...': 'در حال بارگذاری ترجمه...',
+    'Location Permission Needed': 'اجازه دسترسی به موقعیت لازم است',
+    'Location Services Off': 'خدمات موقعیت‌یابی خاموش است',
+    'Madani': 'مدنی',
+    'Makki': 'مکی',
+    'Mint': 'نعنایی',
+    'Minus': 'منها',
+    'Minutes': 'دقیقه',
+    'Needed to accurately calculate prayer times and find the Qibla direction.':
+        'برای محاسبه دقیق اوقات نماز و یافتن جهت قبله لازم است.',
+    'Needed to bypass battery savers so alerts ring exactly on time.':
+        'برای عبور از بهینه‌سازهای باتری تا هشدارها دقیقاً سر وقت به صدا درآیند لازم است.',
+    'Needed to send you Adhan and prayer time alerts on time.':
+        'برای ارسال به‌موقع اذان و هشدارهای اوقات نماز لازم است.',
+    'Nisf (1/2)': 'نصف (۱/۲)',
+    'No Parah found': 'جزئی یافت نشد',
+    'No Surahs found': 'سوره‌ای یافت نشد',
+    'No data available': 'داده‌ای موجود نیست',
+    'No favorites yet.\nTap ♡ on any Surah or Parah.':
+        'هنوز موردی به علاقه‌مندی‌ها اضافه نشده است.\nروی ♡ هر سوره یا جزء بزنید.',
+    'No reminders yet': 'هنوز یادآوری وجود ندارد',
+    'None': 'هیچ‌کدام',
+    'Notification now shows a single icon on the right side for Urdu and Sindhi (RTL), matching the natural reading direction.':
+        'اعلان اکنون برای اردو و سندی (راست‌به‌چپ) یک نماد در سمت راست نشان می‌دهد که با جهت طبیعی خواندن هماهنگ است.',
+    'Notifications are turned off for this app. Prayer alerts will not appear until you enable them in system settings.':
+        'اعلان‌های این برنامه خاموش است. تا زمانی که آن‌ها را در تنظیمات سیستم فعال نکنید، هشدارهای نماز نمایش داده نمی‌شوند.',
+    'PRAYER TIMINGS CUSTOMIZATION': 'شخصی‌سازی اوقات نماز',
+    'Parahs': 'اجزاء',
+    'Permission Permanently Denied': 'اجازه به‌طور دائم رد شد',
+    'Permission Required': 'اجازه لازم است',
+    'Please enable GPS / Location Services on your device.':
+        'لطفاً GPS / خدمات موقعیت‌یابی را در دستگاه خود فعال کنید.',
+    'Please go to app settings and enable location permission.':
+        'لطفاً به تنظیمات برنامه بروید و اجازه دسترسی به موقعیت را فعال کنید.',
+    'Prayers done': 'نمازهای خوانده‌شده',
+    'Qibla from North': 'قبله از شمال',
+    'Ramzan Timetable': 'جدول اوقات رمضان',
+    'Required Permissions': 'اجازه‌های لازم',
+    'Round': 'گرد',
+    'Save / Share': 'ذخیره / اشتراک‌گذاری',
+    'Search Page No (1-549)...': 'جستجوی شماره صفحه (۱-۵۴۹)...',
+    'Select Quarter': 'انتخاب ربع',
+    'Share Sukkur Salah with your friends and family':
+        'سکر صلاۃ را با دوستان و خانواده خود به اشتراک بگذارید',
+    'Slasa (3/4)': 'ثلاثه (۳/۴)',
+    'Something went wrong. Please try again.':
+        'مشکلی پیش آمد. لطفاً دوباره تلاش کنید.',
+    'Sukkur Prayer Times': 'اوقات نماز سکر',
+    'Sukkur Salah': 'سکر صلاۃ',
+    'Sukkur Salah – Namaz timings for Sukkur. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah':
+        'سکر صلاۃ – اوقات نماز برای سکر. هم‌اکنون دانلود کنید:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+    'Sukkur, Sindh, Pakistan': 'سکر، سند، پاکستان',
+    'Surahs': 'سوره‌ها',
+    'Tap + to add a custom reminder before or after any prayer.':
+        'برای افزودن یادآوری پیش یا پس از هر نماز، روی + بزنید.',
+    'Third quarter': 'سه‌ربع',
+    'To get the most out of Sukkur Salah, we need a few permissions.':
+        'برای بهره‌مندی کامل از سکر صلاۃ، به چند اجازه نیاز داریم.',
+    'To set the phone to Silent mode automatically, this app needs "Do Not Disturb" (Notification Policy Access) permission. Please grant it in the next settings screen.':
+        'برای بی‌صدا کردن خودکار گوشی، این برنامه به اجازه «مزاحم نشوید» (دسترسی به سیاست اعلان) نیاز دارد. لطفاً آن را در صفحه تنظیمات بعدی بدهید.',
+    'Translation: Hazrat Mufti Taqi Usmani Hafizahullah':
+        'ترجمه: حضرت مفتی تقی عثمانی حفظه‌الله',
+    'Use Vibrate Instead': 'در عوض از لرزش استفاده کنید',
+    'Vibration': 'لرزش',
+    'View Details': 'مشاهده جزئیات',
+    'Your current location is needed to calculate the accurate Qibla direction.':
+        'برای محاسبه دقیق جهت قبله، موقعیت فعلی شما لازم است.',
+    'e.g. Prepare for Fajr': 'مثلاً آماده شدن برای نماز صبح',
+    'of': 'از',
+    '{minutes} minutes after {prayer}': '{minutes} دقیقه پس از {prayer}',
+    '{minutes} minutes before {prayer}': '{minutes} دقیقه پیش از {prayer}',
+    'جنتری': 'جنتری',
+    'حضرت ڈاکٹر حفیظ اللہ صاحب': 'حضرت دکتر حفیظ‌الله صاحب',
+    'قَدَّسَ اللہ سِرَّہُ': 'قَدَّسَ اللهُ سِرَّهُ',
+    '✓  Facing Qibla': '✓  رو به قبله هستید',
+  },
+};

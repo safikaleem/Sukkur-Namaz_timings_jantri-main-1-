@@ -12,10 +12,7 @@ class DrSloganFooter extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    final isSindhi = settings.language == 'sindhi';
-    
     final bool isWorld = settings.locationMode == LocationMode.world;
-    final bool useEnglish = isWorld && settings.language == 'english';
 
     final String text = isWorld
       ? settings.translate(
@@ -31,16 +28,30 @@ class DrSloganFooter extends StatelessWidget {
         'وفقًا لعالم الفلك الشيخ سيد كاكاخيل حفظه الله، بعد الحسابات الجديدة، أصبح هذا التقويم ساريًا على بانو عاقل، هاليجي شريف، كرمبور، شيكاربور، أمروت شريف، بير کوت، خيربور، بريالو وشادي شهيد. ومع ذلك، يجب على سكان شيكاربور، أمروت شريف، وبير کوت الإمساك عن الإفطار مع الغروب دقيقة واحدة من الوقت الجدولي.'
     );
 
-    final String? font = useEnglish 
-        ? null 
-        : (settings.language == 'sindhi' 
-            ? AppTheme.getSindhiFont(context) 
-            : (settings.language == 'arabic' ? null : AppTheme.urduFont));
+    // The Sukkur (Kaka Khel) text is written in Urdu whatever the app language,
+    // so it always needs the Urdu font and RTL. The world text is translated,
+    // so it must follow the selected language instead - otherwise Bengali,
+    // Hindi, Turkish, French and Indonesian render right-to-left in a
+    // Nastaliq font and are unreadable.
+    final bool textIsRtl = isWorld ? settings.isRtl : true;
+    final String? font = switch (settings.language) {
+      'sindhi' => AppTheme.getSindhiFont(context),
+      'arabic' => null,
+      'urdu' => AppTheme.urduFont,
+      _ => isWorld ? null : AppTheme.urduFont,
+    };
 
     // Responsively scale down font size on smaller devices to ensure it fits nicely.
     final double fontSize = screenWidth < 360
         ? 9.2
         : (screenWidth < 400 ? 9.8 : 10.5);
+
+    // Nastaliq (Urdu/Sindhi) cascades diagonally with tall ascenders and deep
+    // descenders. At 1.40 the glyphs get clipped top and bottom, so give those
+    // scripts a taller line box.
+    final bool isNastaliq =
+        settings.language == 'urdu' || settings.language == 'sindhi';
+    final double lineHeight = isNastaliq ? 1.9 : 1.4;
 
     return Container(
       width: double.infinity,
@@ -61,18 +72,98 @@ class DrSloganFooter extends StatelessWidget {
           ),
         ),
       ),
-      child: Text(
-        text,
-        textDirection: useEnglish ? TextDirection.ltr : TextDirection.rtl,
-        textAlign: TextAlign.center,
-        maxLines: 4,
-        style: TextStyle(
-          fontFamily: font,
-          fontSize: fontSize,
-          color: isDark ? Colors.white70 : Colors.black87,
-          height: 1.40,
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final direction =
+              textIsRtl ? TextDirection.rtl : TextDirection.ltr;
+          final baseStyle = TextStyle(
+            fontFamily: font,
+            fontSize: fontSize,
+            color: isDark ? Colors.white70 : Colors.black87,
+            height: lineHeight,
+          );
+
+          // Measure with the style the Text will actually resolve to - the
+          // ambient DefaultTextStyle merged in, and the user's text scaling
+          // applied - otherwise the chosen size overflows anyway.
+          final effectiveStyle =
+              DefaultTextStyle.of(context).style.merge(baseStyle);
+
+          final size = _fittingFontSize(
+            text: text,
+            style: effectiveStyle,
+            direction: direction,
+            textScaler: MediaQuery.textScalerOf(context),
+            maxWidth: constraints.maxWidth,
+          );
+
+          return Text(
+            text,
+            textDirection: direction,
+            textAlign: TextAlign.center,
+            // The size above is chosen so the text fits inside this many
+            // lines. The cap plus ellipsis is a backstop for the pathological
+            // case where even the smallest size cannot fit - then at least the
+            // truncation is visible rather than a silent chop.
+            maxLines: _hardMaxLines,
+            overflow: TextOverflow.ellipsis,
+            style: baseStyle.copyWith(fontSize: size),
+          );
+        },
       ),
     );
   }
+}
+
+/// Prefer this many lines; shrink the text to reach it if that stays legible.
+const int _preferredMaxLines = 3;
+
+/// Never exceed this many lines.
+const int _hardMaxLines = 4;
+
+/// Smallest size worth shrinking to in order to win back a line.
+const double _minSizeForPreferred = 8.0;
+
+/// Absolute floor - below this the footer stops being readable.
+const double _minSize = 6.0;
+
+/// Largest font size at or below [style].fontSize that lets [text] fit inside
+/// [_preferredMaxLines], falling back to [_hardMaxLines] when three lines would
+/// require an unreadably small size. Shrinking rather than clipping is what
+/// keeps the longer translations - Urdu especially - fully visible.
+double _fittingFontSize({
+  required String text,
+  required TextStyle style,
+  required TextDirection direction,
+  required TextScaler textScaler,
+  required double maxWidth,
+}) {
+  final base = style.fontSize ?? 10.5;
+  if (maxWidth <= 0 || !maxWidth.isFinite) return base;
+
+  // Measure against a hair less width than we have, so rounding between the
+  // measuring pass and the real layout cannot tip the last line over.
+  final measureWidth = maxWidth - 1.0;
+
+  bool fits(double size, int lines) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style.copyWith(fontSize: size)),
+      textDirection: direction,
+      textAlign: TextAlign.center,
+      textScaler: textScaler,
+      maxLines: lines,
+    )..layout(maxWidth: measureWidth);
+    return !painter.didExceedMaxLines;
+  }
+
+  double? largestThatFits(int lines, double floor) {
+    for (var size = base; size >= floor; size -= 0.2) {
+      if (fits(size, lines)) return size;
+    }
+    return null;
+  }
+
+  return largestThatFits(_preferredMaxLines, _minSizeForPreferred) ??
+      largestThatFits(_hardMaxLines, _minSize) ??
+      _minSize;
 }
