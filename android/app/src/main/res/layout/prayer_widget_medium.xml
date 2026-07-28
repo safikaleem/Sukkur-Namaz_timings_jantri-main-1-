@@ -216,3 +216,4 @@
             <TextView android:id="@+id/widget_m_isha_ap" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="" android:textColor="#1A1A2E" android:textSize="8sp" />
         </LinearLayout>
 </LinearLayout>
+</LinearLayout>
