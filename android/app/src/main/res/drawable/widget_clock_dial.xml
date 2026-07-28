@@ -1,0 +1,38 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- Background circle -->
+    <path
+        android:pathData="M100,100 m-96,0 a96,96 0 1,1 192,0 a96,96 0 1,1 -192,0"
+        android:fillColor="#FFFFFF"/>
+
+    <!-- Outer blue border (progress arc style) -->
+    <path
+        android:pathData="M100,100 m-94,0 a94,94 0 1,1 188,0 a94,94 0 1,1 -188,0"
+        android:strokeWidth="4"
+        android:strokeColor="#2196F3"
+        android:fillColor="#00000000"/>
+
+    <!-- 12 Hour Ticks -->
+    <path
+        android:pathData="
+            M100,10 L100,22
+            M100,190 L100,178
+            M10,100 L22,100
+            M190,100 L178,100
+            M55,22 L61,32.4
+            M145,22 L139,32.4
+            M22,55 L32.4,61
+            M178,55 L167.6,61
+            M22,145 L32.4,139
+            M178,145 L167.6,139
+            M55,178 L61,167.6
+            M145,178 L139,167.6
+        "
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeColor="#666666" />
+</vector>

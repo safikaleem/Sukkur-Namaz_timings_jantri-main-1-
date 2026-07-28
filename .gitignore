@@ -1,0 +1,149 @@
+# ============================================================
+# SECRETS / SIGNING  — never commit these
+# ============================================================
+*.jks
+*.keystore
+*.p12
+*.pem
+key.properties
+android/key.properties
+android/app/release-keystore.jks
+*.env
+.env*
+google-services.json
+GoogleService-Info.plist
+
+# ============================================================
+# Build outputs / release artifacts
+# ============================================================
+*.apk
+*.aab
+*.aar
+*.ipa
+*.app
+*.dSYM.zip
+/build/
+build/
+releases/
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# ============================================================
+# Flutter / Dart / Pub
+# ============================================================
+.dart_tool/
+.flutter_tmp/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/coverage/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+app.*.symbols
+app.*.map.json
+
+# ============================================================
+# Gradle / Android
+# ============================================================
+.gradle/
+.gradle_cache/
+.gradle_home/
+android/.gradle/
+android/local.properties
+android/captures/
+android/.cxx/
+local.properties
+*.class
+*.jar.bak
+
+# ============================================================
+# iOS / macOS
+# ============================================================
+**/Flutter/ephemeral/
+**/Pods/
+**/*.xcworkspace/xcuserdata/
+**/xcuserdata/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/flutter_export_environment.sh
+ios/Runner/GeneratedPluginRegistrant.*
+.symlinks/
+
+# ============================================================
+# Windows / Linux desktop build junk
+# ============================================================
+windows/flutter/ephemeral/
+linux/flutter/ephemeral/
+
+# ============================================================
+# Logs & scratch analysis output
+# ============================================================
+*.log
+analyze.txt
+analyze_errors.txt
+build_log.txt
+build_apk_log.txt
+flutter_apk_debug.txt
+flutter_build_log.txt
+
+# ============================================================
+# Local history / recovery / editor state
+# ============================================================
+.lh/
+.history/
+_recovery/
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.claude/
+devtools_options.yaml
+
+# ============================================================
+# One-off helper & scratch scripts (not part of the app)
+# ============================================================
+build_script.ps1
+restore.ps1
+find_history.ps1
+check_chars.dart
+check_encoding.dart
+check_wt.dart
+check_wt2.dart
+extract.dart
+extract.py
+fix_encoding.dart
+fix_kotlin_dates.py
+replace.py
+test_api.dart
+test_api2.dart
+translate.dart
+translate_whats_new.py
+update_pbxproj.py
+update_translations.dart
+update_widget_lang.dart
+
+# ============================================================
+# Third-party tools bundled locally
+# ============================================================
+xpdf/
+
+# ============================================================
+# OS / misc
+# ============================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.pyc
+__pycache__/
+.atom/
+.build/
+.buildlog/
+.svn/
+.swiftpm/
+migrate_working_dir/

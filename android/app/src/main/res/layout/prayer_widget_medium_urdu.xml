@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root_medium"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_background"
+    android:paddingLeft="4dp"
+    android:paddingRight="4dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
+    android:gravity="center_vertical">
+
+    <!-- Header: date block + countdown -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="4dp">
+
+        <TextView
+            android:id="@+id/widget_day_number"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="19"
+            android:textColor="#1A1A2E"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:id="@+id/widget_day_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Saturday"
+                android:textColor="#555577"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+
+            <TextView
+                android:id="@+id/widget_hijri"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dhu al-Hijjah 1447"
+                android:textColor="#888899"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="2dp">
+                <ImageView
+                    android:layout_width="11dp"
+                    android:layout_height="11dp"
+                    android:src="@drawable/ic_custom_pushpin" />
+                <TextView
+                    android:id="@+id/widget_location"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sukkur"
+                    android:textColor="#888899"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:layout_marginStart="2dp"
+                    android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Middle/Right: Digital Clock -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end|top"
+            android:layout_marginEnd="12dp">
+            <TextClock
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#1A1A2E"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:format12Hour="h:mm a"
+                android:format24Hour="HH:mm" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="end">
+
+            <Chronometer
+                android:id="@+id/widget_countdown_med"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#1565C0"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textDirection="ltr"
+                android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+
+            <TextView
+                android:id="@+id/widget_next_prayer_med"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="since Asr"
+                android:textColor="#888899"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Timeline: line behind 8 dots -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="16dp"
+        android:layout_marginTop="6dp">
+
+        <LinearLayout
+            android:id="@+id/widget_med_line"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:background="#C0C4D0" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageView android:id="@+id/dot_m_subah"   android:layout_width="0dp" android:layout_weight="1" android:layout_height="16dp" android:src="@drawable/dot_inactive" android:scaleType="center" />
+            <ImageView android:id="@+id/dot_m_fajar"   android:layout_width="0dp" android:layout_weight="1" android:layout_height="16dp" android:src="@drawable/dot_inactive" android:scaleType="center" />
+            <ImageView android:id="@+id/dot_m_tulu"    android:layout_width="0dp" android:layout_weight="1" android:layout_height="16dp" android:src="@drawable/dot_inactive" android:scaleType="center" />
+            <ImageView android:id="@+id/dot_m_ishraq"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="16dp" android:src="@drawable/dot_inactive" android:scaleType="center" />
+            <ImageView android:id="@+id/dot_m_zawal"   android:layout_width="0dp" android:layout_weight="1" android:layout_height="16dp" android:src="@drawable/dot_inactive" android:scaleType="center" />
+            <ImageView android:id="@+id/dot_m_zuhar"   android:layout_width="0dp" android:layout_weight="1" android:layout_height="16dp" android:src="@drawable/dot_inactive" android:scaleType="center" />
+            <ImageView android:id="@+id/dot_m_misl"    android:layout_width="0dp" android:layout_weight="1" android:layout_height="16dp" android:src="@drawable/dot_inactive" android:scaleType="center" />
+            <ImageView android:id="@+id/dot_m_asr"     android:layout_width="0dp" android:layout_weight="1" android:layout_height="16dp" android:src="@drawable/dot_inactive" android:scaleType="center" />
+            <ImageView android:id="@+id/dot_m_maghrib" android:layout_width="0dp" android:layout_weight="1" android:layout_height="16dp" android:src="@drawable/dot_inactive" android:scaleType="center" />
+            <ImageView android:id="@+id/dot_m_isha"    android:layout_width="0dp" android:layout_weight="1" android:layout_height="16dp" android:src="@drawable/dot_inactive" android:scaleType="center" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- Labels + times (8 prayers) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
+
+        <LinearLayout android:id="@+id/box_m_subah" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/lbl_m_subah" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="Intiha e Sehar" android:textColor="#555577" android:textSize="10.5sp" android:textStyle="bold" android:includeFontPadding="false" android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+            <TextView android:id="@+id/widget_m_subah" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="--:--" android:textColor="#1A1A2E" android:textSize="11sp" android:textStyle="bold" android:includeFontPadding="false" />
+            <TextView android:id="@+id/widget_m_subah_ap" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="" android:textColor="#1A1A2E" android:textSize="9.5sp" android:textStyle="bold" android:includeFontPadding="false" android:layout_marginTop="-3dp" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/box_m_fajar" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/lbl_m_fajar" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="Fajar" android:textColor="#555577" android:textSize="10.5sp" android:textStyle="bold" android:includeFontPadding="false" android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+            <TextView android:id="@+id/widget_m_fajar" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="--:--" android:textColor="#1A1A2E" android:textSize="11sp" android:textStyle="bold" android:includeFontPadding="false" />
+            <TextView android:id="@+id/widget_m_fajar_ap" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="" android:textColor="#1A1A2E" android:textSize="9.5sp" android:textStyle="bold" android:includeFontPadding="false" android:layout_marginTop="-3dp" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/box_m_tulu" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/lbl_m_tulu" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="Tulu Aftab" android:textColor="#555577" android:textSize="10.5sp" android:textStyle="bold" android:includeFontPadding="false" android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+            <TextView android:id="@+id/widget_m_tulu" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="--:--" android:textColor="#1A1A2E" android:textSize="11sp" android:textStyle="bold" android:includeFontPadding="false" />
+            <TextView android:id="@+id/widget_m_tulu_ap" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="" android:textColor="#1A1A2E" android:textSize="9.5sp" android:textStyle="bold" android:includeFontPadding="false" android:layout_marginTop="-3dp" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/box_m_ishraq" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/lbl_m_ishraq" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="Ishraq" android:textColor="#555577" android:textSize="10.5sp" android:textStyle="bold" android:includeFontPadding="false" android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+            <TextView android:id="@+id/widget_m_ishraq" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="--:--" android:textColor="#1A1A2E" android:textSize="11sp" android:textStyle="bold" android:includeFontPadding="false" />
+            <TextView android:id="@+id/widget_m_ishraq_ap" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="" android:textColor="#1A1A2E" android:textSize="9.5sp" android:textStyle="bold" android:includeFontPadding="false" android:layout_marginTop="-3dp" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/box_m_zawal" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/lbl_m_zawal" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="Zawal" android:textColor="#555577" android:textSize="10.5sp" android:textStyle="bold" android:includeFontPadding="false" android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+            <TextView android:id="@+id/widget_m_zawal" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="--:--" android:textColor="#1A1A2E" android:textSize="11sp" android:textStyle="bold" android:includeFontPadding="false" />
+            <TextView android:id="@+id/widget_m_zawal_ap" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="" android:textColor="#1A1A2E" android:textSize="9.5sp" android:textStyle="bold" android:includeFontPadding="false" android:layout_marginTop="-3dp" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/box_m_zuhar" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/lbl_m_zuhar" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="Zuhar" android:textColor="#555577" android:textSize="10.5sp" android:textStyle="bold" android:includeFontPadding="false" android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+            <TextView android:id="@+id/widget_m_zuhar" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="--:--" android:textColor="#1A1A2E" android:textSize="11sp" android:textStyle="bold" android:includeFontPadding="false" />
+            <TextView android:id="@+id/widget_m_zuhar_ap" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="" android:textColor="#1A1A2E" android:textSize="9.5sp" android:textStyle="bold" android:includeFontPadding="false" android:layout_marginTop="-3dp" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/box_m_misl" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/lbl_m_misl" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="Misl Awwal" android:textColor="#555577" android:textSize="10.5sp" android:textStyle="bold" android:includeFontPadding="false" android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+            <TextView android:id="@+id/widget_m_misl" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="--:--" android:textColor="#1A1A2E" android:textSize="11sp" android:textStyle="bold" android:includeFontPadding="false" />
+            <TextView android:id="@+id/widget_m_misl_ap" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="" android:textColor="#1A1A2E" android:textSize="9.5sp" android:textStyle="bold" android:includeFontPadding="false" android:layout_marginTop="-3dp" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/box_m_asr" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/lbl_m_asr" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="Asr" android:textColor="#555577" android:textSize="10.5sp" android:textStyle="bold" android:includeFontPadding="false" android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+            <TextView android:id="@+id/widget_m_asr" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="--:--" android:textColor="#1A1A2E" android:textSize="11sp" android:textStyle="bold" android:includeFontPadding="false" />
+            <TextView android:id="@+id/widget_m_asr_ap" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="" android:textColor="#1A1A2E" android:textSize="9.5sp" android:textStyle="bold" android:includeFontPadding="false" android:layout_marginTop="-3dp" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/box_m_maghrib" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/lbl_m_maghrib" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="Maghrib" android:textColor="#555577" android:textSize="10.5sp" android:textStyle="bold" android:includeFontPadding="false" android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+            <TextView android:id="@+id/widget_m_maghrib" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="--:--" android:textColor="#1A1A2E" android:textSize="11sp" android:textStyle="bold" android:includeFontPadding="false" />
+            <TextView android:id="@+id/widget_m_maghrib_ap" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="" android:textColor="#1A1A2E" android:textSize="9.5sp" android:textStyle="bold" android:includeFontPadding="false" android:layout_marginTop="-3dp" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/box_m_isha" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/lbl_m_isha" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="Isha" android:textColor="#555577" android:textSize="10.5sp" android:textStyle="bold" android:includeFontPadding="false" android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
+            <TextView android:id="@+id/widget_m_isha" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="--:--" android:textColor="#1A1A2E" android:textSize="11sp" android:textStyle="bold" android:includeFontPadding="false" />
+            <TextView android:id="@+id/widget_m_isha_ap" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:lines="1" android:maxLines="1" android:singleLine="true" android:text="" android:textColor="#1A1A2E" android:textSize="9.5sp" android:textStyle="bold" android:includeFontPadding="false" android:layout_marginTop="-3dp" />
+        </LinearLayout>
+</LinearLayout>

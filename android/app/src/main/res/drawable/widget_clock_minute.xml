@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="110dp"
+    android:height="110dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    <!-- Drop Shadow -->
+    <path
+        android:pathData="M 98,117 L 99,27 A 1,1 0 0,1 101,27 L 102,117 Z"
+        android:fillColor="#22000000" />
+    <!-- Tapered Minute Hand -->
+    <path
+        android:pathData="M 97,115 L 99,25 A 1,1 0 0,1 101,25 L 103,115 Z"
+        android:fillColor="#333344" />
+    <path
+        android:pathData="M100,100 m-6,0 a6,6 0 1,1 12,0 a6,6 0 1,1 -12,0"
+        android:fillColor="#1A1A2E" />
+    <path
+        android:pathData="M100,100 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0"
+        android:fillColor="#2196F3" />
+</vector>

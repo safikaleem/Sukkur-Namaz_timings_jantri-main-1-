@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Notification small icon — MUST be white on transparent background.
+    Android 5.0+ (API 21+) silhouette-renders all notification icons; any color
+    other than white/transparent will appear as a solid grey blob on strict OEMs
+    (Samsung One UI, Vivo Funtouch OS).
+
+    Design: mosque dome + crescent moon — matches Sukkur Salah app identity.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Mosque base / floor line -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M2,19 h20 v1.5 H2 z" />
+
+    <!-- Left minaret -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M3.5,19 V13 h1.5 V19 z
+                          M3,12.5 h2.5 v1 H3 z
+                          M3.8,10 h0.9 v2.5 h-0.9 z
+                          M3.5,9.5 h1.5 v0.8 h-1.5 z
+                          M4.25,8 v1.5 h0 A0.75,0.75 0 0 0 4.25,8 z" />
+
+    <!-- Right minaret -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M19,19 V13 h1.5 V19 z
+                          M18.5,12.5 h2.5 v1 h-2.5 z
+                          M19.3,10 h0.9 v2.5 h-0.9 z
+                          M19,9.5 h1.5 v0.8 H19 z
+                          M19.75,8 v1.5 h0 A0.75,0.75 0 0 0 19.75,8 z" />
+
+    <!-- Main dome -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M7,19 V15.5 A5,5.5 0 0 1 17,15.5 V19 z" />
+
+    <!-- Dome tip / finial -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,9 v1.5 M11.4,9.5 h1.2 v0.5 h-1.2 z
+                          M11.7,9 h0.6 v0.6 h-0.6 z" />
+
+    <!-- Crescent moon (top right) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,3 A3.2,3.2 0 1 1 20,9.4
+                           A2.1,2.1 0 1 0 20,3 z" />
+
+</vector>

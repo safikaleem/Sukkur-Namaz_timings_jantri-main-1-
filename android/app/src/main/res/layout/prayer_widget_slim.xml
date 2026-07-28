@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root_slim"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="14dp"
+        android:paddingRight="14dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp">
+
+        <!-- Left Column: Location, Prayer Name, Label -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="start">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="2dp">
+                <ImageView
+                    android:layout_width="11dp"
+                    android:layout_height="11dp"
+                    android:src="@drawable/ic_custom_pushpin" />
+                <TextView
+                    android:id="@+id/widget_location"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sukkur"
+                    android:textColor="#888899"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:layout_marginStart="3dp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/slim_prayer_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Isha"
+                android:textColor="#1A1A2E"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/slim_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="until Isha"
+                android:textColor="#888899"
+                android:textSize="11sp"
+                android:layout_marginTop="1dp" />
+        </LinearLayout>
+
+        <!-- Right Column: Clock, Prayer Time, Countdown -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="end">
+
+            <TextClock
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#1A1A2E"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:format12Hour="h:mm a"
+                android:format24Hour="HH:mm"
+                android:layout_marginBottom="2dp" />
+
+            <TextView
+                android:id="@+id/slim_prayer_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="8:52 PM"
+                android:textColor="#1A1A2E"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:gravity="end" />
+
+            <Chronometer
+                android:id="@+id/slim_countdown"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#E6A817"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:gravity="end"
+                android:layout_marginTop="1dp"
+                android:textDirection="ltr" />
+        </LinearLayout>
+    </LinearLayout>
+
+</FrameLayout>

@@ -1,0 +1,25 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="110dp"
+    android:height="110dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    <!-- Drop Shadow -->
+    <path
+        android:pathData="M 99.5,127 L 99.5,17 A 0.5,0.5 0 0,1 100.5,17 L 100.5,127 Z"
+        android:fillColor="#22000000" />
+    <!-- Tail (Counterweight) -->
+    <path
+        android:pathData="M 99,100 L 99,125 A 1,1 0 0,0 101,125 L 101,100 Z"
+        android:fillColor="#2196F3" />
+    <!-- Tapered Second Hand -->
+    <path
+        android:pathData="M 99,100 L 99.3,15 A 0.7,0.7 0 0,1 100.7,15 L 101,100 Z"
+        android:fillColor="#2196F3" />
+    <path
+        android:pathData="M100,100 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0"
+        android:fillColor="#FFFFFF" />
+    <path
+        android:pathData="M100,100 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0"
+        android:strokeWidth="1.5"
+        android:strokeColor="#2196F3" />
+</vector>

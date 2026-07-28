@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root_circle"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_circle_bg"
+    android:padding="4dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <!-- Gregorian Date -->
+        <TextView
+            android:id="@+id/widget_circle_gregorian"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:text="July 22 Wed"
+            android:gravity="center" />
+
+        <!-- Hijri Date -->
+        <TextView
+            android:id="@+id/widget_circle_hijri"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#E0E0E0"
+            android:textSize="13sp"
+            android:text="7 Safar 1448"
+            android:layout_marginTop="2dp"
+            android:gravity="center" />
+
+        <!-- Digital Clock -->
+        <TextClock
+            android:id="@+id/widget_circle_clock_digital"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:format12Hour="hh:mm"
+            android:format24Hour="HH:mm"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp"
+            android:gravity="center" />
+
+        <!-- Analog Clock Container -->
+        <FrameLayout
+            android:layout_width="85dp"
+            android:layout_height="85dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp">
+            
+            <ImageView
+                android:id="@+id/widget_circle_clock_dial_dynamic"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone" />
+
+            <AnalogClock
+                android:id="@+id/widget_circle_clock_analog"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:dial="@android:color/transparent"
+                android:hand_hour="@drawable/widget_clock_hour"
+                android:hand_minute="@drawable/widget_clock_minute"
+                android:hand_second="@drawable/widget_clock_second"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <!-- Location -->
+        <TextView
+            android:id="@+id/widget_circle_location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:text="Sukkur Sindh Pakistan"
+            android:gravity="center" />
+
+        <!-- Next Prayer Name -->
+        <TextView
+            android:id="@+id/widget_circle_prayer_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#2196F3"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:layout_marginTop="2dp"
+            android:text="Asr" />
+
+        <!-- Next Prayer Time -->
+        <TextView
+            android:id="@+id/widget_circle_prayer_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#E0E0E0"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp"
+            android:text="05:17 PM" />
+
+        <!-- Elapsed/Remaining Label -->
+        <TextView
+            android:id="@+id/widget_circle_elapsed_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#AAAAAA"
+            android:textSize="10sp"
+            android:layout_marginTop="2dp"
+            android:text="Time elapsed" />
+
+        <!-- Chronometer -->
+        <Chronometer
+            android:id="@+id/widget_circle_countdown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+    </LinearLayout>
+</RelativeLayout>
