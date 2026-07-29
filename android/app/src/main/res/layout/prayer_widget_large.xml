@@ -14,21 +14,33 @@
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
+        <!-- Accent rule: anchors the header and picks up the countdown colour. -->
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="4dp"
+            android:layout_height="44dp"
+            android:background="@drawable/widget_accent_bar"
+            android:layout_marginEnd="10dp"
+            android:layout_marginRight="10dp" />
+
         <TextView
             android:id="@+id/widget_large_day_number"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="8"
             android:textColor="#1A1A2E"
-            android:textSize="36sp"
-            android:textStyle="bold" />
+            android:textSize="38sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="-0.03"
+            android:includeFontPadding="false" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginStart="8dp">
+            android:layout_marginStart="10dp">
 
             <TextView
                 android:id="@+id/widget_large_day_name"
@@ -37,7 +49,9 @@
                 android:text="Monday 8-6-2026"
                 android:textColor="#555577"
                 android:textSize="13sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false" />
 
             <TextView
                 android:id="@+id/widget_large_hijri"
@@ -45,27 +59,13 @@
                 android:layout_height="wrap_content"
                 android:text="Dhu al-Hijjah 1447"
                 android:textColor="#888899"
-                android:textSize="13sp" />
+                android:textSize="13sp"
+                android:layout_marginTop="1dp"
+                android:includeFontPadding="false" />
         </LinearLayout>
 
-        <!-- Middle/Right: Digital Clock -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="end|top"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp">
-            <TextClock
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#1A1A2E"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:format12Hour="h:mm a"
-                android:format24Hour="HH:mm" />
-        </LinearLayout>
-
+        <!-- No clock: at this size the grid of times is the point, and the
+             phone's own clock is on the same home screen. -->
         <TextView
             android:id="@+id/widget_large_countdown"
             android:layout_width="wrap_content"
@@ -74,6 +74,13 @@
             android:textColor="#E6A817"
             android:textSize="18sp"
             android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:background="@drawable/widget_pill"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:layout_marginStart="8dp"
             android:textDirection="ltr"
             android:visibility="gone" />
     </LinearLayout>
@@ -83,9 +90,9 @@
         android:id="@+id/widget_l_line"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#E0E0E8"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="6dp"
+        android:background="#1F4A6FA5"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="8dp"
         android:orientation="horizontal" />
 
     <!-- ── Row 1: Subah Sadiq | Tulu Aftab | Ishraq | Zawal ── -->

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Amber after dark, matching the night countdown accent. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="270"
+        android:startColor="#FFFFD166"
+        android:endColor="#FFFDB813"
+        android:type="linear" />
+    <corners android:radius="2dp" />
+</shape>

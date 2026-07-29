@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="oval">
-    <solid android:color="#FDB813" />
-    <size android:width="14dp" android:height="14dp" />
-</shape>
+<!-- The current prayer's dot. A translucent halo around the solid core makes
+     it read as "lit" next to the flat inactive dots. Intrinsic size stays
+     close to the old 14dp so the timeline spacing is unchanged. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#3DFDB813" />
+            <size android:width="16dp" android:height="16dp" />
+        </shape>
+    </item>
+    <item
+        android:left="3dp"
+        android:top="3dp"
+        android:right="3dp"
+        android:bottom="3dp">
+        <shape android:shape="oval">
+            <solid android:color="#FDB813" />
+        </shape>
+    </item>
+</layer-list>

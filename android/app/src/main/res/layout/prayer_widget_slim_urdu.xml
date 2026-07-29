@@ -15,6 +15,15 @@
         android:paddingTop="10dp"
         android:paddingBottom="10dp">
 
+        <!-- Accent rule: anchors the row and picks up the countdown colour. -->
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="3dp"
+            android:layout_height="34dp"
+            android:background="@drawable/widget_accent_bar"
+            android:layout_marginEnd="10dp"
+            android:layout_marginRight="10dp" />
+
         <!-- Left Column: Location, Prayer Name, Label -->
         <LinearLayout
             android:layout_width="0dp"
@@ -23,7 +32,7 @@
             android:orientation="vertical"
             android:gravity="start">
             <!-- No pin, bounded to its own column so a long city name can
-                 never run under the clock on the right. -->
+                 never run under the times on the right. -->
             <TextView
                 android:id="@+id/widget_location"
                 android:layout_width="match_parent"
@@ -61,22 +70,13 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- Right Column: Clock, Prayer Time, Countdown -->
+        <!-- Right Column: Prayer Time, Countdown. No clock - the phone's own
+             clock sits on the same home screen. -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="end">
-
-            <TextClock
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#1A1A2E"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:format12Hour="h:mm a"
-                android:format24Hour="HH:mm"
-                android:layout_marginBottom="2dp" />
 
             <TextView
                 android:id="@+id/slim_prayer_time"
@@ -84,7 +84,7 @@
                 android:layout_height="wrap_content"
                 android:text="8:52 PM"
                 android:textColor="#1A1A2E"
-                android:textSize="17sp"
+                android:textSize="19sp"
                 android:textStyle="bold"
                 android:gravity="end"
                 android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
@@ -96,8 +96,14 @@
                 android:textColor="#E6A817"
                 android:textSize="12sp"
                 android:textStyle="bold"
+                android:background="@drawable/widget_pill"
+                android:paddingLeft="7dp"
+                android:paddingRight="7dp"
+                android:paddingTop="1dp"
+                android:paddingBottom="1dp"
                 android:gravity="end"
-                android:layout_marginTop="1dp"
+                android:layout_gravity="end"
+                android:layout_marginTop="3dp"
                 android:textDirection="ltr"
                 android:fontFamily="@font/jameel_noori_nastaleeq_kasheeda" />
         </LinearLayout>

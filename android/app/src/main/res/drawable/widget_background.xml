@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Day surface: a soft top-down gradient plus a hairline edge reads as a
+     raised card instead of a flat patch of colour. Shared by every
+     rectangular widget, so the whole set lifts together. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="#F0F4FF" />
-    <corners android:radius="16dp" />
+    <gradient
+        android:angle="270"
+        android:startColor="#FFFFFFFF"
+        android:centerColor="#FFF6FAFF"
+        android:endColor="#FFE7EFFD"
+        android:type="linear" />
+    <corners android:radius="20dp" />
+    <stroke android:width="1dp" android:color="#2E4A6FA5" />
 </shape>

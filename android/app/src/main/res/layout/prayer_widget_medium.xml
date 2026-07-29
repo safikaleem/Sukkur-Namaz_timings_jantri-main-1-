@@ -20,14 +20,26 @@
         android:layout_marginStart="4dp"
         android:layout_marginEnd="4dp">
 
+        <!-- Accent rule: anchors the header and picks up the countdown colour. -->
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="3dp"
+            android:layout_height="38dp"
+            android:background="@drawable/widget_accent_bar"
+            android:layout_marginEnd="8dp"
+            android:layout_marginRight="8dp" />
+
         <TextView
             android:id="@+id/widget_day_number"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="19"
             android:textColor="#1A1A2E"
-            android:textSize="28sp"
-            android:textStyle="bold" />
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="-0.03"
+            android:includeFontPadding="false" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -42,7 +54,9 @@
                 android:layout_height="wrap_content"
                 android:text="Saturday"
                 android:textColor="#555577"
-                android:textSize="11sp" />
+                android:textSize="11sp"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false" />
 
             <TextView
                 android:id="@+id/widget_hijri"
@@ -50,7 +64,8 @@
                 android:layout_height="wrap_content"
                 android:text="Dhu al-Hijjah 1447"
                 android:textColor="#888899"
-                android:textSize="10sp" />
+                android:textSize="10sp"
+                android:includeFontPadding="false" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -69,6 +84,8 @@
                     android:text="Sukkur"
                     android:textColor="#888899"
                     android:textSize="10sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.05"
                     android:layout_marginStart="2dp" />
             </LinearLayout>
         </LinearLayout>
@@ -84,8 +101,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="#1A1A2E"
-                android:textSize="20sp"
+                android:textSize="21sp"
                 android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="-0.02"
+                android:includeFontPadding="false"
                 android:format12Hour="h:mm a"
                 android:format24Hour="HH:mm" />
         </LinearLayout>
@@ -101,8 +121,15 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="#1565C0"
-                android:textSize="18sp"
+                android:textSize="17sp"
                 android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:background="@drawable/widget_pill"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:paddingTop="1dp"
+                android:paddingBottom="1dp"
+                android:layout_gravity="end"
                 android:textDirection="ltr" />
 
             <TextView
@@ -111,7 +138,9 @@
                 android:layout_height="wrap_content"
                 android:text="since Asr"
                 android:textColor="#888899"
-                android:textSize="10sp" />
+                android:textSize="10sp"
+                android:layout_gravity="end"
+                android:layout_marginTop="2dp" />
         </LinearLayout>
     </LinearLayout>
 

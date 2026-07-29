@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Same dark disc as before, but lit from the upper third and falling off to
+     near-black at the rim, so it reads as a glass dome rather than a flat cut
+     out. The white rim is softened slightly so it no longer outshines the
+     text inside it. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
-    <solid android:color="#D9121212" /> <!-- Dark semi-transparent color -->
-    <stroke android:width="1.5dp" android:color="#FFFFFF" />
+    <gradient
+        android:type="radial"
+        android:gradientRadius="72%p"
+        android:centerX="0.5"
+        android:centerY="0.34"
+        android:startColor="#E62B3150"
+        android:centerColor="#EB16192A"
+        android:endColor="#F20A0B12" />
+    <stroke android:width="1.5dp" android:color="#C6FFFFFF" />
 </shape>

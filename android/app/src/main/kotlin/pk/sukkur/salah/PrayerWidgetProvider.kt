@@ -1493,6 +1493,8 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         if (style == "analog") {
             views.setViewVisibility(R.id.widget_circle_analog_box, View.VISIBLE)
             views.setViewVisibility(R.id.widget_circle_clock_analog, View.VISIBLE)
+            // Hide the whole digital row so the AM/PM marker goes with it.
+            views.setViewVisibility(R.id.widget_circle_digital_box, View.GONE)
             views.setViewVisibility(R.id.widget_circle_clock_digital, View.GONE)
             try {
                 val dialBitmap = getClockDialBitmap(context, language)
@@ -1504,6 +1506,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             // leaves an empty gap in the middle of the circle.
             views.setViewVisibility(R.id.widget_circle_analog_box, View.GONE)
             views.setViewVisibility(R.id.widget_circle_clock_analog, View.GONE)
+            views.setViewVisibility(R.id.widget_circle_digital_box, View.VISIBLE)
             views.setViewVisibility(R.id.widget_circle_clock_digital, View.VISIBLE)
             views.setViewVisibility(R.id.widget_circle_clock_dial_dynamic, View.GONE)
         }
