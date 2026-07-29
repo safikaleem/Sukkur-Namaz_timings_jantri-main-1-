@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'quran_reader_screen.dart';
@@ -18,6 +19,61 @@ class _QuranScreenState extends State<QuranScreen> {
   final TextEditingController _parahSearchController = TextEditingController();
   String _surahQuery = '';
   String _parahQuery = '';
+
+  /// Separates the parts of a surah's subtitle. In the Nastaleeq/Arabic fonts a
+  /// bullet renders as a small round dot indistinguishable from the digit zero,
+  /// so "۸ آیات" read as "۸۰" - eight ayahs looking like eighty. RTL languages
+  /// get an Arabic comma instead, which cannot be mistaken for a digit.
+  String get _metaSeparator =>
+      context.read<SettingsProvider>().isRtl ? '، ' : ' • ';
+
+  /// Search field + column headers collapse while the user scrolls further
+  /// down the list, and come back as soon as they scroll the other way.
+  bool _chromeVisible = true;
+
+  bool _onListScroll(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) return false;
+
+    // Direction is checked first: the gesture's UserScrollNotification arrives
+    // while pixels is still 0, so an "always show at the top" rule placed ahead
+    // of this would swallow every hide.
+    if (notification is UserScrollNotification) {
+      if (notification.direction == ScrollDirection.reverse &&
+          notification.metrics.maxScrollExtent > 0 &&
+          _chromeVisible) {
+        setState(() => _chromeVisible = false);
+      } else if (notification.direction == ScrollDirection.forward &&
+          !_chromeVisible) {
+        setState(() => _chromeVisible = true);
+      }
+      return false;
+    }
+
+    // Settled back at the very top: the header belongs on screen again.
+    if (!_chromeVisible && notification.metrics.pixels <= 0) {
+      setState(() => _chromeVisible = true);
+    }
+    return false;
+  }
+
+  /// Wraps the search field and column headers so they collapse away smoothly.
+  /// [keepVisible] pins them open - hiding the search box while a query is
+  /// active would strand the user with a filtered list and no way to see why.
+  Widget _collapsibleChrome({
+    required List<Widget> children,
+    required bool keepVisible,
+  }) {
+    return ClipRect(
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        alignment: Alignment.bottomCenter,
+        child: (_chromeVisible || keepVisible)
+            ? Column(mainAxisSize: MainAxisSize.min, children: children)
+            : const SizedBox(width: double.infinity),
+      ),
+    );
+  }
   List<int> _favoriteSurahs = [];
   List<int> _favoriteParahs = [];
 
@@ -417,13 +473,18 @@ class _QuranScreenState extends State<QuranScreen> {
 
     return Column(
       children: [
-        _buildSearchBar(
-          controller: _parahSearchController,
-          hint: searchHint,
-          isDark: isDark,
-          onChanged: (v) => setState(() => _parahQuery = v),
+        _collapsibleChrome(
+          keepVisible: _parahQuery.isNotEmpty,
+          children: [
+            _buildSearchBar(
+              controller: _parahSearchController,
+              hint: searchHint,
+              isDark: isDark,
+              onChanged: (v) => setState(() => _parahQuery = v),
+            ),
+            _buildHeaderRow(settings),
+          ],
         ),
-        _buildHeaderRow(settings),
         Expanded(
           child: filtered.isEmpty
               ? Center(
@@ -432,14 +493,17 @@ class _QuranScreenState extends State<QuranScreen> {
                     style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.only(top: 8.0, bottom: 24.0),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final parah = filtered[index];
-                    final isFav = _favoriteParahs.contains(parah.number);
-                    return _buildParahTile(parah, isFav, isDark, settings);
-                  },
+              : NotificationListener<ScrollNotification>(
+                  onNotification: _onListScroll,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(top: 8.0, bottom: 24.0),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final parah = filtered[index];
+                      final isFav = _favoriteParahs.contains(parah.number);
+                      return _buildParahTile(parah, isFav, isDark, settings);
+                    },
+                  ),
                 ),
         ),
       ],
@@ -931,13 +995,18 @@ class _QuranScreenState extends State<QuranScreen> {
 
     return Column(
       children: [
-        _buildSearchBar(
-          controller: _surahSearchController,
-          hint: searchHint,
-          isDark: isDark,
-          onChanged: (v) => setState(() => _surahQuery = v),
+        _collapsibleChrome(
+          keepVisible: _surahQuery.isNotEmpty,
+          children: [
+            _buildSearchBar(
+              controller: _surahSearchController,
+              hint: searchHint,
+              isDark: isDark,
+              onChanged: (v) => setState(() => _surahQuery = v),
+            ),
+            _buildHeaderRow(settings),
+          ],
         ),
-        _buildHeaderRow(settings),
         Expanded(
           child: filtered.isEmpty
               ? Center(
@@ -946,14 +1015,17 @@ class _QuranScreenState extends State<QuranScreen> {
                     style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.only(top: 8.0, bottom: 24.0),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final surah = filtered[index];
-                    final isFav = _favoriteSurahs.contains(surah.number);
-                    return _buildSurahTile(surah, isFav, isDark, settings);
-                  },
+              : NotificationListener<ScrollNotification>(
+                  onNotification: _onListScroll,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(top: 8.0, bottom: 24.0),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final surah = filtered[index];
+                      final isFav = _favoriteSurahs.contains(surah.number);
+                      return _buildSurahTile(surah, isFav, isDark, settings);
+                    },
+                  ),
                 ),
         ),
       ],
@@ -1064,7 +1136,7 @@ class _QuranScreenState extends State<QuranScreen> {
                               ),
                               const SizedBox(height: 2),
                                 Text(
-                                  '${surah.english} • ${surah.revelationType == 'Meccan' ? settings.translate('Makki', 'مکی', 'مڪي', 'مكية') : settings.translate('Madani', 'مدنی', 'مدني', 'مدنية')} • ${_translateNumber(surah.totalAyahs, settings)} ${settings.translate('Ayahs', 'آیات', 'آيتون', 'آيات')}',
+                                  '${surah.english}$_metaSeparator${surah.revelationType == 'Meccan' ? settings.translate('Makki', 'مکی', 'مڪي', 'مكية') : settings.translate('Madani', 'مدنی', 'مدني', 'مدنية')}$_metaSeparator${_translateNumber(surah.totalAyahs, settings)} ${settings.translate('Ayahs', 'آیات', 'آيتون', 'آيات')}',
                                   style: TextStyle(
                                     color: isDark ? Colors.white54 : Colors.black54,
                                     fontSize: 12,

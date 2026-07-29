@@ -47,6 +47,44 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
     }
   }
 
+  // Sukkur has its own Jantri, so the calculated world timings must never
+  // silently replace it - not by name, and not by standing in the city.
+  static const _sukkurLat = 27.7052;
+  static const _sukkurLng = 68.8574;
+  // 20 km covers Sukkur, New Sukkur and Rohri across the river, while leaving
+  // genuinely separate cities like Khairpur (~22 km) free to be selected.
+  static const _sukkurRadiusMetres = 20000.0;
+
+  static const _sukkurNames = [
+    'sukkur', 'sukur', 'sukkar', 'sakkhar', 'سکھر', 'سکر', 'سكر',
+  ];
+
+  bool _looksLikeSukkur(String? name) {
+    if (name == null) return false;
+    final n = name.toLowerCase();
+    return _sukkurNames.any(n.contains);
+  }
+
+  bool _isNearSukkur(double lat, double lng) =>
+      Geolocator.distanceBetween(lat, lng, _sukkurLat, _sukkurLng) <=
+      _sukkurRadiusMetres;
+
+  /// Shown instead of switching to calculated timings, in every language.
+  void _showUseJantriMessage(SettingsProvider settings) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(settings.translate(
+          'Select Sukkur Jantri (Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu Sirrahu Jantri) from the side bar for accurate timings',
+          'درست اوقات کے لیے سائیڈ بار سے سکھر جنتری (بمطابق حضرت ڈاکٹر حفیظ اللہ صاحب قَدَّسَ اللہ سِرَّہُ جنتری) منتخب کریں',
+          'صحيح وقتن لاءِ سائيڊ بار مان سکر جنتري (حضرت ڊاڪٽر حفيظ الله صاحب قَدَّسَ اللهُ سِرَّهُ جي جنتري مطابق) چونڊيو',
+          'للحصول على أوقات دقيقة، اختر جنتري سكر (بناءً على تقويم الشيخ الدكتور حفيظ الله قَدَّسَ اللهُ سِرَّهُ) من الشريط الجانبي',
+        )),
+        duration: const Duration(seconds: 6),
+      ),
+    );
+  }
+
   Future<void> _getCurrentLocation(SettingsProvider settings) async {
     setState(() {
       _isLoading = true;
@@ -84,6 +122,14 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
         city = p.locality ?? p.subAdministrativeArea ?? p.administrativeArea ?? p.country ?? 'Unknown Location';
       }
 
+      // Standing in (or near) Sukkur: keep the Jantri, don't switch modes.
+      if (_looksLikeSukkur(city) ||
+          _isNearSukkur(position.latitude, position.longitude)) {
+        setState(() => _isLoading = false);
+        _showUseJantriMessage(settings);
+        return;
+      }
+
       await settings.setLocation(position.latitude, position.longitude, city);
       await settings.setLocationMode(LocationMode.world);
 
@@ -109,22 +155,8 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
     final query = _cityController.text.trim();
     if (query.isEmpty) return;
 
-    final q = query.toLowerCase();
-    if (q.contains('sukkur') || q.contains('sukur') || q.contains('sukkar') || 
-        q.contains('سکھر') || q.contains('سکر') || q.contains('سكر')) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(settings.translate(
-              'Select Sukkur timings from the side bar — Sukkur (Jantri Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu)',
-              'سائیڈ بار سے سکھر کے اوقات منتخب کریں — سکھر (جنتری حضرت ڈاکٹر حفیظ اللہ صاحب قَدَّسَ اللہ سِرَّہُ)',
-              'سائيڊ بار مان سکر جا وقت چونڊيو — سکر (جنتري حضرت ڊاڪٽر حفيظ الله صاحب قَدَّسَ اللهُ سِرَّهُ)',
-              'اختر أوقات سكر من القائمة الجانبية — سكر (تقويم الشيخ الدكتور حفيظ الله قَدَّسَ اللهُ سِرَّهُ)'
-            )),
-            duration: const Duration(seconds: 6),
-          ),
-        );
-      }
+    if (_looksLikeSukkur(query)) {
+      _showUseJantriMessage(settings);
       return;
     }
 
@@ -145,6 +177,15 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
         if (placemarks.isNotEmpty) {
           final p = placemarks.first;
           city = p.locality ?? p.subAdministrativeArea ?? query;
+        }
+
+        // The typed word passed the name check, but the place it resolved to
+        // may still be Sukkur or a town right beside it.
+        if (_looksLikeSukkur(city) ||
+            _isNearSukkur(loc.latitude, loc.longitude)) {
+          setState(() => _isLoading = false);
+          _showUseJantriMessage(settings);
+          return;
         }
 
         await settings.setLocation(loc.latitude, loc.longitude, city);

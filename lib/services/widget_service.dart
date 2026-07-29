@@ -45,20 +45,22 @@ class WidgetService {
       await HomeWidget.saveWidgetData('time_format', tf);
 
       // Compute and save location_string for Kotlin widget
+      // Just the city - the widgets are small, and "Sindh, Pakistan" only
+      // crowded the line (and overlapped the clock on the smallest ones).
       final locMode = prefs.getString('location_mode');
-      String locationStr = 'Sukkur, Sindh, Pakistan';
-      
+      String locationStr = 'Sukkur';
+
       if (locMode == 'world' && prefs.getString('city_name') != null) {
         locationStr = prefs.getString('city_name')!;
       } else {
         if (language == 'urdu') {
-          locationStr = 'سکھر، سندھ، پاکستان';
+          locationStr = 'سکھر';
         } else if (language == 'sindhi') {
-          locationStr = 'سکر، سنڌ، پاڪستان';
+          locationStr = 'سکر';
         } else if (language == 'arabic') {
-          locationStr = 'سكر، السند، باكستان';
-        } else if (worldTranslations.containsKey(language) && worldTranslations[language]!.containsKey('Sukkur, Sindh, Pakistan')) {
-          locationStr = worldTranslations[language]!['Sukkur, Sindh, Pakistan']!;
+          locationStr = 'سكر';
+        } else {
+          locationStr = worldTranslations[language]?['Sukkur'] ?? 'Sukkur';
         }
       }
       await prefs.setString('location_string', locationStr);

@@ -1191,7 +1191,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         views.setTextViewText(R.id.widget_prayer_time, data.prayerTime)   // actual clock time
         bindChronometer(views, R.id.widget_countdown, data.activeMins, data.isElapsed, language)
         val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        val loc = prefs.getString("flutter.location_string", "Sukkur Sindh Pakistan") ?: "Sukkur Sindh Pakistan"
+        val loc = prefs.getString("flutter.location_string", "Sukkur") ?: "Sukkur"
         views.setTextViewText(R.id.widget_location, loc)
 
         views.setTextColor(R.id.widget_prayer_name, primaryText(isNight))
@@ -1208,7 +1208,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         val cal   = Calendar.getInstance()
         
         val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        val loc = prefs.getString("flutter.location_string", "Sukkur Sindh Pakistan") ?: "Sukkur Sindh Pakistan"
+        val loc = prefs.getString("flutter.location_string", "Sukkur") ?: "Sukkur"
         views.setTextViewText(R.id.widget_location, loc)
 
         views.setTextViewText(R.id.widget_day_number,      toLocalizedNumerals(cal.get(Calendar.DAY_OF_MONTH), language))
@@ -1320,7 +1320,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         views.setTextViewText(R.id.widget_l_maghrib, data.maghrib)
         views.setTextViewText(R.id.widget_l_isha,    data.isha)
         val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        val loc = prefs.getString("flutter.location_string", "Sukkur Sindh Pakistan") ?: "Sukkur Sindh Pakistan"
+        val loc = prefs.getString("flutter.location_string", "Sukkur") ?: "Sukkur"
         views.setTextViewText(R.id.widget_location, loc)
 
         views.setTextColor(R.id.widget_large_day_number, primaryText(isNight))
@@ -1362,7 +1362,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         bindChronometer(views, R.id.tiny_countdown, data.activeMins, data.isElapsed, language)
         
         val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        val loc = prefs.getString("flutter.location_string", "Sukkur Sindh Pakistan") ?: "Sukkur Sindh Pakistan"
+        val loc = prefs.getString("flutter.location_string", "Sukkur") ?: "Sukkur"
         views.setTextViewText(R.id.widget_location, loc)
 
         views.setTextColor(R.id.tiny_prayer_name, primaryText(isNight))
@@ -1381,7 +1381,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         bindChronometer(views, R.id.slim_countdown, data.activeMins, data.isElapsed, language)
         
         val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        val loc = prefs.getString("flutter.location_string", "Sukkur Sindh Pakistan") ?: "Sukkur Sindh Pakistan"
+        val loc = prefs.getString("flutter.location_string", "Sukkur") ?: "Sukkur"
         views.setTextViewText(R.id.widget_location, loc)
 
         views.setTextColor(R.id.slim_prayer_name, primaryText(isNight))
@@ -1491,6 +1491,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         val style = prefs.getString("flutter.circle_widget_style", "digital")
 
         if (style == "analog") {
+            views.setViewVisibility(R.id.widget_circle_analog_box, View.VISIBLE)
             views.setViewVisibility(R.id.widget_circle_clock_analog, View.VISIBLE)
             views.setViewVisibility(R.id.widget_circle_clock_digital, View.GONE)
             try {
@@ -1499,12 +1500,15 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
                 views.setViewVisibility(R.id.widget_circle_clock_dial_dynamic, View.VISIBLE)
             } catch (e: Exception) {}
         } else {
+            // The whole 85dp box has to go, not just its children - otherwise it
+            // leaves an empty gap in the middle of the circle.
+            views.setViewVisibility(R.id.widget_circle_analog_box, View.GONE)
             views.setViewVisibility(R.id.widget_circle_clock_analog, View.GONE)
             views.setViewVisibility(R.id.widget_circle_clock_digital, View.VISIBLE)
             views.setViewVisibility(R.id.widget_circle_clock_dial_dynamic, View.GONE)
         }
 
-        val loc = prefs.getString("flutter.location_string", "Sukkur Sindh Pakistan") ?: "Sukkur Sindh Pakistan"
+        val loc = prefs.getString("flutter.location_string", "Sukkur") ?: "Sukkur"
         views.setTextViewText(R.id.widget_circle_location, loc)
 
         views.setTextViewText(R.id.widget_circle_prayer_name, translatePrayerName(data.stateName, language))

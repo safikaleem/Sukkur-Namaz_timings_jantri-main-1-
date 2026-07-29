@@ -147,21 +147,26 @@ class SettingsScreen extends StatelessWidget {
                       isDark),
                   _DefaultSettingsTile(isDark: isDark),
 
-                  const SizedBox(height: 20),
-                  Center(
-                    child: Text(
-                      settings.translate(
-                        'All timings from the local Sukkur Jantri',
-                        'تمام اوقات سکھر کی مقامی جنتری سے لیے گئے ہیں',
-                        'سڀ وقت سکر جي مقامي جنتري مان ورتا ويا آهن',
+                  // Only true in Sukkur mode - a selected world city gets its
+                  // timings from calculation, not from the Jantri.
+                  if (settings.locationMode == LocationMode.sukkur) ...[
+                    const SizedBox(height: 20),
+                    Center(
+                      child: Text(
+                        settings.translate(
+                          'All timings from the local Sukkur Jantri',
+                          'تمام اوقات سکھر کی مقامی جنتری سے لیے گئے ہیں',
+                          'سڀ وقت سکر جي مقامي جنتري مان ورتا ويا آهن',
+                          'جميع الأوقات مأخوذة من جنتري سكر المحلية',
+                        ),
+                        style: TextStyle(
+                          fontSize: isRtl ? 14 : 12,
+                          color: isDark ? Colors.white30 : Colors.black38,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      style: TextStyle(
-                        fontSize: isRtl ? 14 : 12,
-                        color: isDark ? Colors.white30 : Colors.black38,
-                      ),
-                      textAlign: TextAlign.center,
                     ),
-                  ),
+                  ],
                   const SizedBox(height: 24),
                 ],
               ),

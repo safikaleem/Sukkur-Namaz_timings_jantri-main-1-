@@ -18,6 +18,7 @@ const Map<String, String> prayerNameAliases = {
 
 const Map<String, Map<String, String>> additionalTranslations = {
   'bengali': {
+    'Select Sukkur Jantri (Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu Sirrahu Jantri) from the side bar for accurate timings': 'সঠিক সময়ের জন্য সাইড বার থেকে সুক্কুর জান্ত্রি (হযরত ডক্টর হাফিজুল্লাহ সাহেব কাদ্দাসাল্লাহু সিররাহু জান্ত্রি অনুসারে) নির্বাচন করুন',
     'Quran Translation Now Works Offline': 'কুরআনের অনুবাদ এখন অফলাইনে কাজ করে',
     'The complete English and Urdu translation by Hazrat Mufti Taqi Usmani Hafizahullah is now built into the app. All 114 Surahs open instantly without any internet connection.': 'হযরত মুফতি তাকি উসমানি হাফিযাহুল্লাহর সম্পূর্ণ ইংরেজি ও উর্দু অনুবাদ এখন অ্যাপের ভিতরেই রয়েছে। ১১৪টি সূরাই ইন্টারনেট ছাড়া সঙ্গে সঙ্গে খোলে।',
     'Translation Error Fixed': 'অনুবাদের ত্রুটি সংশোধন',
@@ -142,6 +143,7 @@ const Map<String, Map<String, String>> additionalTranslations = {
     '✓  Facing Qibla': '✓  আপনি কিবলামুখী',
   },
   'indonesian': {
+    'Select Sukkur Jantri (Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu Sirrahu Jantri) from the side bar for accurate timings': 'Untuk waktu yang akurat, pilih Jantri Sukkur (berdasarkan Jantri Hazrat Dr Hafeezullah Sahib Qaddasallahu Sirrahu) dari bilah samping',
     'Quran Translation Now Works Offline': 'Terjemahan Al-Quran Kini Berfungsi Offline',
     'The complete English and Urdu translation by Hazrat Mufti Taqi Usmani Hafizahullah is now built into the app. All 114 Surahs open instantly without any internet connection.': 'Terjemahan lengkap bahasa Inggris dan Urdu oleh Hazrat Mufti Taqi Usmani Hafizahullah kini tertanam di dalam aplikasi. Seluruh 114 surah terbuka seketika tanpa koneksi internet.',
     'Translation Error Fixed': 'Kesalahan Terjemahan Diperbaiki',
@@ -266,6 +268,7 @@ const Map<String, Map<String, String>> additionalTranslations = {
     '✓  Facing Qibla': '✓  Menghadap Kiblat',
   },
   'turkish': {
+    'Select Sukkur Jantri (Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu Sirrahu Jantri) from the side bar for accurate timings': 'Doğru vakitler için yan menüden Sukkur Jantri\'yi (Hazret Dr Hafeezullah Sahib Kaddesallahu Sirrahu Jantri esas alınmıştır) seçin',
     'Quran Translation Now Works Offline': 'Kuran Meali Artık Çevrimdışı Çalışıyor',
     'The complete English and Urdu translation by Hazrat Mufti Taqi Usmani Hafizahullah is now built into the app. All 114 Surahs open instantly without any internet connection.': 'Hazret Müftü Taki Osmani Hafizahullah tarafından hazırlanan tam İngilizce ve Urduca meal artık uygulamanın içinde yer alıyor. 114 surenin tamamı internet bağlantısı olmadan anında açılır.',
     'Translation Error Fixed': 'Meal Hatası Düzeltildi',
@@ -390,6 +393,7 @@ const Map<String, Map<String, String>> additionalTranslations = {
     '✓  Facing Qibla': '✓  Kıbleye dönüksünüz',
   },
   'french': {
+    'Select Sukkur Jantri (Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu Sirrahu Jantri) from the side bar for accurate timings': 'Pour des horaires précis, sélectionnez le Jantri de Sukkur (basé sur le Jantri de Hazrat Dr Hafeezullah Sahib Qaddasallahu Sirrahu) dans le menu latéral',
     'Quran Translation Now Works Offline': 'La traduction du Coran fonctionne désormais hors ligne',
     'The complete English and Urdu translation by Hazrat Mufti Taqi Usmani Hafizahullah is now built into the app. All 114 Surahs open instantly without any internet connection.': 'La traduction complète en anglais et en ourdou de Hazrat Mufti Taqi Usmani Hafizahullah est désormais intégrée à l\'application. Les 114 sourates s\'ouvrent instantanément sans connexion Internet.',
     'Translation Error Fixed': 'Erreur de traduction corrigée',
@@ -515,6 +519,7 @@ const Map<String, Map<String, String>> additionalTranslations = {
     '✓  Facing Qibla': '✓  Vous êtes face à la Qibla',
   },
   'hindi': {
+    'Select Sukkur Jantri (Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu Sirrahu Jantri) from the side bar for accurate timings': 'सटीक समय के लिए साइड बार से सुक्कुर जंत्री (हज़रत डॉ हफ़ीज़ुल्लाह साहिब क़द्दसल्लाहु सिर्रहु जंत्री पर आधारित) चुनें',
     'Quran Translation Now Works Offline': 'क़ुरआन का अनुवाद अब ऑफ़लाइन उपलब्ध',
     'The complete English and Urdu translation by Hazrat Mufti Taqi Usmani Hafizahullah is now built into the app. All 114 Surahs open instantly without any internet connection.': 'हज़रत मुफ़्ती तक़ी उस्मानी हफ़िज़हुल्लाह का पूरा अंग्रेज़ी और उर्दू अनुवाद अब ऐप में शामिल है। सभी 114 सूरतें बिना इंटरनेट के तुरंत खुलती हैं।',
     'Translation Error Fixed': 'अनुवाद की त्रुटि ठीक की गई',
@@ -639,6 +644,7 @@ const Map<String, Map<String, String>> additionalTranslations = {
     '✓  Facing Qibla': '✓  आप क़िबला की ओर हैं',
   },
   'persian': {
+    'Select Sukkur Jantri (Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu Sirrahu Jantri) from the side bar for accurate timings': 'برای اوقات دقیق، جنتری سکر (بر پایه جنتری حضرت دکتر حفیظ‌الله صاحب قدس‌الله سره) را از نوار کناری انتخاب کنید',
     'Quran Translation Now Works Offline': 'ترجمه قرآن اکنون به‌صورت آفلاین کار می‌کند',
     'The complete English and Urdu translation by Hazrat Mufti Taqi Usmani Hafizahullah is now built into the app. All 114 Surahs open instantly without any internet connection.': 'ترجمه کامل انگلیسی و اردوی حضرت مفتی تقی عثمانی حفظه‌الله اکنون درون برنامه قرار دارد. هر ۱۱۴ سوره بدون اتصال به اینترنت بی‌درنگ باز می‌شود.',
     'Translation Error Fixed': 'خطای ترجمه برطرف شد',
