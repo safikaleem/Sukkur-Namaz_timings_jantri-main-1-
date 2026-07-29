@@ -12,7 +12,10 @@ class DrSloganFooter extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    final bool isWorld = settings.locationMode == LocationMode.world;
+    // Keyed off the timings actually in use, not the radio button: ticking
+    // "World" before choosing a city still leaves the Jantri in force, and the
+    // calculation-method disclaimer would be wrong there.
+    final bool isWorld = settings.usesCalculatedTimings;
 
     final String text = isWorld
       ? settings.translate(

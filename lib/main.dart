@@ -304,7 +304,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       // Qibla requests location + runs the compass only while it's the active
       // tab, so a fresh install doesn't prompt for location at launch.
       QiblaScreen(isActive: _currentIndex == 4), // 4 - Qibla
-      if (settings.locationMode == LocationMode.sukkur)
+      // Hidayat belongs to the Jantri, so it follows the timings actually in
+      // use rather than the radio button.
+      if (!settings.usesCalculatedTimings)
         const HidayatScreen(),    // 5 - Hidayat (conditionally shown)
       const QuranScreen(),      // 6 or 5 - Quran
       const TasbeehScreen(),    // 7 or 6 - Tasbeeh
@@ -323,6 +325,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
           Navigator.pop(context);
           settings.setLocationMode(LocationMode.sukkur);
           setState(() => _currentIndex = 0);
+        },
+        // Picking a world city lands on that city's timings, same as Sukkur.
+        onWorldCitySelected: () {
+          if (mounted) setState(() => _currentIndex = 0);
         },
       ),
       body: SafeArea(
@@ -390,7 +396,7 @@ class _SukkurNavBar extends StatelessWidget {
       _NavItem(icon: Icons.view_list_rounded,             label: settings.translate('Monthly', 'ماہانہ', 'مهينو', 'شهري')),    // 2
       _NavItem(icon: Icons.notifications_active_rounded,  label: settings.translate('Reminders', 'اطلاعات', 'اطلاعون', 'تنبيهات')), // 3
       _NavItem(icon: Icons.explore_rounded,               label: settings.translate('Qibla', 'قبلہ', 'قبلو', 'القبلة')),        // 4
-      if (settings.locationMode == LocationMode.sukkur)
+      if (!settings.usesCalculatedTimings)
         _NavItem(icon: Icons.menu_book_rounded,             label: settings.translate('Instructions', 'ہدایت', 'هدايتون', 'إرشادات')),     // 5
       _NavItem(icon: Icons.menu_book,                     label: settings.translate('Quran', 'قرآن', 'قرآن', 'القرآن')),         // 6
       _NavItem(icon: Icons.fingerprint_rounded,           label: settings.translate('Tasbeeh', 'تسبیح', 'تسبیح', 'التسبيح')),      // 7

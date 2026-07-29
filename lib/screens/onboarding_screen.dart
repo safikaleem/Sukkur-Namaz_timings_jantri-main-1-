@@ -105,8 +105,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
             final p = placemarks.first;
             city = p.locality ?? p.subAdministrativeArea ?? p.administrativeArea ?? p.country ?? 'Unknown Location';
           }
+          // A user setting up while in Sukkur is refused here and handed the
+          // Jantri instead - it is more accurate than the calculation.
           await settings.setLocation(position.latitude, position.longitude, city);
         } catch (_) {}
+        // No fix, or geocoding failed: world mode with no city would show
+        // calculated timings for nowhere, so fall back to the Jantri.
+        await settings.ensureWorldLocationValid();
       }
 
       // 2. Notification

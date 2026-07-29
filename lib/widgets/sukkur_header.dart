@@ -6,7 +6,7 @@ import 'pin_icon.dart';
 /// The city shown in the header and in the monthly month strip: just the city
 /// name, or the chosen city when the app is in world-location mode.
 String locationLabel(SettingsProvider settings) {
-  if (settings.locationMode == LocationMode.world && settings.cityName != null) {
+  if (settings.usesCalculatedTimings && settings.cityName != null) {
     return settings.cityName!;
   }
   return settings.translate('Sukkur', 'سکھر', 'سکر', 'سكر');
@@ -24,7 +24,7 @@ class SukkurHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (settings.locationMode == LocationMode.world)
+        if (settings.usesCalculatedTimings)
           Icon(
             Icons.location_on,
             size: 20,

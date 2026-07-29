@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,6 +36,55 @@ enum UnifiedTheme {
 }
 
 enum LocationMode { sukkur, world }
+
+/// Sukkur has its own Jantri, which is more accurate than anything the world
+/// calculation can produce, so Sukkur must never be stored as a world city -
+/// not under its own name, and not by coordinates. This lives here rather than
+/// on the world screen because every entry point has to honour it: the city
+/// search, "Get Current Location", the onboarding GPS step, and prefs written
+/// by older builds that had no such check.
+class SukkurLocation {
+  static const lat = 27.7052;
+  static const lng = 68.8574;
+
+  /// 20 km covers Sukkur, New Sukkur and Rohri across the river, while leaving
+  /// genuinely separate cities like Khairpur (~22 km) free to be selected.
+  static const radiusMetres = 20000.0;
+
+  static const _names = [
+    'sukkur', 'sukur', 'sukkar', 'sakkhar', 'سکھر', 'سکر', 'سكر',
+  ];
+
+  static bool matchesName(String? name) {
+    if (name == null) return false;
+    final n = name.toLowerCase();
+    return _names.any(n.contains);
+  }
+
+  static bool isNear(double latitude, double longitude) =>
+      _distanceMetres(latitude, longitude, lat, lng) <= radiusMetres;
+
+  /// True when this place should be served by the Jantri instead of the world
+  /// calculation - either it is named Sukkur or it sits right beside it.
+  static bool covers(double latitude, double longitude, String? city) =>
+      matchesName(city) || isNear(latitude, longitude);
+
+  /// Haversine. Kept local so the provider stays free of plugin imports; at a
+  /// 20 km threshold the choice of earth model makes no practical difference.
+  static double _distanceMetres(
+      double lat1, double lng1, double lat2, double lng2) {
+    const earthRadius = 6371000.0;
+    double toRad(double d) => d * math.pi / 180.0;
+    final dLat = toRad(lat2 - lat1);
+    final dLng = toRad(lng2 - lng1);
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(toRad(lat1)) *
+            math.cos(toRad(lat2)) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    return earthRadius * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+  }
+}
 
 class SettingsProvider extends ChangeNotifier {
   DarkModeOption _darkModeOption = DarkModeOption.auto;
@@ -204,6 +255,10 @@ class SettingsProvider extends ChangeNotifier {
     _locationMode = mode;
     notifyListeners();
     Future.delayed(const Duration(milliseconds: 150), () async {
+      // Something may have overridden the mode inside the delay - notably a
+      // rejected Sukkur selection handing the timings back to the Jantri.
+      // Writing the stale mode here would undo that.
+      if (_locationMode != mode) return;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('location_mode', mode.name);
       if (mode == LocationMode.world) {
@@ -216,12 +271,58 @@ class SettingsProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> setLocation(double lat, double lng, String city) async {
+  /// True once world mode actually has a city to calculate for. World mode on
+  /// its own is not enough - the user can tick the radio before searching, and
+  /// until they do the app must keep showing the Jantri.
+  bool get usesCalculatedTimings =>
+      _locationMode == LocationMode.world &&
+      _latitude != null &&
+      _longitude != null;
+
+  /// Drops any stored world city and hands the timings back to the Jantri.
+  Future<void> useSukkurJantri() async {
+    _latitude = null;
+    _longitude = null;
+    _cityName = null;
+    _locationMode = LocationMode.sukkur;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('location_mode', LocationMode.sukkur.name);
+    await prefs.remove('latitude');
+    await prefs.remove('longitude');
+    await prefs.remove('city_name');
+    // Otherwise the home-screen widget would keep serving the last calculated
+    // month; with no cache it falls back to the bundled Jantri asset.
+    await prefs.remove('world_timings_cache');
+    WidgetService.updateWidget();
+    if (_notificationsEnabled) {
+      await NotificationService.instance.scheduleWeeklyNotifications();
+    }
+  }
+
+  /// World mode is only meaningful with a real, non-Sukkur city behind it.
+  /// Anything else falls back to the Jantri.
+  Future<void> ensureWorldLocationValid() async {
+    if (_locationMode != LocationMode.world) return;
+    final lat = _latitude, lng = _longitude;
+    if (lat == null || lng == null || SukkurLocation.covers(lat, lng, _cityName)) {
+      await useSukkurJantri();
+    }
+  }
+
+  /// Returns false when the place is Sukkur (or right beside it). Nothing is
+  /// stored and nothing else changes - the caller just tells the user to pick
+  /// the Jantri from the side bar. With no Sukkur coordinates on file, every
+  /// screen keeps falling back to the Jantri's own timings.
+  Future<bool> setLocation(double lat, double lng, String city) async {
+    if (SukkurLocation.covers(lat, lng, city)) return false;
     _latitude = lat;
     _longitude = lng;
     _cityName = city;
     notifyListeners();
     Future.delayed(const Duration(milliseconds: 150), () async {
+      // Superseded within the delay - don't resurrect a cleared location.
+      if (_latitude != lat || _longitude != lng) return;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble('latitude', lat);
       await prefs.setDouble('longitude', lng);
@@ -232,6 +333,7 @@ class SettingsProvider extends ChangeNotifier {
         await NotificationService.instance.scheduleWeeklyNotifications();
       }
     });
+    return true;
   }
 
   Future<void> setCalculationMethod(String method) async {
@@ -518,6 +620,28 @@ class SettingsProvider extends ChangeNotifier {
     _latitude = prefs.getDouble('latitude');
     _longitude = prefs.getDouble('longitude');
     _cityName = prefs.getString('city_name');
+
+    // Older builds - and the onboarding GPS step for anyone actually standing
+    // in Sukkur - could leave the app parked in world mode on Sukkur itself,
+    // which served calculated timings in place of the Jantri across Times,
+    // Today and Monthly. Repair that stored state on launch.
+    if (_locationMode == LocationMode.world) {
+      final lat = _latitude, lng = _longitude;
+      if (lat == null ||
+          lng == null ||
+          SukkurLocation.covers(lat, lng, _cityName)) {
+        _locationMode = LocationMode.sukkur;
+        _latitude = null;
+        _longitude = null;
+        _cityName = null;
+        await prefs.setString('location_mode', LocationMode.sukkur.name);
+        await prefs.remove('latitude');
+        await prefs.remove('longitude');
+        await prefs.remove('city_name');
+        await prefs.remove('world_timings_cache');
+      }
+    }
+
     _calculationMethod = prefs.getString('calculation_method') ?? 'Karachi';
     _asrMethod = prefs.getString('asr_method') ?? 'Hanafi';
 

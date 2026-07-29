@@ -47,29 +47,13 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
     }
   }
 
-  // Sukkur has its own Jantri, so the calculated world timings must never
-  // silently replace it - not by name, and not by standing in the city.
-  static const _sukkurLat = 27.7052;
-  static const _sukkurLng = 68.8574;
-  // 20 km covers Sukkur, New Sukkur and Rohri across the river, while leaving
-  // genuinely separate cities like Khairpur (~22 km) free to be selected.
-  static const _sukkurRadiusMetres = 20000.0;
-
-  static const _sukkurNames = [
-    'sukkur', 'sukur', 'sukkar', 'sakkhar', 'سکھر', 'سکر', 'سكر',
-  ];
-
-  bool _looksLikeSukkur(String? name) {
-    if (name == null) return false;
-    final n = name.toLowerCase();
-    return _sukkurNames.any(n.contains);
-  }
-
-  bool _isNearSukkur(double lat, double lng) =>
-      Geolocator.distanceBetween(lat, lng, _sukkurLat, _sukkurLng) <=
-      _sukkurRadiusMetres;
+  // The rule itself lives on SettingsProvider, so every entry point - here,
+  // onboarding, and prefs restored at launch - blocks Sukkur the same way.
+  bool _looksLikeSukkur(String? name) => SukkurLocation.matchesName(name);
 
   /// Shown instead of switching to calculated timings, in every language.
+  /// Nothing else happens: no location is stored, so Times, Today and Monthly
+  /// go on showing the Jantri rather than a calculated Sukkur.
   void _showUseJantriMessage(SettingsProvider settings) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -83,6 +67,15 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
         duration: const Duration(seconds: 6),
       ),
     );
+  }
+
+  /// The whole point of picking a city is to see its timings, so hand the user
+  /// straight back to the Times tab instead of making them press back. The
+  /// `true` result is what tells the shell to switch tabs; the snackbar lives
+  /// on the app-level ScaffoldMessenger, so it survives the pop.
+  void _returnToTimings() {
+    if (!mounted) return;
+    Navigator.of(context).pop(true);
   }
 
   Future<void> _getCurrentLocation(SettingsProvider settings) async {
@@ -122,15 +115,15 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
         city = p.locality ?? p.subAdministrativeArea ?? p.administrativeArea ?? p.country ?? 'Unknown Location';
       }
 
-      // Standing in (or near) Sukkur: keep the Jantri, don't switch modes.
-      if (_looksLikeSukkur(city) ||
-          _isNearSukkur(position.latitude, position.longitude)) {
-        setState(() => _isLoading = false);
+      // Standing in (or near) Sukkur: the provider refuses to store it and
+      // hands the timings back to the Jantri, so don't switch modes either.
+      final accepted =
+          await settings.setLocation(position.latitude, position.longitude, city);
+      if (!accepted) {
+        if (mounted) setState(() => _isLoading = false);
         _showUseJantriMessage(settings);
         return;
       }
-
-      await settings.setLocation(position.latitude, position.longitude, city);
       await settings.setLocationMode(LocationMode.world);
 
       if (mounted) {
@@ -138,6 +131,7 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
           '${settings.translate('Location updated: ', 'مقام اپڈیٹ ہو گیا: ', 'جڳهه اپڊيٽ ٿي وئي: ', 'تم تحديث الموقع: ')}$city'
         )));
       }
+      _returnToTimings();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
@@ -145,9 +139,11 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
         )));
       }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -180,15 +176,15 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
         }
 
         // The typed word passed the name check, but the place it resolved to
-        // may still be Sukkur or a town right beside it.
-        if (_looksLikeSukkur(city) ||
-            _isNearSukkur(loc.latitude, loc.longitude)) {
-          setState(() => _isLoading = false);
+        // may still be Sukkur or a town right beside it - which the provider
+        // rejects, keeping the Jantri in charge.
+        final accepted =
+            await settings.setLocation(loc.latitude, loc.longitude, city);
+        if (!accepted) {
+          if (mounted) setState(() => _isLoading = false);
           _showUseJantriMessage(settings);
           return;
         }
-
-        await settings.setLocation(loc.latitude, loc.longitude, city);
         await settings.setLocationMode(LocationMode.world);
 
         if (mounted) {
@@ -197,6 +193,7 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
           )));
           _cityController.clear();
         }
+        _returnToTimings();
       } else {
         throw Exception('Location not found');
       }
@@ -207,9 +204,11 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
         )));
       }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

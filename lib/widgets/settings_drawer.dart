@@ -15,7 +15,10 @@ import '../screens/world_prayers_screen.dart';
 
 class SettingsDrawer extends StatefulWidget {
   final VoidCallback? onTapSukkur;
-  const SettingsDrawer({super.key, this.onTapSukkur});
+  /// Fired once the world screen has actually settled on a city, so the shell
+  /// can drop the user on the Times tab for it.
+  final VoidCallback? onWorldCitySelected;
+  const SettingsDrawer({super.key, this.onTapSukkur, this.onWorldCitySelected});
 
   @override
   State<SettingsDrawer> createState() => _SettingsDrawerState();
@@ -67,12 +70,16 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   _DrawerItem(
                     icon: Icons.public_rounded,
                     label: settings.translate('World Prayer Timings', 'دنیا بھر کی نمازیں', 'دنيا جي نمازون', 'أوقات الصلاة العالمية'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
+                    onTap: () async {
+                      // Closing the drawer disposes this widget, so grab the
+                      // navigator and callback before popping it.
+                      final navigator = Navigator.of(context);
+                      final onSelected = widget.onWorldCitySelected;
+                      navigator.pop();
+                      final picked = await navigator.push<bool>(
                         MaterialPageRoute(builder: (_) => const WorldPrayersScreen()),
                       );
+                      if (picked == true) onSelected?.call();
                     },
                   ),
                   const _Divider(),
