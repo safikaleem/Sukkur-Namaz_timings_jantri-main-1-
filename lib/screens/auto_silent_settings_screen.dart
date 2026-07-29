@@ -86,19 +86,19 @@ class _AutoSilentSettingsScreenState extends State<AutoSilentSettingsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isRtl = settings.isRtl;
 
-    final prayers = [
-      'Fajar',
-      'Zuhar',
-      'Misl Awwal',
-      'Asr Hanafi',
-      'Maghrib',
-      'Isha'
-    ];
+    // Sunrise is never included here - it is not a prayer. A calculated world
+    // city also drops Misl Awwal, which is jantri-only.
+    final prayers = settings.locationMode == LocationMode.sukkur
+        ? ['Fajar', 'Zuhar', 'Misl Awwal', 'Asr Hanafi', 'Maghrib', 'Isha']
+        : ['Fajar', 'Zuhar', 'Asr Hanafi', 'Maghrib', 'Isha'];
     final prayerDisplayNames = {
       'Fajar': settings.translate('Fajar', 'فجر', 'فجر', 'الفجر'),
       'Zuhar': settings.translate('Zuhar', 'ظہر', 'ظھر', 'الظهر'),
       'Misl Awwal': settings.translate('Misl Awwal', 'مثل اول', 'مثل اول', 'المثل الأول'),
-      'Asr Hanafi': settings.translate('Asr', 'عصر حنفی', 'عصر', 'العصر'),
+      // A calculated city has plain "Asr", not the jantri's "Asr Hanafi".
+      'Asr Hanafi': settings.locationMode == LocationMode.sukkur
+          ? settings.translate('Asr', 'عصر حنفی', 'عصر', 'العصر')
+          : settings.translate('Asr', 'عصر', 'عصر', 'العصر'),
       'Maghrib': settings.translate('Maghrib', 'مغرب', 'مغرب', 'المغرب'),
       'Isha': settings.translate('Isha', 'عشاء', 'عشاء', 'العشاء'),
     };

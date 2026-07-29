@@ -7,6 +7,12 @@ import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/notification_service.dart';
 
+/// Measured height of the setup checklist at scale 1.0. Shorter screens scale
+/// everything down proportionally so it still fits in one view. Verified by
+/// test/onboarding_fits_test.dart - if the content changes, that test fails and
+/// this number needs re-measuring.
+const double _kDesignHeight = 960.0;
+
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -146,30 +152,52 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
     final accent = settings.displayThemeAccent();
 
     return Scaffold(
-      body: SafeArea(
+      // Onboarding is a fixed checklist that has to be read at a glance, so the
+      // system font scale is capped here - otherwise a large accessibility
+      // setting alone pushes the Allow button off-screen.
+      body: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.1,
+        child: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
+            // Everything scales off the height actually available, so the whole
+            // checklist fits without scrolling on small and large phones alike.
+            // The user's font scale is folded in too: bigger text means taller
+            // content, so the layout has to shrink further to compensate.
+            final textScale = MediaQuery.textScalerOf(context).scale(100) / 100;
+            // 0.62 is a readability floor: below it the body text stops being
+            // legible, so very short screens (or a very large font setting)
+            // scroll the last bit instead of shrinking further.
+            final scale =
+                (constraints.maxHeight / (_kDesignHeight * textScale))
+                    .clamp(0.62, 1.0);
+            double s(double value) => value * scale;
+
             return SingleChildScrollView(
+              // Scrolling stays available as a safety net (landscape, split
+              // screen), but portrait never needs it.
+              physics: const ClampingScrollPhysics(),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   minHeight: constraints.maxHeight,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: s(24.0), vertical: s(16.0)),
                   child: IntrinsicHeight(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SizedBox(height: 20),
+                        SizedBox(height: s(12)),
                         Text(
                           settings.translate('App Setup', 'ایپ سیٹ اپ', 'ايپ سيٽ اپ', 'إعداد التطبيق'),
-                          style: const TextStyle(
-                            fontSize: 28,
+                          style: TextStyle(
+                            fontSize: s(28),
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: s(6)),
                         Text(
                           settings.translate(
                             'To get the most out of Sukkur Salah, we need a few permissions.',
@@ -177,23 +205,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                             'سکر صلاۃ مان مڪمل فائدو وٺڻ لاءِ، اسان کي ڪجهه اجازتن جي ضرورت آهي.',
                           ),
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: s(15),
                             color: isDark ? Colors.white70 : Colors.black54,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 24),
-                        
+                        SizedBox(height: s(18)),
+
                         Text(
                           settings.translate('Select Prayer Timings', 'نماز کے اوقات کا انتخاب کریں', 'نماز جي وقتن جو انتخاب ڪريو', 'اختر أوقات الصلاة'),
-                          style: const TextStyle(
-                            fontSize: 18,
+                          style: TextStyle(
+                            fontSize: s(17),
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 12),
-                        
+                        SizedBox(height: s(10)),
+
                         _buildModeOption(
                           title: settings.translate('Sukkur (Jantri)', 'سکھر (جنتری)', 'سکر (جنتري)', 'سكر (جنتري)'),
                           subtitle: settings.translate('Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu sirrahu Jantri', 'بمطابق حضرت ڈاکٹر حفیظ اللہ صاحب قدس اللہ سرہ جنتری', 'حضرت ڊاڪٽر حفيظ الله صاحب قدس الله سره جي جنتري مطابق', 'بناءً على تقويم الشيخ الدكتور حفيظ الله قدس الله سره'),
@@ -201,8 +229,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                           icon: Icons.push_pin_rounded,
                           accent: accent,
                           isDark: isDark,
+                          s: s,
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: s(10)),
                         _buildModeOption(
                           title: settings.translate('Other Cities', 'دیگر شہر', 'ٻيا شهر', 'مدن أخرى'),
                           subtitle: settings.translate('Auto-calculate timings based on GPS location', 'GPS لوکیشن کے مطابق اوقات کا خودکار حساب', 'GPS لوڪيشن جي مطابق وقتن جو خودڪار حساب', 'حساب الأوقات تلقائيًا بناءً على الموقع'),
@@ -210,20 +239,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                           icon: Icons.public_rounded,
                           accent: accent,
                           isDark: isDark,
+                          s: s,
                         ),
-                        
-                        const SizedBox(height: 32),
-                        
+
+                        SizedBox(height: s(20)),
+
                         Text(
                           settings.translate('Required Permissions', 'مطلوبہ اجازتیں', 'گهربل اجازتون', 'الأذونات المطلوبة'),
-                          style: const TextStyle(
-                            fontSize: 18,
+                          style: TextStyle(
+                            fontSize: s(17),
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 12),
-                        
+                        SizedBox(height: s(10)),
+
                         _buildPermissionCard(
                           icon: Icons.location_on_rounded,
                           title: settings.translate('Location Access', 'مقام کی رسائی', 'مقام تائين رسائي', 'الوصول إلى الموقع'),
@@ -235,9 +265,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                           accent: accent,
                           isDark: isDark,
                           isTicked: _locTicked,
+                          s: s,
                         ),
-                        const SizedBox(height: 16),
-                        
+                        SizedBox(height: s(10)),
+
                         _buildPermissionCard(
                           icon: Icons.notifications_active_rounded,
                           title: settings.translate('Notifications', 'اطلاعات', 'اطلاعون', 'الإشعارات'),
@@ -249,8 +280,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                           accent: accent,
                           isDark: isDark,
                           isTicked: _notifTicked,
+                          s: s,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: s(10)),
 
                         _buildPermissionCard(
                           icon: Icons.battery_charging_full_rounded,
@@ -263,11 +295,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                           accent: accent,
                           isDark: isDark,
                           isTicked: _batteryTicked,
+                          s: s,
                         ),
-                        
+
                         const Spacer(),
-                        const SizedBox(height: 24),
-                        
+                        SizedBox(height: s(16)),
+
                         ElevatedButton(
                           onPressed: _isProcessing ? null : _requestPermissions,
                           style: ElevatedButton.styleFrom(
@@ -275,25 +308,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                             foregroundColor: Colors.white,
                             disabledBackgroundColor: isDark ? Colors.white12 : Colors.black12,
                             disabledForegroundColor: isDark ? Colors.white38 : Colors.black38,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: EdgeInsets.symmetric(vertical: s(14)),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             elevation: 0,
                           ),
                           child: _isProcessing
-                              ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
+                              ? SizedBox(
+                                  height: s(22),
+                                  width: s(22),
+                                  child: const CircularProgressIndicator(
                                     color: Colors.white,
                                     strokeWidth: 2.5,
                                   ),
                                 )
                               : Text(
                                   settings.translate('Allow Permissions', 'اجازت دیں', 'اجازت ڏيو', 'السماح بالأذونات'),
-                                  style: const TextStyle(
-                                    fontSize: 18,
+                                  style: TextStyle(
+                                    fontSize: s(17),
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -306,6 +339,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
             );
           },
         ),
+        ),
       ),
     );
   }
@@ -317,13 +351,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
     required Color accent,
     required bool isDark,
     required bool isTicked,
+    required double Function(double) s,
     VoidCallback? onTap,
   }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(s(12)),
         decoration: BoxDecoration(
           color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(16),
@@ -338,7 +373,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(s(8)),
               decoration: BoxDecoration(
                 color: accent.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
@@ -346,37 +381,38 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
               child: Icon(
                 icon,
                 color: accent,
-                size: 24,
+                size: s(20),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: s(12)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: s(15),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: s(2)),
                   Text(
                     description,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: s(12.5),
+                      height: 1.25,
                       color: isDark ? Colors.white70 : Colors.black54,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: s(8)),
             Icon(
               isTicked ? Icons.check_circle_rounded : Icons.circle_outlined,
               color: isTicked ? Colors.green : (isDark ? Colors.white24 : Colors.black26),
-              size: 28,
+              size: s(24),
             ),
           ],
         ),
@@ -391,6 +427,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
     required IconData icon,
     required Color accent,
     required bool isDark,
+    required double Function(double) s,
   }) {
     final isSelected = _selectedLocationMode == mode;
     return InkWell(
@@ -401,7 +438,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(s(12)),
         decoration: BoxDecoration(
           color: isSelected 
               ? accent.withValues(alpha: 0.15) 
@@ -417,7 +454,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(s(8)),
               decoration: BoxDecoration(
                 color: isSelected ? accent : (isDark ? Colors.white12 : Colors.black12),
                 shape: BoxShape.circle,
@@ -425,10 +462,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
               child: Icon(
                 icon,
                 color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black54),
-                size: 24,
+                size: s(20),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: s(12)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,16 +473,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: s(15),
                       fontWeight: FontWeight.bold,
                       color: isSelected ? (isDark ? Colors.white : Colors.black87) : (isDark ? Colors.white70 : Colors.black87),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: s(2)),
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: s(12),
+                      height: 1.25,
                       color: isDark ? Colors.white54 : Colors.black54,
                     ),
                   ),
@@ -453,11 +491,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
               ),
             ),
             if (isSelected) ...[
-              const SizedBox(width: 8),
+              SizedBox(width: s(8)),
               Icon(
                 Icons.check_circle_rounded,
                 color: accent,
-                size: 28,
+                size: s(24),
               ),
             ],
           ],

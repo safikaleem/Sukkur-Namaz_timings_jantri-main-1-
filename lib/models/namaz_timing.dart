@@ -41,6 +41,12 @@ class DayTiming {
     return '$zh:$zm';
   }
 
+  /// True when these times were calculated for a world city rather than read
+  /// from the Sukkur jantri. Calculated days expose only the six standard
+  /// prayers - the jantri-specific entries (Intiha e Sehar, Ishraq, Zawal,
+  /// Misl Awwal) have no equivalent in an astronomical calculation.
+  final bool isCalculated;
+
   const DayTiming({
     required this.day,
     required this.subahSadiq,
@@ -51,6 +57,7 @@ class DayTiming {
     required this.asrHanafi,
     required this.maghrib,
     required this.isha,
+    this.isCalculated = false,
   });
 
   static String _field(Map<String, dynamic> json, String newKey, String oldKey) =>
@@ -89,8 +96,26 @@ class DayTiming {
     PrayerTime(name: 'Isha',       urduName: 'عشاء',      time: isha),
   ];
 
+  /// What the app shows: the full jantri for Sukkur, the six standard prayers
+  /// for a calculated world city.
+  List<PrayerTime> get allTimings =>
+      isCalculated ? worldTimings : jantriTimings;
+
+  /// The six prayers for a calculated location. Names deliberately match the
+  /// jantri keys so notification/auto-silent preferences carry over unchanged.
+  /// Fajar and Zuhar use the calculated values directly - the jantri's "+6" and
+  /// "+5" offsets are Sukkur conventions and do not apply here.
+  List<PrayerTime> get worldTimings => [
+    PrayerTime(name: 'Fajar',      urduName: 'فجر',        time: subahSadiq, isPm: false),
+    PrayerTime(name: 'Tulu Aftab', urduName: 'طلوع آفتاب', time: tuluAftab,  isPm: false),
+    PrayerTime(name: 'Zuhar',      urduName: 'ظہر',        time: zawalAftab, isPm: true),
+    PrayerTime(name: 'Asr Hanafi', urduName: 'عصر',        time: asrHanafi,  isPm: true, displayName: 'Asr'),
+    PrayerTime(name: 'Maghrib',    urduName: 'مغرب',       time: maghrib,    isPm: true),
+    PrayerTime(name: 'Isha',       urduName: 'عشاء',       time: isha,       isPm: true),
+  ];
+
   /// All 10 jantri timings (Fajar after Subah Sadiq, Zuhar after Zawal)
-  List<PrayerTime> get allTimings => [
+  List<PrayerTime> get jantriTimings => [
     PrayerTime(name: 'Intiha e Sehar',  urduName: 'انتہائے سحر',   time: subahSadiq,  isPm: false),
     PrayerTime(name: 'Fajar',        urduName: 'فجر',         time: fajar,       isPm: false),
     PrayerTime(name: 'Tulu Aftab',   urduName: 'طلوع آفتاب',  time: tuluAftab,   isPm: false),
@@ -104,20 +129,31 @@ class DayTiming {
   ];
 }
 
+/// "Asr Hanafi" is a jantri term. A calculated world city just has "Asr", so
+/// labels resolve through this while the stored preference key stays the same.
+String displayKeyFor(String prayerKey, {required bool isCalculated}) =>
+    (isCalculated && prayerKey == 'Asr Hanafi') ? 'Asr' : prayerKey;
+
 class PrayerTime {
   final String name;
   final String urduName;
   final String time;
   final bool isPm;
 
+  /// Label to show instead of [name], when they differ. [name] stays the
+  /// preference key so notification and auto-silent settings carry over.
+  final String? displayName;
+
   const PrayerTime({
     required this.name,
     required this.urduName,
     required this.time,
     this.isPm = false,
+    this.displayName,
   });
 
   String localizedName(String language) {
+    final name = displayName ?? this.name;
     if (language == 'sindhi') {
       switch (name) {
         case 'Intiha e Sehar': return 'انتهاءِ سحر';

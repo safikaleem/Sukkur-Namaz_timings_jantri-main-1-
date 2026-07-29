@@ -36,6 +36,23 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
     'الظهر', 'المثل\nالأول', 'العصر', 'المغرب', 'العشاء',
   ];
 
+  // A calculated world city has only the six standard prayers.
+  static const _worldHeaders = [
+    'Date', 'Fajar', 'Sunrise', 'Zuhar', 'Asr', 'Maghrib', 'Isha',
+  ];
+  static const _worldHeadersUrdu = [
+    'تاریخ', 'فجر', 'طلوع\nآفتاب', 'ظہر', 'عصر', 'مغرب', 'عشاء',
+  ];
+  static const _worldHeadersSindhi = [
+    'تاريخ', 'فجر', 'سج\nاڀرڻ', 'ظھر', 'عصر', 'مغرب', 'عشاء',
+  ];
+  static const _worldHeadersArabic = [
+    'تاريخ', 'الفجر', 'الشروق', 'الظهر', 'العصر', 'المغرب', 'العشاء',
+  ];
+
+  /// Sukkur shows the full jantri; a selected world city shows six prayers.
+  bool _isWorld = false;
+
   static const _monthNames = [
     '', 'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
@@ -68,7 +85,8 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
     final today = DateTime.now();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final settings = context.watch<SettingsProvider>();
-    
+    _isWorld = settings.locationMode != LocationMode.sukkur;
+
     // Refresh timings in case location settings changed
     _monthData = TimingsData.instance.month(_selectedMonth);
 
@@ -200,9 +218,14 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
     final days = _monthData!.days;
     final isRtl = settings.isRtl;
     final isSindhi = settings.isSindhi;
-    final headers = isSindhi ? _colHeadersSindhi
-        : (settings.isArabic ? _colHeadersArabic
-        : (settings.language == 'urdu' ? _colHeadersUrdu : _colHeaders));
+    final headers = _isWorld
+        ? (isSindhi ? _worldHeadersSindhi
+            : (settings.isArabic ? _worldHeadersArabic
+            : (settings.language == 'urdu' ? _worldHeadersUrdu : _worldHeaders)))
+        : (isSindhi ? _colHeadersSindhi
+            : (settings.isArabic ? _colHeadersArabic
+            : (settings.language == 'urdu' ? _colHeadersUrdu : _colHeaders)));
+    final columnCount = headers.length - 1; // minus the date column
 
     if (isRtl) {
       return Column(
@@ -222,7 +245,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                   fontFamily: AppTheme.getFontForLanguage(context, settings.language),
                 ),
               ),
-              for (int i = 0; i < 10; i++)
+              for (int i = 0; i < columnCount; i++)
                 Expanded(
                   child: _buildHeaderCell(
                     columnIndex: i + 1,
@@ -258,7 +281,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                         scale: scale,
                       ),
                     ),
-                    for (int i = 0; i < 10; i++)
+                    for (int i = 0; i < columnCount; i++)
                       Expanded(
                         child: _buildDataColumn(
                           columnIndex: i + 1,
@@ -297,7 +320,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                   fontFamily: AppTheme.getFontForLanguage(context, settings.language),
                 ),
               ),
-              for (int i = 0; i < 10; i++)
+              for (int i = 0; i < columnCount; i++)
                 Expanded(
                   child: _buildHeaderCell(
                     columnIndex: i + 1,
@@ -333,7 +356,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                         scale: scale,
                       ),
                     ),
-                    for (int i = 0; i < 10; i++)
+                    for (int i = 0; i < columnCount; i++)
                       Expanded(
                         child: _buildDataColumn(
                           columnIndex: i + 1,
@@ -491,19 +514,12 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
     if (isDate) {
       cellText = day.day.toString().padLeft(2, '0');
     } else {
-      final times = [
-        day.subahSadiq,
-        day.fajar,
-        day.tuluAftab,
-        day.ishraq,
-        day.zawalAftab,
-        day.zuhar,
-        day.mislEAwwal,
-        day.asrHanafi,
-        day.maghrib,
-        day.isha,
-      ];
-      cellText = times[columnIndex - 1];
+      // Driven by allTimings so the table always matches the rest of the app:
+      // 10 jantri entries for Sukkur, 6 calculated ones for a world city.
+      final times = day.allTimings;
+      cellText = columnIndex - 1 < times.length
+          ? times[columnIndex - 1].time
+          : '--:--';
     }
 
     return Container(

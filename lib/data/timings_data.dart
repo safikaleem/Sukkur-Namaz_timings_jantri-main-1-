@@ -70,12 +70,12 @@ class TimingsData {
         break;
     }
 
+    // Astronomically there are only two Asr rules: Hanafi puts it at twice the
+    // object's shadow, while Shafi'i, Maliki and Hanbali all use once the
+    // shadow. So every non-Hanafi madhab maps to Madhab.shafi.
     final asrMethod = _prefs?.getString('asr_method') ?? 'Hanafi';
-    if (asrMethod == 'Shafi') {
-      params.madhab = Madhab.shafi;
-    } else {
-      params.madhab = Madhab.hanafi;
-    }
+    final asrMadhab = asrMethod == 'Hanafi' ? Madhab.hanafi : Madhab.shafi;
+    params.madhab = asrMadhab;
 
     final dateComponents = DateComponents(date.year, date.month, date.day);
     final prayerTimes = PrayerTimes(coordinates, dateComponents, params);
@@ -93,13 +93,15 @@ class TimingsData {
     final ishraq = formatTime(ishraqDt);
     final dhuhr = formatTime(prayerTimes.dhuhr);
     
+    // Misl-e-Awwal is jantri-only and is always the one-shadow time.
     params.madhab = Madhab.shafi;
     final prayerTimesShafi = PrayerTimes(coordinates, dateComponents, params);
     final mislAwwal = formatTime(prayerTimesShafi.asr);
-    
-    params.madhab = Madhab.hanafi;
-    final prayerTimesHanafi = PrayerTimes(coordinates, dateComponents, params);
-    final asrHanafi = formatTime(prayerTimesHanafi.asr);
+
+    // Asr follows the madhab the user actually chose.
+    params.madhab = asrMadhab;
+    final prayerTimesAsr = PrayerTimes(coordinates, dateComponents, params);
+    final asrHanafi = formatTime(prayerTimesAsr.asr);
 
     final maghrib = formatTime(prayerTimes.maghrib);
     final isha = formatTime(prayerTimes.isha);
@@ -114,6 +116,7 @@ class TimingsData {
       asrHanafi: asrHanafi,
       maghrib: maghrib,
       isha: isha,
+      isCalculated: true,
     );
   }
 

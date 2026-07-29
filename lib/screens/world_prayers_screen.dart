@@ -30,7 +30,22 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
     'Singapore'
   ];
 
-  final List<String> _asrMethods = ['Hanafi', 'Shafi'];
+  // Hanafi puts Asr at twice the object's shadow; Shafi'i, Maliki and Hanbali
+  // all use once the shadow, so those three resolve to the same time.
+  final List<String> _asrMethods = ['Hanafi', 'Shafi', 'Maliki', 'Hanbali'];
+
+  String _asrMethodLabel(SettingsProvider settings, String m) {
+    switch (m) {
+      case 'Hanafi':
+        return settings.translate('Hanafi', 'حنفی', 'حنفي', 'حنفي');
+      case 'Maliki':
+        return settings.translate('Maliki', 'مالکی', 'مالڪي', 'مالكي');
+      case 'Hanbali':
+        return settings.translate('Hanbali', 'حنبلی', 'حنبلي', 'حنبلي');
+      default:
+        return settings.translate('Shafi', 'شافعی', 'شافعي', 'شافعي');
+    }
+  }
 
   Future<void> _getCurrentLocation(SettingsProvider settings) async {
     setState(() {
@@ -398,9 +413,7 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
                       ),
                       items: _asrMethods.map((m) => DropdownMenuItem(
                         value: m,
-                        child: Text(m == 'Hanafi' 
-                            ? settings.translate('Hanafi', 'حنفی', 'حنفي', 'حنفي') 
-                            : settings.translate('Shafi / Standard', 'شافعی / معیاری', 'شافعي / معياري', 'شافعي / قياسي')),
+                        child: Text(_asrMethodLabel(settings, m)),
                       )).toList(),
                       onChanged: (val) {
                         if (val != null) settings.setAsrMethod(val);

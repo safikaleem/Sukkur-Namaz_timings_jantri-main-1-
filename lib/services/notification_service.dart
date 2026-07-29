@@ -46,6 +46,7 @@ class NotificationService {
     'Zuhar': 'ظہر',
     'Misl Awwal': 'مثل اول',
     'Asr Hanafi': 'عصر حنفی',
+    'Asr': 'عصر', // calculated world city
     'Maghrib': 'مغرب',
     'Isha': 'عشاء',
   };
@@ -59,6 +60,7 @@ class NotificationService {
     'Zuhar': 'الظهر',
     'Misl Awwal': 'المثل الأول',
     'Asr Hanafi': 'العصر',
+    'Asr': 'العصر', // calculated world city
     'Maghrib': 'المغرب',
     'Isha': 'العشاء',
   };
@@ -781,12 +783,15 @@ class NotificationService {
       return (title, legacy);
     }
 
+    // Label key, not the preference key: a calculated city says "Asr" where
+    // the jantri says "Asr Hanafi".
+    final labelKey = prayer.displayName ?? prayer.name;
     final name = switch (language) {
-      'urdu' => _urduNames[prayer.name] ?? prayer.urduName,
-      'arabic' => _arabicNames[prayer.name] ?? prayer.name,
+      'urdu' => _urduNames[labelKey] ?? prayer.urduName,
+      'arabic' => _arabicNames[labelKey] ?? labelKey,
       'sindhi' => prayer.localizedName('sindhi'),
-      'english' => prayer.name == 'Tulu Aftab' ? 'Sunrise' : prayer.name,
-      _ => worldTranslations[language]?[prayer.name] ?? prayer.name,
+      'english' => labelKey == 'Tulu Aftab' ? 'Sunrise' : labelKey,
+      _ => worldTranslations[language]?[labelKey] ?? labelKey,
     };
 
     final started = translateFor(

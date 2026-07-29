@@ -1,5 +1,10 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
 import '../providers/settings_provider.dart';
 import '../data/quran_data.dart';
@@ -31,8 +36,55 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
   bool _isLoading = true;
   String? _errorMessage;
 
-  String get _assetPath =>
-      'assets/quran_pdfs/Colour_Coded_Quran_Juz_${widget.parahNumber.toString().padLeft(2, '0')}.pdf';
+  String get _assetName =>
+      'Colour_Coded_Quran_Juz_${widget.parahNumber.toString().padLeft(2, '0')}.pdf';
+
+  String get _assetPath => 'assets/quran_pdfs/$_assetName';
+
+  /// Opens the juz, unpacking it to a stable file on first use.
+  ///
+  /// pdfx's openAsset/openData both re-copy the whole 5 MB file on every open -
+  /// its cache filename is a fresh UUID each call, so its own "already
+  /// extracted?" check can never hit. Extracting once ourselves and then
+  /// opening by path makes every subsequent open effectively instant.
+  Future<PdfDocument> _openDocument() async {
+    if (kIsWeb) return PdfDocument.openAsset(_assetPath); // no file system
+    final file = await _cachedPdf();
+    return PdfDocument.openFile(file.path);
+  }
+
+  Future<File> _cachedPdf() async {
+    final support = await getApplicationSupportDirectory();
+    // Keyed by build number so an app update never serves stale pages.
+    final info = await PackageInfo.fromPlatform();
+    final dir = Directory('${support.path}/quran_pdfs/v${info.buildNumber}');
+    final file = File('${dir.path}/$_assetName');
+    if (await file.exists()) return file;
+
+    await dir.create(recursive: true);
+    await _dropStaleVersions(dir);
+
+    // Write to a sibling then rename: an interrupted copy can never be
+    // mistaken for a complete one on the next launch.
+    final bytes = await rootBundle.load(_assetPath);
+    final partial = File('${file.path}.part');
+    await partial.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
+    return partial.rename(file.path);
+  }
+
+  Future<void> _dropStaleVersions(Directory current) async {
+    try {
+      await for (final entry in current.parent.list()) {
+        if (entry is! Directory) continue;
+        // identical() resolves the paths: a plain string compare is wrong on
+        // Windows, where list() yields backslashes and current.path does not.
+        if (await FileSystemEntity.identical(entry.path, current.path)) continue;
+        await entry.delete(recursive: true);
+      }
+    } catch (_) {
+      // Housekeeping only - never block opening the Quran.
+    }
+  }
 
   @override
   void initState() {
@@ -47,18 +99,12 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
       _errorMessage = null;
     });
 
-    // Let the screen transition settle before doing the heavy decode work.
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (!mounted) return;
-
     PdfDocument? document;
     try {
-      // Read the asset ourselves instead of using PdfDocument.openAsset, and
-      // await the document here: pdfx swallows anything that isn't a Dart
-      // Exception (a missing asset throws a FlutterError, which is an Error)
-      // and reports it as the useless "Exception: Unknown error".
-      final bytes = await rootBundle.load(_assetPath);
-      document = await PdfDocument.openData(bytes.buffer.asUint8List());
+      // Awaited here, not handed to PdfController: pdfx swallows anything that
+      // isn't a Dart Exception (a missing asset throws a FlutterError, which is
+      // an Error) and reports it as the useless "Exception: Unknown error".
+      document = await _openDocument();
 
       final int pageCount = document.pagesCount;
       final int initialPage = widget.initialPage.clamp(1, pageCount);

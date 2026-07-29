@@ -12,9 +12,46 @@ class PrayerStateResult {
   });
 }
 
+/// State for a calculated (world city) day: count down once we are within
+/// [_calculatedLead] of the next prayer, otherwise count up from the last one.
+const _calculatedLead = Duration(minutes: 40);
+
+PrayerStateResult? _calculatedState(DateTime now, DayTiming today) {
+  final entries = today.allTimings
+      .map((p) => MapEntry(p, p.toDateTime(date: now)))
+      .toList()
+    ..sort((a, b) => a.value.compareTo(b.value));
+  if (entries.isEmpty) return null;
+
+  for (final next in entries) {
+    if (!now.isBefore(next.value)) continue;
+
+    final past = entries.where((e) => !e.value.isAfter(now));
+    final untilNext = next.value.difference(now);
+    // Before the first prayer of the day there is nothing to count up from.
+    if (past.isEmpty || untilNext <= _calculatedLead) {
+      return PrayerStateResult(
+          prayer: next.key, isElapsed: false, duration: untilNext);
+    }
+    final last = past.last;
+    return PrayerStateResult(
+        prayer: last.key, isElapsed: true, duration: now.difference(last.value));
+  }
+
+  // Past Isha: count up from it until midnight rolls the day over.
+  final last = entries.last;
+  return PrayerStateResult(
+      prayer: last.key, isElapsed: true, duration: now.difference(last.value));
+}
+
 /// Returns which prayer is currently active/highlighted and whether to show
 /// elapsed (+) or remaining (−) time, based on the precise per-prayer rules.
 PrayerStateResult? computePrayerState(DateTime now, DayTiming today) {
+  // A calculated world city has only the six standard prayers, so the jantri
+  // rules below (which pivot on Intiha e Sehar, Ishraq, Zawal and Misl Awwal)
+  // cannot be applied - they would leave most of the day unmatched.
+  if (today.isCalculated) return _calculatedState(now, today);
+
   final all = today.allTimings;
 
   PrayerTime? _find(String name) {

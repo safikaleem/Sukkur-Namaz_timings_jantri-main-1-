@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../models/namaz_timing.dart';
 import '../utils/app_theme.dart';
 import '../widgets/dr_slogan_footer.dart';
 import '../widgets/dr_slogan_header.dart';
@@ -24,7 +25,8 @@ class Reminder {
     this.enabled = true,
   });
 
-  String description(String language) {
+  String description(String language, {bool isCalculated = false}) {
+    final prayerName = displayKeyFor(this.prayerName, isCalculated: isCalculated);
     final urduNames = {
       'Intiha e Sehar': 'انتہائے سحر', 'Fajar': 'فجر',
       'Tulu Aftab': 'طلوع آفتاب', 'Ishraq': 'اشراق',
@@ -60,7 +62,8 @@ class Reminder {
         'Tulu Aftab': 'الشروق', 'Ishraq': 'الإشراق',
         'Zawal': 'الزوال', 'Zuhar': 'الظهر', 'Zuhr': 'الظهر',
         'Misl Awwal': 'المثل الأول',
-        'Asr Hanafi': 'العصر', 'Maghrib': 'المغرب', 'Isha': 'العشاء',
+        'Asr Hanafi': 'العصر', 'Asr': 'العصر',
+        'Maghrib': 'المغرب', 'Isha': 'العشاء',
       };
       final pName = arabicNames[prayerName] ?? prayerName;
       if (offsetMinutes == 0) return 'عند $pName';
@@ -322,7 +325,11 @@ class _RemindersScreenState extends State<RemindersScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        r.description(settings.language),
+                        r.description(
+                          settings.language,
+                          isCalculated:
+                              settings.locationMode != LocationMode.sukkur,
+                        ),
                         style: TextStyle(
                           fontSize: isRtl ? 15 : 12,
                           color: r.enabled ? (isDark ? Colors.white54 : Colors.black54) : (isDark ? Colors.white24 : Colors.black38),
@@ -378,7 +385,7 @@ class _AddReminderFormState extends State<_AddReminderForm> {
   int _minutes = 15;
   final _labelController = TextEditingController();
 
-  static const _prayers = [
+  static const _jantriPrayers = [
     'Intiha e Sehar',
     'Fajar',
     'Tulu Aftab',
@@ -390,6 +397,21 @@ class _AddReminderFormState extends State<_AddReminderForm> {
     'Maghrib',
     'Isha'
   ];
+
+  // A calculated world city only has these six.
+  static const _worldPrayers = [
+    'Fajar',
+    'Tulu Aftab',
+    'Zuhar',
+    'Asr Hanafi',
+    'Maghrib',
+    'Isha'
+  ];
+
+  List<String> get _prayers =>
+      context.read<SettingsProvider>().locationMode == LocationMode.sukkur
+          ? _jantriPrayers
+          : _worldPrayers;
   static const _minuteOptions = [5, 10, 15, 20, 30, 45, 60];
 
   @override
@@ -429,7 +451,8 @@ class _AddReminderFormState extends State<_AddReminderForm> {
         'Tulu Aftab': 'الشروق', 'Ishraq': 'الإشراق',
         'Zawal': 'الزوال', 'Zuhar': 'الظهر', 'Zuhr': 'الظهر',
         'Misl Awwal': 'المثل الأول',
-        'Asr Hanafi': 'العصر', 'Maghrib': 'المغرب', 'Isha': 'العشاء',
+        'Asr Hanafi': 'العصر', 'Asr': 'العصر',
+        'Maghrib': 'المغرب', 'Isha': 'العشاء',
       };
       final p = arabicNames[_selectedPrayer] ?? _selectedPrayer;
       defaultLabel = _direction == 'at' ? 'عند $p' : '$_minutes دقيقة ${_direction == 'before' ? 'قبل' : 'بعد'} $p';
