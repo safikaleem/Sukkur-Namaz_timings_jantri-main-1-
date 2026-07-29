@@ -4,7 +4,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
-import '../widgets/sukkur_header.dart';
 
 class WorldPrayersScreen extends StatefulWidget {
   const WorldPrayersScreen({super.key});
@@ -52,8 +51,9 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
   bool _looksLikeSukkur(String? name) => SukkurLocation.matchesName(name);
 
   /// Shown instead of switching to calculated timings, in every language.
-  /// Nothing else happens: no location is stored, so Times, Today and Monthly
-  /// go on showing the Jantri rather than a calculated Sukkur.
+  /// Nothing else happens - deliberately: a rejected Sukkur attempt must not
+  /// disturb whatever is already in charge. If a world city was active it
+  /// stays active; if the Jantri was showing, it goes on showing.
   void _showUseJantriMessage(SettingsProvider settings) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -212,6 +212,24 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
     }
   }
 
+  /// Hands the timings back to the city already on file. The provider refuses
+  /// and erases it if that city turns out to be Sukkur from an older build, in
+  /// which case there is nothing to switch to and the Jantri stands.
+  Future<void> _useLastCity(SettingsProvider settings) async {
+    final city = settings.cityName;
+    final restored = await settings.useLastWorldCity();
+    if (!mounted) return;
+    if (!restored) {
+      _showUseJantriMessage(settings);
+      setState(() {});
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+      '${settings.translate('Location updated: ', 'مقام اپڈیٹ ہو گیا: ', 'جڳهه اپڊيٽ ٿي وئي: ', 'تم تحديث الموقع: ')}$city'
+    )));
+    _returnToTimings();
+  }
+
   @override
   void dispose() {
     _cityController.dispose();
@@ -236,7 +254,89 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Mode Selection
+            // Location Details
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: settings.displayThemeCard(isDark),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: settings.displayThemeCardBorder(isDark)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLocationSummary(settings, isDark, textColor),
+                  const SizedBox(height: 20),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: _isLoading ? null : () => _getCurrentLocation(settings),
+                      icon: _isLoading 
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
+                        : const Icon(Icons.my_location),
+                      label: Text(settings.translate('Get Current Location', 'موجودہ مقام حاصل کریں', 'موجودہ جڳھ حاصل ڪريو', 'الحصول على الموقع الحالي')),
+                    ),
+                  ),
+                    
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black26)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(settings.translate('OR', 'یا', 'يا', 'أو')),
+                      ),
+                      Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black26)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                    
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _cityController,
+                          style: TextStyle(color: textColor),
+                          decoration: InputDecoration(
+                            hintText: settings.translate('Enter city name (e.g., London)', 'شہر کا نام درج کریں', 'شهر جو نالو لکو', 'أدخل اسم المدينة'),
+                            hintStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: settings.displayThemeCardBorder(isDark)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: settings.displayThemeCardBorder(isDark)),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      IconButton(
+                        onPressed: _isLoading ? null : () => _searchCity(settings),
+                        icon: const Icon(Icons.search),
+                        color: Colors.white,
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppTheme.accent,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Calculation Methods
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -248,224 +348,176 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    settings.translate('Location Mode', 'مقام کا انتخاب', 'جڳھ جي چونڊ', 'وضع الموقع'),
+                    settings.translate('Calculation Parameters', 'حساب کے پیرامیٹرز', 'حساب جا پيرا ميٽرز', 'معلمات الحساب'),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.accent,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  RadioListTile<LocationMode>(
-                    title: Text(settings.translate('Sukkur (Jantri)', 'سکھر (جنتری)', 'سکر (جنتري)', 'سكر (جنتري)')),
-                    subtitle: Text(settings.translate('(Based on Hazrat Dr Hafeezullah Qaddasallahu sirrahu Jantri)', '(بمطابق حضرت ڈاکٹر حفیظ اللہ صاحب قدس اللہ سرہ جنتری)', '(حضرت ڊاڪٽر حفيظ الله صاحب قدس الله سره جي جنتري مطابق)', '(بناءً على تقويم الشيخ الدكتور حفيظ الله قدس الله سره)')),
-                    value: LocationMode.sukkur,
-                    groupValue: settings.locationMode,
-                    activeColor: AppTheme.accent,
-                    onChanged: (mode) {
-                      if (mode != null) settings.setLocationMode(mode);
+                  const SizedBox(height: 16),
+                    
+                  Text(
+                    settings.translate('Calculation Method', 'حساب کا طریقہ', 'حساب جو طريقو', 'طريقة الحساب'),
+                    style: TextStyle(color: textColor, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: settings.calculationMethod,
+                    dropdownColor: settings.displayThemeCard(isDark),
+                    style: TextStyle(color: textColor),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: _calculationMethods.map((m) => DropdownMenuItem(
+                      value: m,
+                      child: Text(settings.translate(m, m, m, m)),
+                    )).toList(),
+                    onChanged: (val) {
+                      if (val != null) settings.setCalculationMethod(val);
                     },
                   ),
-                  RadioListTile<LocationMode>(
-                    title: Text(settings.translate('World (Calculated)', 'دنیا (خودکار حساب)', 'دنيا (خودڪار حساب)', 'عالمي (محسوب)')),
-                    subtitle: Text(settings.translate('Calculate timings for any city worldwide', 'دنیا کے کسی بھی شہر کے لیے اوقات کا حساب لگائیں', 'دنيا جي ڪنهن به شهر لاءِ وقتن جو حساب لڳايو', 'حساب الأوقات لأي مدينة في العالم')),
-                    value: LocationMode.world,
-                    groupValue: settings.locationMode,
-                    activeColor: AppTheme.accent,
-                    onChanged: (mode) {
-                      if (mode != null) settings.setLocationMode(mode);
+
+                  const SizedBox(height: 16),
+                    
+                  Text(
+                    settings.translate('Asr Juristic Method', 'عصر کا فقہی طریقہ', 'عصر جو فقهي طريقو', 'طريقة العصر الفقهية'),
+                    style: TextStyle(color: textColor, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: settings.asrMethod,
+                    dropdownColor: settings.displayThemeCard(isDark),
+                    style: TextStyle(color: textColor),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: _asrMethods.map((m) => DropdownMenuItem(
+                      value: m,
+                      child: Text(_asrMethodLabel(settings, m)),
+                    )).toList(),
+                    onChanged: (val) {
+                      if (val != null) settings.setAsrMethod(val);
                     },
                   ),
                 ],
               ),
             ),
-
-            if (settings.locationMode == LocationMode.world) ...[
-              const SizedBox(height: 16),
-              
-              // Location Details
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: settings.displayThemeCard(isDark),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: settings.displayThemeCardBorder(isDark)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      settings.translate('Selected Location', 'منتخب مقام', 'چونڊيل جڳھ', 'الموقع المحدد'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.accent,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on, color: Colors.red),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            settings.cityName ?? 'None',
-                            style: TextStyle(fontSize: 16, color: textColor, fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (settings.latitude != null && settings.longitude != null)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 32, top: 4),
-                        child: Text(
-                          '${settings.latitude!.toStringAsFixed(4)}, ${settings.longitude!.toStringAsFixed(4)}',
-                          style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12),
-                        ),
-                      ),
-                    const SizedBox(height: 20),
-                    
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.accent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        onPressed: _isLoading ? null : () => _getCurrentLocation(settings),
-                        icon: _isLoading 
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
-                          : const Icon(Icons.my_location),
-                        label: Text(settings.translate('Get Current Location', 'موجودہ مقام حاصل کریں', 'موجودہ جڳھ حاصل ڪريو', 'الحصول على الموقع الحالي')),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black26)),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(settings.translate('OR', 'یا', 'يا', 'أو')),
-                        ),
-                        Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black26)),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _cityController,
-                            style: TextStyle(color: textColor),
-                            decoration: InputDecoration(
-                              hintText: settings.translate('Enter city name (e.g., London)', 'شہر کا نام درج کریں', 'شهر جو نالو لکو', 'أدخل اسم المدينة'),
-                              hintStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: settings.displayThemeCardBorder(isDark)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: settings.displayThemeCardBorder(isDark)),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        IconButton(
-                          onPressed: _isLoading ? null : () => _searchCity(settings),
-                          icon: const Icon(Icons.search),
-                          color: Colors.white,
-                          style: IconButton.styleFrom(
-                            backgroundColor: AppTheme.accent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Calculation Methods
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: settings.displayThemeCard(isDark),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: settings.displayThemeCardBorder(isDark)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      settings.translate('Calculation Parameters', 'حساب کے پیرامیٹرز', 'حساب جا پيرا ميٽرز', 'معلمات الحساب'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.accent,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    Text(
-                      settings.translate('Calculation Method', 'حساب کا طریقہ', 'حساب جو طريقو', 'طريقة الحساب'),
-                      style: TextStyle(color: textColor, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: settings.calculationMethod,
-                      dropdownColor: settings.displayThemeCard(isDark),
-                      style: TextStyle(color: textColor),
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
-                      items: _calculationMethods.map((m) => DropdownMenuItem(
-                        value: m,
-                        child: Text(settings.translate(m, m, m, m)),
-                      )).toList(),
-                      onChanged: (val) {
-                        if (val != null) settings.setCalculationMethod(val);
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-                    
-                    Text(
-                      settings.translate('Asr Juristic Method', 'عصر کا فقہی طریقہ', 'عصر جو فقهي طريقو', 'طريقة العصر الفقهية'),
-                      style: TextStyle(color: textColor, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: settings.asrMethod,
-                      dropdownColor: settings.displayThemeCard(isDark),
-                      style: TextStyle(color: textColor),
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
-                      items: _asrMethods.map((m) => DropdownMenuItem(
-                        value: m,
-                        child: Text(_asrMethodLabel(settings, m)),
-                      )).toList(),
-                      onChanged: (val) {
-                        if (val != null) settings.setAsrMethod(val);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ],
         ),
       ),
+    );
+  }
+
+  /// Three states, one card header. The city on file outlives a switch back to
+  /// the Jantri, so "stored" and "in charge" are separate questions:
+  ///  - in charge            -> "Selected Location", plain.
+  ///  - stored, not in charge -> "Last selected", plus a button to restore it.
+  ///  - nothing stored       -> a line saying the Jantri is what's showing.
+  ///
+  /// Sukkur is never any of these: it cannot be stored, so it cannot appear.
+  Widget _buildLocationSummary(
+      SettingsProvider settings, bool isDark, Color textColor) {
+    final city = settings.cityName;
+    final active = settings.usesCalculatedTimings;
+    final muted = isDark ? Colors.white54 : Colors.black54;
+
+    if (!settings.hasStoredWorldCity || city == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            settings.translate('Selected Location', 'منتخب مقام', 'چونڊيل جڳھ', 'الموقع المحدد'),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.accent),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            settings.translate(
+              'No city selected. Showing the Sukkur Jantri.',
+              'کوئی شہر منتخب نہیں۔ سکھر جنتری دکھائی جا رہی ہے۔',
+              'ڪو به شهر چونڊيل ناهي. سکر جنتري ڏيکاري پئي وڃي.',
+              'لم يتم اختيار مدينة. يتم عرض جنتري سكر.',
+            ),
+            style: TextStyle(fontSize: 14, color: muted),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          active
+              ? settings.translate('Selected Location', 'منتخب مقام', 'چونڊيل جڳھ', 'الموقع المحدد')
+              : settings.translate('Last selected', 'آخری منتخب مقام', 'آخري چونڊيل جڳھ', 'آخر موقع محدد'),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.accent),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Icon(Icons.location_on, color: active ? Colors.red : muted),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                city,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: active ? textColor : muted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 32, top: 4),
+          child: Text(
+            '${settings.latitude!.toStringAsFixed(4)}, ${settings.longitude!.toStringAsFixed(4)}',
+            style: TextStyle(color: muted, fontSize: 12),
+          ),
+        ),
+        if (!active) ...[
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: 32),
+            child: Text(
+              settings.translate(
+                'Currently showing the Sukkur Jantri.',
+                'اس وقت سکھر جنتری دکھائی جا رہی ہے۔',
+                'هن وقت سکر جنتري ڏيکاري پئي وڃي.',
+                'يتم عرض جنتري سكر حاليًا.',
+              ),
+              style: TextStyle(color: muted, fontSize: 12),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.accent,
+                side: BorderSide(color: AppTheme.accent),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: _isLoading ? null : () => _useLastCity(settings),
+              icon: const Icon(Icons.restore),
+              // A placeholder rather than concatenation: languages differ on
+              // where the city goes relative to the verb.
+              label: Text(
+                settings.translate(
+                  'Use {city}',
+                  '{city} استعمال کریں',
+                  '{city} استعمال ڪريو',
+                  'استخدم {city}',
+                ).replaceAll('{city}', city),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

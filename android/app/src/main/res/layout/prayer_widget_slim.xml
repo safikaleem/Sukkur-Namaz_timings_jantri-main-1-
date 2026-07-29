@@ -24,12 +24,17 @@
             android:layout_marginEnd="10dp"
             android:layout_marginRight="10dp" />
 
-        <!-- Left Column: Location, Prayer Name, Label -->
+        <!-- Left Column: Location, Prayer Name, Label.
+             baselineAlignedChildIndex="1" is what puts the prayer name level
+             with the time in the next column: the row aligns its columns by
+             baseline, and without this each column offers its FIRST child, so
+             the time lined up with the small city label instead. -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
+            android:baselineAlignedChildIndex="1"
             android:gravity="start">
 
             <!-- No pin, and bounded to its own column so a long city name can

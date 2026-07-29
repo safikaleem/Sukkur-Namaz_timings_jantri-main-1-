@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'data/timings_data.dart';
-import 'providers/settings_provider.dart' show SettingsProvider, DarkModeOption, LocationMode;
+import 'providers/settings_provider.dart' show SettingsProvider, DarkModeOption;
 import 'services/notification_service.dart';
 import 'services/widget_service.dart';
 import 'screens/today_screen.dart';
@@ -321,9 +321,14 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       key: _scaffoldKey,
       backgroundColor: settings.displayThemeBg(isDark),
       drawer: SettingsDrawer(
+        // The side bar is the only way into the Jantri, so it has to do the
+        // full switch: setLocationMode alone leaves the last world month in
+        // world_timings_cache and the home-screen widget goes on serving that
+        // city. The city itself stays on file for the World screen to offer
+        // back.
         onTapSukkur: () {
           Navigator.pop(context);
-          settings.setLocationMode(LocationMode.sukkur);
+          settings.useSukkurJantri();
           setState(() => _currentIndex = 0);
         },
         // Picking a world city lands on that city's timings, same as Sukkur.

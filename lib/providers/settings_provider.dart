@@ -221,7 +221,18 @@ class SettingsProvider extends ChangeNotifier {
   int get tasbeehThemeIndex => _tasbeehThemeIndex;
   String get circleWidgetStyle => _circleWidgetStyle;
 
-  LocationMode get locationMode => _locationMode;
+  /// The mode the app is *actually* running in, which is not the same as the
+  /// stored one. World mode with no city behind it resolves to Sukkur, because
+  /// that is what the data layer already serves: TimingsData falls back to the
+  /// Jantri when there are no coordinates. Sukkur mode with a city remembered
+  /// behind it likewise resolves to Sukkur - the city is on file, not in use.
+  ///
+  /// Every screen that decides which prayer set to draw must use this, or it
+  /// renders the six-prayer world layout over eleven-field Jantri data and the
+  /// columns silently shift.
+  LocationMode get locationMode =>
+      usesCalculatedTimings ? LocationMode.world : LocationMode.sukkur;
+
   double? get latitude => _latitude;
   double? get longitude => _longitude;
   String? get cityName => _cityName;
@@ -271,16 +282,43 @@ class SettingsProvider extends ChangeNotifier {
     });
   }
 
-  /// True once world mode actually has a city to calculate for. World mode on
-  /// its own is not enough - the user can tick the radio before searching, and
-  /// until they do the app must keep showing the Jantri.
+  /// True once world mode actually has a city to calculate for. Both halves
+  /// matter: coordinates with the mode set to Sukkur mean a city the user has
+  /// parked behind the Jantri, and world mode without coordinates means a
+  /// mode nothing backs. Either way the Jantri is what gets drawn.
   bool get usesCalculatedTimings =>
       _locationMode == LocationMode.world &&
       _latitude != null &&
       _longitude != null;
 
-  /// Drops any stored world city and hands the timings back to the Jantri.
+  /// A world city is on file, whether or not it is the one currently driving
+  /// the timings. The World screen offers it back as "last selected".
+  bool get hasStoredWorldCity =>
+      _cityName != null && _latitude != null && _longitude != null;
+
+  /// Switches to the Jantri while *keeping* the last world city on file, so
+  /// the World screen can offer it back with one tap. The city stays inert:
+  /// [usesCalculatedTimings] is false in Sukkur mode regardless of coordinates.
+  ///
+  /// Use [forgetWorldCity] instead when the stored city itself is the problem.
   Future<void> useSukkurJantri() async {
+    _locationMode = LocationMode.sukkur;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('location_mode', LocationMode.sukkur.name);
+    // Otherwise the home-screen widget would keep serving the last calculated
+    // month; with no cache it falls back to the bundled Jantri asset.
+    await prefs.remove('world_timings_cache');
+    WidgetService.updateWidget();
+    if (_notificationsEnabled) {
+      await NotificationService.instance.scheduleWeeklyNotifications();
+    }
+  }
+
+  /// Erases the stored world city outright and returns to the Jantri. For
+  /// places that must never be offered again - Sukkur smuggled in by an older
+  /// build - rather than the ordinary "show me the Jantri for now" switch.
+  Future<void> forgetWorldCity() async {
     _latitude = null;
     _longitude = null;
     _cityName = null;
@@ -291,13 +329,25 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.remove('latitude');
     await prefs.remove('longitude');
     await prefs.remove('city_name');
-    // Otherwise the home-screen widget would keep serving the last calculated
-    // month; with no cache it falls back to the bundled Jantri asset.
     await prefs.remove('world_timings_cache');
     WidgetService.updateWidget();
     if (_notificationsEnabled) {
       await NotificationService.instance.scheduleWeeklyNotifications();
     }
+  }
+
+  /// Puts the remembered city back in charge. Returns false when there is
+  /// nothing to restore, or when what is on file turns out to be Sukkur - in
+  /// which case it is erased rather than resurrected, and the Jantri stands.
+  Future<bool> useLastWorldCity() async {
+    final lat = _latitude, lng = _longitude;
+    if (lat == null || lng == null) return false;
+    if (SukkurLocation.covers(lat, lng, _cityName)) {
+      await forgetWorldCity();
+      return false;
+    }
+    await setLocationMode(LocationMode.world);
+    return true;
   }
 
   /// World mode is only meaningful with a real, non-Sukkur city behind it.
@@ -306,7 +356,7 @@ class SettingsProvider extends ChangeNotifier {
     if (_locationMode != LocationMode.world) return;
     final lat = _latitude, lng = _longitude;
     if (lat == null || lng == null || SukkurLocation.covers(lat, lng, _cityName)) {
-      await useSukkurJantri();
+      await forgetWorldCity();
     }
   }
 
@@ -622,24 +672,31 @@ class SettingsProvider extends ChangeNotifier {
     _cityName = prefs.getString('city_name');
 
     // Older builds - and the onboarding GPS step for anyone actually standing
-    // in Sukkur - could leave the app parked in world mode on Sukkur itself,
-    // which served calculated timings in place of the Jantri across Times,
-    // Today and Monthly. Repair that stored state on launch.
-    if (_locationMode == LocationMode.world) {
-      final lat = _latitude, lng = _longitude;
-      if (lat == null ||
-          lng == null ||
-          SukkurLocation.covers(lat, lng, _cityName)) {
-        _locationMode = LocationMode.sukkur;
-        _latitude = null;
-        _longitude = null;
-        _cityName = null;
-        await prefs.setString('location_mode', LocationMode.sukkur.name);
-        await prefs.remove('latitude');
-        await prefs.remove('longitude');
-        await prefs.remove('city_name');
-        await prefs.remove('world_timings_cache');
-      }
+    // in Sukkur - could leave Sukkur itself on file as a world city. In world
+    // mode that served calculated timings in place of the Jantri across Times,
+    // Today and Monthly; now that a stored city outlives a switch back to the
+    // Jantri, it would also resurface as "last selected". Erase it on launch,
+    // whichever mode it was left in.
+    final storedLat = _latitude, storedLng = _longitude;
+    if (storedLat != null &&
+        storedLng != null &&
+        SukkurLocation.covers(storedLat, storedLng, _cityName)) {
+      _locationMode = LocationMode.sukkur;
+      _latitude = null;
+      _longitude = null;
+      _cityName = null;
+      await prefs.setString('location_mode', LocationMode.sukkur.name);
+      await prefs.remove('latitude');
+      await prefs.remove('longitude');
+      await prefs.remove('city_name');
+      await prefs.remove('world_timings_cache');
+    } else if (_locationMode == LocationMode.world &&
+        (storedLat == null || storedLng == null)) {
+      // World mode with nothing behind it. There is no city to erase - just
+      // stop claiming a mode the data layer cannot honour.
+      _locationMode = LocationMode.sukkur;
+      await prefs.setString('location_mode', LocationMode.sukkur.name);
+      await prefs.remove('world_timings_cache');
     }
 
     _calculationMethod = prefs.getString('calculation_method') ?? 'Karachi';
@@ -764,10 +821,11 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   /// Re-geocodes the saved world coordinates so the stored city name follows
-  /// the current app language. No-op outside world mode; keeps the existing
-  /// name if the device geocoder has no localised entry or fails.
+  /// the current app language. Runs whenever a city is on file, not only while
+  /// it is in charge - a city remembered behind the Jantri is still shown on
+  /// the World screen. Keeps the existing name if the device geocoder has no
+  /// localised entry or fails.
   Future<void> _relocaliseCityName() async {
-    if (_locationMode != LocationMode.world) return;
     final lat = _latitude, lng = _longitude;
     if (lat == null || lng == null) return;
     try {
