@@ -29,12 +29,30 @@ class PdfMushafReader extends StatefulWidget {
 }
 
 class _PdfMushafReaderState extends State<PdfMushafReader> {
+  /// Every page in these juz files is a single ~856x1303 pixel scan - not
+  /// vector text - so rendering far above the screen's own pixel width only
+  /// interpolates, it cannot recover detail the scan does not hold. Render once
+  /// at the screen's real pixels plus a little headroom for pinch-zoom, so the
+  /// page is resampled exactly once (by the PDF renderer, which filters
+  /// properly) rather than twice as it was at the old flat 1.2x.
+  static const double _zoomHeadroom = 1.5;
+
+  /// Guards the decoded bitmap. A page costs roughly width^2 * 6 bytes in
+  /// Flutter's image cache, which holds 100 MB by default - 2000 px keeps
+  /// several pages resident so swiping back never re-decodes.
+  static const double _minRenderWidth = 1000;
+  static const double _maxRenderWidth = 2000;
+
   final TextEditingController _pageSearchController = TextEditingController();
   PdfController? _pdfController;
   PdfDocument? _document;
   int _pageCount = 0;
   bool _isLoading = true;
   String? _errorMessage;
+
+  /// Set before the first build, so the renderer callback always has a real
+  /// figure rather than a guess.
+  double _renderWidthPx = _minRenderWidth;
 
   String get _assetName =>
       'Colour_Coded_Quran_Juz_${widget.parahNumber.toString().padLeft(2, '0')}.pdf';
@@ -92,6 +110,15 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
     _initPdf();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final media = MediaQuery.of(context);
+    _renderWidthPx =
+        (media.size.width * media.devicePixelRatio * _zoomHeadroom)
+            .clamp(_minRenderWidth, _maxRenderWidth);
+  }
+
   Future<void> _initPdf() async {
     if (!mounted) return;
     setState(() {
@@ -140,6 +167,27 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
     _document?.close();
     super.dispose();
   }
+
+  /// Same as pdfx's own page builder except for [filterQuality]: photo_view
+  /// defaults to [FilterQuality.none], i.e. nearest-neighbour, so the moment a
+  /// page is scaled at all - which it always is, the scan never matches the
+  /// screen exactly - the thin Arabic strokes and tajweed colouring break up
+  /// into hard steps. Proper filtering costs nothing and is the single biggest
+  /// improvement available without shipping larger scans.
+  PhotoViewGalleryPageOptions _buildPage(
+    BuildContext context,
+    Future<PdfPageImage> pageImage,
+    int index,
+    PdfDocument document,
+  ) =>
+      PhotoViewGalleryPageOptions(
+        imageProvider: PdfPageImageProvider(pageImage, index, document.id),
+        filterQuality: FilterQuality.high,
+        minScale: PhotoViewComputedScale.contained,
+        maxScale: PhotoViewComputedScale.contained * 3.0,
+        initialScale: PhotoViewComputedScale.contained,
+        heroAttributes: PhotoViewHeroAttributes(tag: '${document.id}-$index'),
+      );
 
   void _onPageSubmitted(String value) {
     final page = int.tryParse(value);
@@ -256,12 +304,25 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
               pageSnapping: true,
               reverse: true, // RTL reading direction
               physics: const BouncingScrollPhysics(),
-              renderer: (PdfPage page) => page.render(
-                width: page.width * 1.2, // Reduced from default 2.0x for much faster swiping
-                height: page.height * 1.2,
-                format: PdfPageImageFormat.jpeg,
-                backgroundColor: '#ffffff',
+              builders: PdfViewBuilders<DefaultBuilderOptions>(
+                options: const DefaultBuilderOptions(),
+                pageBuilder: _buildPage,
               ),
+              // pdfx keeps every rendered page for the life of this widget, so
+              // the higher resolution is paid once per page, not on each swipe.
+              renderer: (PdfPage page) {
+                final scale = _renderWidthPx / page.width;
+                return page.render(
+                  width: page.width * scale,
+                  height: page.height * scale,
+                  format: PdfPageImageFormat.jpeg,
+                  // The scan inside the PDF is itself a JPEG; at 100 the
+                  // re-encode skips chroma subsampling, so the colour-coded
+                  // tajweed marks do not pick up a second generation of fringing.
+                  quality: 100,
+                  backgroundColor: '#ffffff',
+                );
+              },
               backgroundDecoration: BoxDecoration(
                 color: widget.isDark ? const Color(0xFF1E1E2E) : const Color(0xFFFDFBF7),
               ),
