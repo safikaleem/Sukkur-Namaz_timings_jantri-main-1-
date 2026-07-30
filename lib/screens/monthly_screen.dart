@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/timings_data.dart';
+import '../l10n/world_translations.dart';
 import '../models/namaz_timing.dart';
 import '../utils/app_theme.dart';
 import '../widgets/dr_slogan_footer.dart';
@@ -48,6 +49,19 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
   ];
   static const _worldHeadersArabic = [
     'تاريخ', 'الفجر', 'الشروق', 'الظهر', 'العصر', 'المغرب', 'العشاء',
+  ];
+
+  // Dictionary keys for the two column sets, in the same order as the lists
+  // above. Every other language resolves its headers through these rather than
+  // carrying a hand-written list, the way prayer names already do elsewhere.
+  // The world set keys sunrise as 'Tulu Aftab' - the dictionaries have no
+  // 'Sunrise' entry, and only English ever shows that wording.
+  static const _colHeaderKeys = [
+    'Date', 'Intiha e Sehar', 'Fajar', 'Tulu Aftab', 'Ishraq', 'Zawal',
+    'Zuhar', 'Misl Awwal', 'Asr Hanafi', 'Maghrib', 'Isha',
+  ];
+  static const _worldHeaderKeys = [
+    'Date', 'Fajar', 'Tulu Aftab', 'Zuhar', 'Asr', 'Maghrib', 'Isha',
   ];
 
   /// Sukkur shows the full jantri; a selected world city shows six prayers.
@@ -206,25 +220,49 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
             ),
 
             const DrSloganFooter(),
-            if (settings.locationMode != LocationMode.sukkur)
-              const SizedBox(height: 16),
           ],
         ),
       ),
     );
   }
 
+  /// Column labels for the language in use. English, Urdu, Sindhi and Arabic
+  /// keep their hand-written lists - the line breaks in those are placed where
+  /// each script reads best. Every other language resolves through the shared
+  /// dictionary, which already carries these prayer names for the Today screen,
+  /// so the header row stops falling back to English.
+  List<String> _headersFor(SettingsProvider settings) {
+    switch (settings.language) {
+      case 'english':
+        return _isWorld ? _worldHeaders : _colHeaders;
+      case 'urdu':
+        return _isWorld ? _worldHeadersUrdu : _colHeadersUrdu;
+      case 'sindhi':
+        return _isWorld ? _worldHeadersSindhi : _colHeadersSindhi;
+      case 'arabic':
+        return _isWorld ? _worldHeadersArabic : _colHeadersArabic;
+    }
+    final dictionary = worldTranslations[settings.language];
+    return [
+      for (final key in _isWorld ? _worldHeaderKeys : _colHeaderKeys)
+        _wrappedHeader(dictionary?[key] ?? key),
+    ];
+  }
+
+  /// A header cell is three lines tall and shrinks whatever it is given to fit,
+  /// so a translated label reads better broken at its spaces than squeezed onto
+  /// one line. Words past the third share the last line.
+  static String _wrappedHeader(String label) {
+    final words = label.split(' ').where((w) => w.isNotEmpty).toList();
+    if (words.length < 2) return label;
+    if (words.length <= 3) return words.join('\n');
+    return [words[0], words[1], words.skip(2).join(' ')].join('\n');
+  }
+
   Widget _buildTable(SettingsProvider settings, bool isDark, DateTime today, double scale) {
     final days = _monthData!.days;
     final isRtl = settings.isRtl;
-    final isSindhi = settings.isSindhi;
-    final headers = _isWorld
-        ? (isSindhi ? _worldHeadersSindhi
-            : (settings.isArabic ? _worldHeadersArabic
-            : (settings.language == 'urdu' ? _worldHeadersUrdu : _worldHeaders)))
-        : (isSindhi ? _colHeadersSindhi
-            : (settings.isArabic ? _colHeadersArabic
-            : (settings.language == 'urdu' ? _colHeadersUrdu : _colHeaders)));
+    final headers = _headersFor(settings);
     final columnCount = headers.length - 1; // minus the date column
 
     if (isRtl) {

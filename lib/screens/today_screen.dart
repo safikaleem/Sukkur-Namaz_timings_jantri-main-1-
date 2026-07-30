@@ -281,8 +281,6 @@ class _TodayScreenState extends State<TodayScreen> {
             Expanded(child: _buildPrayerList(context, settings.language, isDark)),
 
             const DrSloganFooter(),
-            if (settings.locationMode != LocationMode.sukkur)
-              const SizedBox(height: 16),
           ],
         ),
       ),
