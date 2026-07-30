@@ -117,7 +117,30 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Slasa (3/4)': 'সালাসা (৩/৪)',
     'Something went wrong. Please try again.':
         'কিছু একটা ভুল হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।',
-    'Sukkur Prayer Times': 'সুক্কুর নামাজের সময়',
+    'Worldwide Prayer Timings': 'বিশ্বজুড়ে নামাজের সময়',
+    // ── What's New, version 1.1.3 ──
+    "What's New": 'নতুন কী আছে',
+    'Monthly Jantri Now Fully Translated': 'মাসিক জান্ত্রি এখন সম্পূর্ণ অনূদিত',
+    'The Monthly Schedule column headings - Date, Intiha e Sehar, Fajar, Zuhar and the rest - now appear in your chosen language instead of English, for both the Sukkur Jantri and world city timings.':
+        'মাসিক সময়সূচীর কলামের শিরোনাম - তারিখ, সেহরীর শেষ সময়, ফজর, যোহর এবং বাকিগুলি - এখন ইংরেজির বদলে আপনার নির্বাচিত ভাষায় দেখা যায়, সুক্কুর জান্ত্রি ও বিশ্বের শহর উভয়ের জন্যই।',
+    'Sharper Quran Pages': 'কুরআনের পৃষ্ঠা আরও ঝকঝকে',
+    "Mushaf pages are now rendered at your screen's own resolution with proper filtering, so the text looks noticeably crisper on high resolution displays.":
+        'মুসহাফের পৃষ্ঠাগুলি এখন আপনার স্ক্রিনের নিজস্ব রেজোলিউশনে তৈরি হয়, ফলে উচ্চ রেজোলিউশনের পর্দায় লেখা লক্ষণীয়ভাবে পরিষ্কার দেখায়।',
+    'Redesigned Home Screen Widgets': 'হোম স্ক্রিন উইজেটের নতুন রূপ',
+    'The home screen widgets have a slimmer, cleaner look, and the circle clock widget now shows AM/PM alongside the time.':
+        'হোম স্ক্রিনের উইজেটগুলি এখন আরও পাতলা ও পরিচ্ছন্ন, এবং বৃত্তাকার ঘড়ি উইজেটে সময়ের সঙ্গে AM/PM দেখানো হয়।',
+    'Sukkur Always Uses the Jantri': 'সুক্কুর সবসময় জান্ত্রি অনুসরণ করে',
+    'Sukkur now always shows the authentic Jantri timings and never falls back to calculated ones. After choosing a city you are also taken straight to the Times screen.':
+        'সুক্কুর এখন সবসময় প্রকৃত জান্ত্রির সময় দেখায়, কখনও গণনাকৃত সময়ে ফিরে যায় না। শহর নির্বাচনের পর আপনি সরাসরি সময়ের পর্দায় পৌঁছে যান।',
+    'Your Last City Is Remembered': 'আপনার শেষ শহর মনে রাখা হয়',
+    'Switching back to World Prayer Timings returns you to the city you were last using, instead of asking you to choose it again.':
+        'বিশ্বের নামাজে ফিরে গেলে আপনি সেই শহরটিই পান যেটি সর্বশেষ ব্যবহার করছিলেন, আবার বেছে নেওয়ার প্রয়োজন হয় না।',
+    'Clearer Analogue Clock': 'অ্যানালগ ঘড়ি আরও স্পষ্ট',
+    'The analogue clock hands are slimmer and easier to read across every clock style.':
+        'অ্যানালগ ঘড়ির কাঁটা এখন সরু এবং প্রতিটি ঘড়ির স্টাইলে পড়া সহজ।',
+    'Neater Screen Layout': 'পরিচ্ছন্ন পর্দার বিন্যাস',
+    'The advisory note at the bottom of the Today and Monthly screens now sits flush against the navigation bar, with no leftover gap.':
+        'আজ ও মাসিক পর্দার নিচের নির্দেশনাটি এখন নেভিগেশন বারের সঙ্গে লেগে থাকে, মাঝে কোনো ফাঁক থাকে না।',
     'Sukkur Salah': 'সুক্কুর সালাহ',
     'Sukkur Salah – Namaz timings for Sukkur. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah':
         'সুক্কুর সালাহ – সুক্কুরের নামাজের সময়। এখনই ডাউনলোড করুন:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
@@ -246,7 +269,30 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Slasa (3/4)': 'Tsulutsah (3/4)',
     'Something went wrong. Please try again.':
         'Terjadi kesalahan. Silakan coba lagi.',
-    'Sukkur Prayer Times': 'Jadwal Salat Sukkur',
+    'Worldwide Prayer Timings': 'Jadwal Salat Seluruh Dunia',
+    // ── What's New, version 1.1.3 ──
+    "What's New": 'Apa yang Baru',
+    'Monthly Jantri Now Fully Translated': 'Jantri Bulanan Kini Diterjemahkan Sepenuhnya',
+    'The Monthly Schedule column headings - Date, Intiha e Sehar, Fajar, Zuhar and the rest - now appear in your chosen language instead of English, for both the Sukkur Jantri and world city timings.':
+        'Judul kolom Jadwal Bulanan - Tanggal, Akhir Sahur, Subuh, Zuhur dan lainnya - kini tampil dalam bahasa pilihan Anda, bukan bahasa Inggris, baik untuk Jantri Sukkur maupun kota dunia.',
+    'Sharper Quran Pages': 'Halaman Al-Quran Lebih Tajam',
+    "Mushaf pages are now rendered at your screen's own resolution with proper filtering, so the text looks noticeably crisper on high resolution displays.":
+        'Halaman mushaf kini ditampilkan pada resolusi asli layar Anda dengan penyaringan yang tepat, sehingga teks terlihat jauh lebih jernih pada layar beresolusi tinggi.',
+    'Redesigned Home Screen Widgets': 'Widget Layar Utama Didesain Ulang',
+    'The home screen widgets have a slimmer, cleaner look, and the circle clock widget now shows AM/PM alongside the time.':
+        'Widget layar utama kini tampil lebih ramping dan bersih, dan widget jam lingkaran menampilkan AM/PM di samping waktu.',
+    'Sukkur Always Uses the Jantri': 'Sukkur Selalu Memakai Jantri',
+    'Sukkur now always shows the authentic Jantri timings and never falls back to calculated ones. After choosing a city you are also taken straight to the Times screen.':
+        'Sukkur kini selalu menampilkan waktu Jantri yang asli dan tidak pernah beralih ke waktu hasil perhitungan. Setelah memilih kota, Anda juga langsung dibawa ke layar Waktu.',
+    'Your Last City Is Remembered': 'Kota Terakhir Anda Diingat',
+    'Switching back to World Prayer Timings returns you to the city you were last using, instead of asking you to choose it again.':
+        'Kembali ke Sholat Dunia akan membawa Anda ke kota yang terakhir Anda gunakan, tanpa perlu memilihnya lagi.',
+    'Clearer Analogue Clock': 'Jam Analog Lebih Jelas',
+    'The analogue clock hands are slimmer and easier to read across every clock style.':
+        'Jarum jam analog kini lebih ramping dan mudah dibaca pada semua gaya jam.',
+    'Neater Screen Layout': 'Tata Letak Layar Lebih Rapi',
+    'The advisory note at the bottom of the Today and Monthly screens now sits flush against the navigation bar, with no leftover gap.':
+        'Catatan panduan di bagian bawah layar Hari Ini dan Bulanan kini menempel rapat pada bilah navigasi, tanpa celah tersisa.',
     'Sukkur Salah': 'Sukkur Salah',
     'Sukkur Salah – Namaz timings for Sukkur. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah':
         'Sukkur Salah – Jadwal salat untuk Sukkur. Unduh sekarang:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
@@ -375,7 +421,30 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Slasa (3/4)': 'Selase (3/4)',
     'Something went wrong. Please try again.':
         'Bir şeyler ters gitti. Lütfen tekrar deneyin.',
-    'Sukkur Prayer Times': 'Sukkur Namaz Vakitleri',
+    'Worldwide Prayer Timings': 'Dünya Geneli Namaz Vakitleri',
+    // ── What's New, version 1.1.3 ──
+    "What's New": 'Yenilikler',
+    'Monthly Jantri Now Fully Translated': 'Aylık Jantri Artık Tamamen Çevrildi',
+    'The Monthly Schedule column headings - Date, Intiha e Sehar, Fajar, Zuhar and the rest - now appear in your chosen language instead of English, for both the Sukkur Jantri and world city timings.':
+        'Aylık Takvim sütun başlıkları - Tarih, Sahur Sonu, Sabah, Öğle ve diğerleri - artık İngilizce yerine seçtiğiniz dilde görünüyor; hem Sukkur Jantri hem de dünya şehirleri için.',
+    'Sharper Quran Pages': "Daha Net Kur'an Sayfaları",
+    "Mushaf pages are now rendered at your screen's own resolution with proper filtering, so the text looks noticeably crisper on high resolution displays.":
+        'Mushaf sayfaları artık ekranınızın kendi çözünürlüğünde işleniyor, böylece yüksek çözünürlüklü ekranlarda metin belirgin şekilde daha net görünüyor.',
+    'Redesigned Home Screen Widgets': 'Yeniden Tasarlanan Ana Ekran Araçları',
+    'The home screen widgets have a slimmer, cleaner look, and the circle clock widget now shows AM/PM alongside the time.':
+        'Ana ekran araçları daha ince ve sade bir görünüme kavuştu, dairesel saat aracı artık saatin yanında ÖÖ/ÖS gösteriyor.',
+    'Sukkur Always Uses the Jantri': 'Sukkur Her Zaman Jantri Kullanır',
+    'Sukkur now always shows the authentic Jantri timings and never falls back to calculated ones. After choosing a city you are also taken straight to the Times screen.':
+        'Sukkur artık her zaman özgün Jantri vakitlerini gösteriyor ve asla hesaplanmış vakitlere geçmiyor. Bir şehir seçtikten sonra doğrudan Vakitler ekranına yönlendirilirsiniz.',
+    'Your Last City Is Remembered': 'Son Şehriniz Hatırlanır',
+    'Switching back to World Prayer Timings returns you to the city you were last using, instead of asking you to choose it again.':
+        "Dünya Namaz Vakitleri'ne döndüğünüzde en son kullandığınız şehir karşınıza gelir, yeniden seçmeniz gerekmez.",
+    'Clearer Analogue Clock': 'Daha Net Analog Saat',
+    'The analogue clock hands are slimmer and easier to read across every clock style.':
+        'Analog saat akrep ve yelkovanları daha ince ve tüm saat stillerinde daha okunaklı.',
+    'Neater Screen Layout': 'Daha Düzenli Ekran Yerleşimi',
+    'The advisory note at the bottom of the Today and Monthly screens now sits flush against the navigation bar, with no leftover gap.':
+        'Bugün ve Aylık ekranlarının altındaki uyarı notu artık gezinme çubuğuna bitişik duruyor, arada boşluk kalmıyor.',
     'Sukkur Salah': 'Sukkur Salah',
     'Sukkur Salah – Namaz timings for Sukkur. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah':
         'Sukkur Salah – Sukkur için namaz vakitleri. Hemen indirin:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
@@ -505,7 +574,30 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Slasa (3/4)': 'Thoulth (3/4)',
     'Something went wrong. Please try again.':
         "Une erreur s'est produite. Veuillez réessayer.",
-    'Sukkur Prayer Times': 'Horaires de prière de Sukkur',
+    'Worldwide Prayer Timings': 'Horaires de prière du monde entier',
+    // ── What's New, version 1.1.3 ──
+    "What's New": 'Nouveautés',
+    'Monthly Jantri Now Fully Translated': 'Jantri mensuel entièrement traduit',
+    'The Monthly Schedule column headings - Date, Intiha e Sehar, Fajar, Zuhar and the rest - now appear in your chosen language instead of English, for both the Sukkur Jantri and world city timings.':
+        "Les en-têtes de colonnes du calendrier mensuel - Date, Fin du Sahour, Fajr, Dhuhr et les autres - apparaissent désormais dans la langue que vous avez choisie plutôt qu'en anglais, aussi bien pour le Jantri de Sukkur que pour les villes du monde.",
+    'Sharper Quran Pages': 'Pages du Coran plus nettes',
+    "Mushaf pages are now rendered at your screen's own resolution with proper filtering, so the text looks noticeably crisper on high resolution displays.":
+        'Les pages du mushaf sont désormais rendues à la résolution native de votre écran, si bien que le texte paraît nettement plus net sur les écrans haute résolution.',
+    'Redesigned Home Screen Widgets': "Widgets d'écran d'accueil repensés",
+    'The home screen widgets have a slimmer, cleaner look, and the circle clock widget now shows AM/PM alongside the time.':
+        "Les widgets de l'écran d'accueil ont un aspect plus fin et plus épuré, et le widget horloge circulaire affiche désormais AM/PM à côté de l'heure.",
+    'Sukkur Always Uses the Jantri': 'Sukkur utilise toujours le Jantri',
+    'Sukkur now always shows the authentic Jantri timings and never falls back to calculated ones. After choosing a city you are also taken straight to the Times screen.':
+        "Sukkur affiche désormais toujours les horaires authentiques du Jantri et ne bascule jamais vers les horaires calculés. Après avoir choisi une ville, vous arrivez directement sur l'écran des horaires.",
+    'Your Last City Is Remembered': 'Votre dernière ville est mémorisée',
+    'Switching back to World Prayer Timings returns you to the city you were last using, instead of asking you to choose it again.':
+        'Revenir aux Prières Mondiales vous ramène à la ville que vous utilisiez en dernier, sans avoir à la sélectionner de nouveau.',
+    'Clearer Analogue Clock': 'Horloge analogique plus lisible',
+    'The analogue clock hands are slimmer and easier to read across every clock style.':
+        "Les aiguilles de l'horloge analogique sont plus fines et plus lisibles dans tous les styles d'horloge.",
+    'Neater Screen Layout': 'Mise en page plus soignée',
+    'The advisory note at the bottom of the Today and Monthly screens now sits flush against the navigation bar, with no leftover gap.':
+        "La note d'information en bas des écrans Aujourd'hui et Mensuel est désormais collée à la barre de navigation, sans espace résiduel.",
     'Sukkur Salah': 'Sukkur Salah',
     'Sukkur Salah – Namaz timings for Sukkur. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah':
         'Sukkur Salah – Horaires de prière pour Sukkur. Téléchargez maintenant :\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
@@ -634,7 +726,30 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Slasa (3/4)': 'सलासा (3/4)',
     'Something went wrong. Please try again.':
         'कुछ गड़बड़ हो गई। कृपया फिर से प्रयास करें।',
-    'Sukkur Prayer Times': 'सुक्कुर नमाज़ का समय',
+    'Worldwide Prayer Timings': 'दुनिया भर की नमाज़ का समय',
+    // ── What's New, version 1.1.3 ──
+    "What's New": 'नया क्या है',
+    'Monthly Jantri Now Fully Translated': 'मासिक जंत्री अब पूरी तरह अनूदित',
+    'The Monthly Schedule column headings - Date, Intiha e Sehar, Fajar, Zuhar and the rest - now appear in your chosen language instead of English, for both the Sukkur Jantri and world city timings.':
+        'मासिक सूची के कॉलम शीर्षक - दिनांक, सहरी का अंत, फ़ज्र, ज़ोहर और बाकी सभी - अब अंग्रेज़ी के बजाय आपकी चुनी हुई भाषा में दिखते हैं, सुक्कुर जंत्री और दुनिया भर के शहरों दोनों के लिए।',
+    'Sharper Quran Pages': 'क़ुरआन के पन्ने अधिक स्पष्ट',
+    "Mushaf pages are now rendered at your screen's own resolution with proper filtering, so the text looks noticeably crisper on high resolution displays.":
+        'मुसहफ़ के पन्ने अब आपकी स्क्रीन के मूल रिज़ॉल्यूशन पर तैयार होते हैं, इसलिए उच्च रिज़ॉल्यूशन वाली स्क्रीन पर लिखावट काफ़ी साफ़ दिखती है।',
+    'Redesigned Home Screen Widgets': 'होम स्क्रीन विजेट का नया रूप',
+    'The home screen widgets have a slimmer, cleaner look, and the circle clock widget now shows AM/PM alongside the time.':
+        'होम स्क्रीन के विजेट अब पतले और साफ़ हैं, और गोल घड़ी विजेट में समय के साथ AM/PM भी दिखता है।',
+    'Sukkur Always Uses the Jantri': 'सुक्कुर हमेशा जंत्री के अनुसार',
+    'Sukkur now always shows the authentic Jantri timings and never falls back to calculated ones. After choosing a city you are also taken straight to the Times screen.':
+        'सुक्कुर अब हमेशा असली जंत्री के समय दिखाता है और कभी गणना किए गए समय पर नहीं जाता। शहर चुनने के बाद आप सीधे समय स्क्रीन पर पहुँच जाते हैं।',
+    'Your Last City Is Remembered': 'आपका पिछला शहर याद रहता है',
+    'Switching back to World Prayer Timings returns you to the city you were last using, instead of asking you to choose it again.':
+        'विश्व प्रार्थना पर लौटने पर आपको वही शहर मिलता है जो आपने आख़िरी बार इस्तेमाल किया था, दोबारा चुनने की ज़रूरत नहीं।',
+    'Clearer Analogue Clock': 'एनालॉग घड़ी अधिक स्पष्ट',
+    'The analogue clock hands are slimmer and easier to read across every clock style.':
+        'एनालॉग घड़ी की सुइयाँ अब पतली और हर घड़ी शैली में पढ़ने में आसान हैं।',
+    'Neater Screen Layout': 'साफ़-सुथरा स्क्रीन लेआउट',
+    'The advisory note at the bottom of the Today and Monthly screens now sits flush against the navigation bar, with no leftover gap.':
+        'आज और मासिक स्क्रीन के नीचे दी गई सूचना अब नेविगेशन बार से बिल्कुल सटी हुई है, बीच में कोई ख़ाली जगह नहीं।',
     'Sukkur Salah': 'सुक्कुर सलाह',
     'Sukkur Salah – Namaz timings for Sukkur. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah':
         'सुक्कुर सलाह – सुक्कुर के लिए नमाज़ का समय। अभी डाउनलोड करें:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
@@ -763,7 +878,30 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Slasa (3/4)': 'ثلاثه (۳/۴)',
     'Something went wrong. Please try again.':
         'مشکلی پیش آمد. لطفاً دوباره تلاش کنید.',
-    'Sukkur Prayer Times': 'اوقات نماز سکر',
+    'Worldwide Prayer Timings': 'اوقات نماز سراسر جهان',
+    // ── What's New, version 1.1.3 ──
+    "What's New": 'تازه‌ها',
+    'Monthly Jantri Now Fully Translated': 'جنتری ماهانه اکنون کاملاً ترجمه شده',
+    'The Monthly Schedule column headings - Date, Intiha e Sehar, Fajar, Zuhar and the rest - now appear in your chosen language instead of English, for both the Sukkur Jantri and world city timings.':
+        'عنوان ستون‌های برنامه ماهانه - تاریخ، پایان سحر، فجر، ظهر و بقیه - اکنون به جای انگلیسی به زبان انتخابی شما نمایش داده می‌شود، هم برای جنتری سکر و هم برای شهرهای جهان.',
+    'Sharper Quran Pages': 'صفحات قرآن شفاف‌تر',
+    "Mushaf pages are now rendered at your screen's own resolution with proper filtering, so the text looks noticeably crisper on high resolution displays.":
+        'صفحات مصحف اکنون با وضوح واقعی صفحه‌نمایش شما پردازش می‌شوند، بنابراین متن روی نمایشگرهای با وضوح بالا به‌مراتب شفاف‌تر دیده می‌شود.',
+    'Redesigned Home Screen Widgets': 'طراحی تازه ابزارک‌های صفحه اصلی',
+    'The home screen widgets have a slimmer, cleaner look, and the circle clock widget now shows AM/PM alongside the time.':
+        'ابزارک‌های صفحه اصلی ظاهری باریک‌تر و تمیزتر دارند و ابزارک ساعت دایره‌ای اکنون ق.ظ/ب.ظ را کنار زمان نشان می‌دهد.',
+    'Sukkur Always Uses the Jantri': 'سکر همیشه از جنتری استفاده می‌کند',
+    'Sukkur now always shows the authentic Jantri timings and never falls back to calculated ones. After choosing a city you are also taken straight to the Times screen.':
+        'سکر اکنون همیشه اوقات اصیل جنتری را نشان می‌دهد و هرگز به اوقات محاسبه‌شده بازنمی‌گردد. پس از انتخاب شهر نیز مستقیماً به صفحه اوقات می‌روید.',
+    'Your Last City Is Remembered': 'آخرین شهر شما به خاطر سپرده می‌شود',
+    'Switching back to World Prayer Timings returns you to the city you were last using, instead of asking you to choose it again.':
+        'با بازگشت به اوقات شرعی جهان، همان شهری که آخرین بار استفاده می‌کردید نمایش داده می‌شود و نیازی به انتخاب دوباره نیست.',
+    'Clearer Analogue Clock': 'ساعت عقربه‌ای خواناتر',
+    'The analogue clock hands are slimmer and easier to read across every clock style.':
+        'عقربه‌های ساعت عقربه‌ای باریک‌تر و در همه سبک‌های ساعت خواناتر شده‌اند.',
+    'Neater Screen Layout': 'چیدمان مرتب‌تر صفحه',
+    'The advisory note at the bottom of the Today and Monthly screens now sits flush against the navigation bar, with no leftover gap.':
+        'یادداشت راهنما در پایین صفحه‌های امروز و ماهانه اکنون کاملاً به نوار پیمایش چسبیده است و فاصله‌ای باقی نمانده.',
     'Sukkur Salah': 'سکر صلاۃ',
     'Sukkur Salah – Namaz timings for Sukkur. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah':
         'سکر صلاۃ – اوقات نماز برای سکر. هم‌اکنون دانلود کنید:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
