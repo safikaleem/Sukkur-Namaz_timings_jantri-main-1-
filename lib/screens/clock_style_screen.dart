@@ -504,7 +504,7 @@ class _LivePreviewCard extends StatelessWidget {
       final dt = p.toDateTime();
       if (dt.isAfter(now)) {
         final rem = dt.difference(now);
-        return (name: p.name, localizedName: p.localizedName(lang), time: p.time, remaining: rem);
+        return (name: p.name, localizedName: p.localizedName(lang), time: p.displayTime, remaining: rem);
       }
     }
     return null;

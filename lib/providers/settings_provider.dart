@@ -8,6 +8,7 @@ import '../services/notification_service.dart';
 import '../services/widget_service.dart';
 import '../utils/alert_mode.dart';
 import '../utils/app_theme.dart';
+import '../utils/world_location.dart';
 import '../data/timings_data.dart';
 
 enum TimeFormat { system, h12, h24 }
@@ -61,6 +62,23 @@ class SukkurLocation {
     return _names.any(n.contains);
   }
 
+  /// Shortest prefix that is unambiguous enough to be worth answering. Two
+  /// letters would fire on half of Sindh; three is where "suk" stops being a
+  /// coincidence.
+  static const _minLookingForLength = 3;
+
+  /// True when someone typing [query] is plainly heading for Sukkur - either
+  /// they have written one of its names, or what they have so far is the start
+  /// of one.
+  ///
+  /// The search list withholds Sukkur outright, which left the user staring at
+  /// a result that never came. This is what lets the picker say why instead.
+  static bool looksLikeSearchFor(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.length < _minLookingForLength) return false;
+    return _names.any((n) => q.contains(n) || n.startsWith(q));
+  }
+
   static bool isNear(double latitude, double longitude) =>
       _distanceMetres(latitude, longitude, lat, lng) <= radiusMetres;
 
@@ -104,7 +122,14 @@ class SettingsProvider extends ChangeNotifier {
   double? _latitude;
   double? _longitude;
   String? _cityName;
+  /// IANA zone for the stored city, e.g. 'Europe/London'. Null only when the
+  /// lookup could not place the coordinates.
+  String? _cityTimezone;
   String _calculationMethod = 'Karachi';
+  /// True once the user has picked a method themselves, which stops a newly
+  /// selected city from applying its regional default over the top.
+  bool _calculationMethodManual = false;
+  bool _worldAlertsFollowDevice = false;
   String _asrMethod = 'Hanafi';
 
   bool _autoSilentEnabled = false;
@@ -236,6 +261,28 @@ class SettingsProvider extends ChangeNotifier {
   double? get latitude => _latitude;
   double? get longitude => _longitude;
   String? get cityName => _cityName;
+  String? get cityTimezone => _cityTimezone;
+
+  /// True when a watched city's alerts should land on the phone's clock rather
+  /// than the city's. Only observable when the two differ - i.e. when the user
+  /// is not actually in the city they picked.
+  bool get worldAlertsFollowDevice => _worldAlertsFollowDevice;
+
+  Future<void> setWorldAlertsFollowDevice(bool value) async {
+    if (_worldAlertsFollowDevice == value) return;
+    _worldAlertsFollowDevice = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        TimingsData.alertTimezoneKey, value ? 'device' : 'city');
+    // The whole schedule is pinned to one clock or the other, so it all has to
+    // be rewritten - as does the widget, which reads the same preference.
+    await TimingsData.instance.syncWorldTimingsToCache();
+    WidgetService.updateWidget();
+    if (_notificationsEnabled) {
+      await NotificationService.instance.scheduleWeeklyNotifications();
+    }
+  }
 
   /// BCP-47 code for the current app language, for asking the platform
   /// geocoder to return place names in the user's own script.
@@ -322,6 +369,7 @@ class SettingsProvider extends ChangeNotifier {
     _latitude = null;
     _longitude = null;
     _cityName = null;
+    _cityTimezone = null;
     _locationMode = LocationMode.sukkur;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
@@ -329,6 +377,7 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.remove('latitude');
     await prefs.remove('longitude');
     await prefs.remove('city_name');
+    await prefs.remove('city_timezone');
     await prefs.remove('world_timings_cache');
     WidgetService.updateWidget();
     if (_notificationsEnabled) {
@@ -369,6 +418,16 @@ class SettingsProvider extends ChangeNotifier {
     _latitude = lat;
     _longitude = lng;
     _cityName = city;
+    // Both are pure lookups on the coordinates, so they can be resolved now and
+    // are on file before anything asks for a timing.
+    _cityTimezone = WorldLocation.timezoneNameFor(lat, lng);
+    // A city the user has never overridden the method for gets its own region's
+    // convention - London on Karachi angles was simply wrong. Touching the
+    // dropdown once pins the choice and this stops reaching for it.
+    if (!_calculationMethodManual) {
+      _calculationMethod =
+          WorldLocation.defaultCalculationMethod(_cityTimezone, lat, lng);
+    }
     notifyListeners();
     Future.delayed(const Duration(milliseconds: 150), () async {
       // Superseded within the delay - don't resurrect a cleared location.
@@ -377,6 +436,15 @@ class SettingsProvider extends ChangeNotifier {
       await prefs.setDouble('latitude', lat);
       await prefs.setDouble('longitude', lng);
       await prefs.setString('city_name', city);
+      await prefs.setString('calculation_method', _calculationMethod);
+      // Written before the sync below, which reads it back to place the city
+      // on its own clock rather than the phone's.
+      final zone = _cityTimezone;
+      if (zone != null) {
+        await prefs.setString('city_timezone', zone);
+      } else {
+        await prefs.remove('city_timezone');
+      }
       await TimingsData.instance.syncWorldTimingsToCache();
       WidgetService.updateWidget();
       if (_notificationsEnabled) {
@@ -389,10 +457,14 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setCalculationMethod(String method) async {
     if (_calculationMethod == method) return;
     _calculationMethod = method;
+    // From here on this is the user's choice, not a regional default, so
+    // picking another city must not quietly overwrite it.
+    _calculationMethodManual = true;
     notifyListeners();
     Future.delayed(const Duration(milliseconds: 150), () async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('calculation_method', method);
+      await prefs.setBool('calculation_method_manual', true);
       await TimingsData.instance.syncWorldTimingsToCache();
       WidgetService.updateWidget();
       if (_notificationsEnabled) {
@@ -700,6 +772,23 @@ class SettingsProvider extends ChangeNotifier {
     }
 
     _calculationMethod = prefs.getString('calculation_method') ?? 'Karachi';
+    _calculationMethodManual =
+        prefs.getBool('calculation_method_manual') ?? false;
+    _cityTimezone = prefs.getString('city_timezone');
+    _worldAlertsFollowDevice =
+        (prefs.getString(TimingsData.alertTimezoneKey) ?? 'city') == 'device';
+    // A city stored by a build that predates timezone support has no zone on
+    // file. Resolve it from the coordinates rather than leaving that city
+    // calculating on the phone's clock until it is picked again. Reads the
+    // fields, not the prefs, so a city the Sukkur check just erased above stays
+    // erased.
+    final lat = _latitude, lng = _longitude;
+    if (_cityTimezone == null && lat != null && lng != null) {
+      _cityTimezone = WorldLocation.timezoneNameFor(lat, lng);
+      if (_cityTimezone != null) {
+        await prefs.setString('city_timezone', _cityTimezone!);
+      }
+    }
     _asrMethod = prefs.getString('asr_method') ?? 'Hanafi';
 
     for (final key in _autoSilentOffsets.keys) {
@@ -832,9 +921,8 @@ class SettingsProvider extends ChangeNotifier {
       await setLocaleIdentifier(localeIdentifier);
       final placemarks = await placemarkFromCoordinates(lat, lng);
       if (placemarks.isEmpty) return;
-      final p = placemarks.first;
-      final city = p.locality ?? p.subAdministrativeArea ?? p.administrativeArea;
-      if (city == null || city.isEmpty || city == _cityName) return;
+      final city = cityNameFrom(placemarks.first);
+      if (city == null || city == _cityName) return;
       _cityName = city;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('city_name', city);

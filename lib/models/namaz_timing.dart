@@ -105,13 +105,16 @@ class DayTiming {
   /// jantri keys so notification/auto-silent preferences carry over unchanged.
   /// Fajar and Zuhar use the calculated values directly - the jantri's "+6" and
   /// "+5" offsets are Sukkur conventions and do not apply here.
+  /// [is24Hour] rather than a fixed AM/PM per prayer: a calculated city can put
+  /// Isha after midnight (routine in a northern summer) and Fajr before it, so
+  /// the meridiem has to come from the time itself.
   List<PrayerTime> get worldTimings => [
-    PrayerTime(name: 'Fajar',      urduName: 'فجر',        time: subahSadiq, isPm: false),
-    PrayerTime(name: 'Tulu Aftab', urduName: 'طلوع آفتاب', time: tuluAftab,  isPm: false),
-    PrayerTime(name: 'Zuhar',      urduName: 'ظہر',        time: zawalAftab, isPm: true),
-    PrayerTime(name: 'Asr Hanafi', urduName: 'عصر',        time: asrHanafi,  isPm: true, displayName: 'Asr'),
-    PrayerTime(name: 'Maghrib',    urduName: 'مغرب',       time: maghrib,    isPm: true),
-    PrayerTime(name: 'Isha',       urduName: 'عشاء',       time: isha,       isPm: true),
+    PrayerTime(name: 'Fajar',      urduName: 'فجر',        time: subahSadiq, is24Hour: true),
+    PrayerTime(name: 'Tulu Aftab', urduName: 'طلوع آفتاب', time: tuluAftab,  is24Hour: true),
+    PrayerTime(name: 'Zuhar',      urduName: 'ظہر',        time: zawalAftab, is24Hour: true),
+    PrayerTime(name: 'Asr Hanafi', urduName: 'عصر',        time: asrHanafi,  is24Hour: true, displayName: 'Asr'),
+    PrayerTime(name: 'Maghrib',    urduName: 'مغرب',       time: maghrib,    is24Hour: true),
+    PrayerTime(name: 'Isha',       urduName: 'عشاء',       time: isha,       is24Hour: true),
   ];
 
   /// All 10 jantri timings (Fajar after Subah Sadiq, Zuhar after Zawal)
@@ -140,6 +143,14 @@ class PrayerTime {
   final String time;
   final bool isPm;
 
+  /// True when [time] is already a 24-hour "HH:mm" and [isPm] means nothing.
+  ///
+  /// The Jantri stores 12-hour strings and recovers the meridiem from a fixed
+  /// per-prayer flag, which works only because Sukkur's Isha never crosses
+  /// midnight. A calculated city's does, so those timings carry the full hour
+  /// and let the value speak for itself.
+  final bool is24Hour;
+
   /// Label to show instead of [name], when they differ. [name] stays the
   /// preference key so notification and auto-silent settings carry over.
   final String? displayName;
@@ -149,8 +160,30 @@ class PrayerTime {
     required this.urduName,
     required this.time,
     this.isPm = false,
+    this.is24Hour = false,
     this.displayName,
   });
+
+  int get _hour24 {
+    final parts = time.split(':');
+    if (parts.length != 2) return 0;
+    final hour = int.tryParse(parts[0]) ?? 0;
+    if (is24Hour) return hour;
+    return (isPm && hour < 12) ? hour + 12 : hour;
+  }
+
+  /// Whether this time falls in the afternoon, however it is stored.
+  bool get displayIsPm => is24Hour ? _hour24 >= 12 : isPm;
+
+  /// The 12-hour "hh:mm" the UI prints next to [displayIsPm]. Jantri times are
+  /// already in that form and pass through untouched.
+  String get displayTime {
+    if (!is24Hour) return time;
+    final parts = time.split(':');
+    if (parts.length != 2) return time;
+    final hour = _hour24 % 12 == 0 ? 12 : _hour24 % 12;
+    return '${hour.toString().padLeft(2, '0')}:${parts[1]}';
+  }
 
   String localizedName(String language) {
     final name = displayName ?? this.name;
@@ -197,9 +230,13 @@ class PrayerTime {
     final parts = time.split(':');
     int hour = int.parse(parts[0]);
     final minute = int.parse(parts[1]);
-    // Use the instance's isPm field OR the override parameter
-    final usePm = this.isPm || isPm;
-    if (usePm && hour < 12) hour += 12;
+    // A 24-hour time already says which half of the day it is in; coercing it
+    // would push an after-midnight Isha to lunchtime.
+    if (!is24Hour) {
+      // Use the instance's isPm field OR the override parameter
+      final usePm = this.isPm || isPm;
+      if (usePm && hour < 12) hour += 12;
+    }
     return DateTime(base.year, base.month, base.day, hour, minute);
   }
 }

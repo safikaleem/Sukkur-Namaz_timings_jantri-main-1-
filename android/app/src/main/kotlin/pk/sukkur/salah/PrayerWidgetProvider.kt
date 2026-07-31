@@ -262,10 +262,21 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             val maghribRaw = d.optString("maghrib", "")
             val ishaRaw    = d.optString("isha", "")
 
-            val fajarRaw   = addMinutes(subahRaw, 6)
-            val zuharRaw   = addMinutes(zawalRaw, 5)
+            // A world-city cache is written in 24-hour form and says so. Two
+            // Jantri conventions have to stand down for it, both of which would
+            // otherwise put the widget minutes or hours away from the app.
+            val src24 = json.optBoolean("is_24h", false)
+
+            // "+6" and "+5" are Sukkur conventions; a calculated city already
+            // holds its own Fajr and Zuhr, exactly as DayTiming.worldTimings does.
+            val fajarRaw   = if (src24) subahRaw else addMinutes(subahRaw, 6)
+            val zuharRaw   = if (src24) zawalRaw else addMinutes(zawalRaw, 5)
 
             // isPm flags mirror the Flutter model: AM for subah/fajar/tulu/ishraq, PM for the rest.
+            // That fixed meridiem is the other one: a calculated Isha can fall
+            // after midnight, and reading "00:35" as PM would land at lunchtime.
+            fun pm(flag: Boolean) = flag && !src24
+
             val is24 = resolveIs24(context)
             val nowMins = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
             val nowSecs = nowMins * 60 + cal.get(Calendar.SECOND)
@@ -274,12 +285,12 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             val fajarM = toMins(fajarRaw,   false)
             val tuluM = toMins(tuluRaw,    false)
             val ishraqM = toMins(ishraqRaw,  false)
-            val zawalM = toMins(zawalRaw,   true)
-            val zuharM = toMins(zuharRaw,   true)
-            val mislM = toMins(mislRaw,    true)
-            val asrM = toMins(asrRaw,     true)
-            val maghribM = toMins(maghribRaw, true)
-            val ishaM = toMins(ishaRaw,    true)
+            val zawalM = toMins(zawalRaw,   pm(true))
+            val zuharM = toMins(zuharRaw,   pm(true))
+            val mislM = toMins(mislRaw,    pm(true))
+            val asrM = toMins(asrRaw,     pm(true))
+            val maghribM = toMins(maghribRaw, pm(true))
+            val ishaM = toMins(ishaRaw,    pm(true))
 
             val isWorld = mode == "world"
 
@@ -302,12 +313,12 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
                 "Fajar"   -> fmt(fajarRaw,   false, is24)
                 "Tulu"    -> fmt(tuluRaw,    false, is24)
                 "Ishraq"  -> fmt(ishraqRaw,  false, is24)
-                "Zawal"   -> fmt(zawalRaw,   true,  is24)
-                "Zuhar"   -> fmt(zuharRaw,   true,  is24)
-                "Misl"    -> fmt(mislRaw,    true,  is24)
-                "Asr"     -> fmt(asrRaw,     true,  is24)
-                "Maghrib" -> fmt(maghribRaw, true,  is24)
-                "Isha"    -> fmt(ishaRaw,    true,  is24)
+                "Zawal"   -> fmt(zawalRaw,   pm(true), is24)
+                "Zuhar"   -> fmt(zuharRaw,   pm(true), is24)
+                "Misl"    -> fmt(mislRaw,    pm(true), is24)
+                "Asr"     -> fmt(asrRaw,     pm(true), is24)
+                "Maghrib" -> fmt(maghribRaw, pm(true), is24)
+                "Isha"    -> fmt(ishaRaw,    pm(true), is24)
                 else      -> "--:--"
             }
 
@@ -361,12 +372,12 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
                 fajar   = fmt(fajarRaw,   false, is24),
                 tulu    = fmt(tuluRaw,    false, is24),
                 ishraq  = fmt(ishraqRaw,  false, is24),
-                zawal   = fmt(zawalRaw,   true,  is24),
-                zuhar   = fmt(zuharRaw,   true,  is24),
-                misl    = fmt(mislRaw,    true,  is24),
-                asr     = fmt(asrRaw,     true,  is24),
-                maghrib = fmt(maghribRaw, true,  is24),
-                isha    = fmt(ishaRaw,    true,  is24),
+                zawal   = fmt(zawalRaw,   pm(true), is24),
+                zuhar   = fmt(zuharRaw,   pm(true), is24),
+                misl    = fmt(mislRaw,    pm(true), is24),
+                asr     = fmt(asrRaw,     pm(true), is24),
+                maghrib = fmt(maghribRaw, pm(true), is24),
+                isha    = fmt(ishaRaw,    pm(true), is24),
                 relativeTimes = relativeTimes,
                 activeMins = activeMins,
                 subahM = subahM,

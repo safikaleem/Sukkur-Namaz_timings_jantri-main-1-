@@ -7,8 +7,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'data/timings_data.dart';
 import 'providers/settings_provider.dart' show SettingsProvider, DarkModeOption;
+import 'services/notification_health.dart';
 import 'services/notification_service.dart';
 import 'services/widget_service.dart';
+import 'screens/notification_health_screen.dart';
 import 'screens/today_screen.dart';
 import 'screens/clock_screen.dart';
 import 'screens/monthly_screen.dart';
@@ -208,6 +210,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   int _currentIndex = 0;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   DateTime? _lastScheduled;
+  NotificationHealth? _notifHealth;
 
   @override
   void initState() {
@@ -215,48 +218,23 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AnnouncementService.checkForAnnouncement(context);
-      _maybeWarnNotificationsBlocked();
+      _refreshNotificationHealth();
     });
   }
 
-  /// If the user has prayer alerts enabled but the OS has notifications blocked
-  /// for the app, nothing would ever appear silently — surface a dismissible
-  /// banner so they know to re-enable them in system settings.
-  Future<void> _maybeWarnNotificationsBlocked() async {
+  /// Re-reads whether the OS will actually deliver prayer alerts on time.
+  ///
+  /// Checked on every launch and every resume, not just at onboarding: the
+  /// notification permission, the exact-alarm permission and the battery
+  /// exemption are all routinely revoked afterwards - by an OS upgrade, or by
+  /// an OEM battery manager resetting itself on update. The app used to absorb
+  /// that silently and simply start arriving late, which is indistinguishable
+  /// from working until someone misses a prayer.
+  Future<void> _refreshNotificationHealth() async {
     if (kIsWeb) return;
-    final settings = context.read<SettingsProvider>();
-    if (!settings.notificationsEnabled) return;
-
-    // Recreate channels after permission grant to ensure sound settings
-    // are properly applied (Android caches channel config from first creation).
-    // NOTE: Do NOT call scheduleWeeklyNotifications() here — main() already
-    // calls it at startup. A second call would cancelAll() and race against
-    // the first batch on slow/older devices (Samsung S8, Vivo Y21), causing
-    // intermittent missed notifications.
-
-    final enabled = await NotificationService.instance.areNotificationsEnabled();
-    if (enabled || !mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showMaterialBanner(
-      MaterialBanner(
-        content: Text(settings.translate(
-          'Notifications are turned off for this app. Prayer alerts will not '
-              'appear until you enable them in system settings.',
-          'اس ایپ کے لیے اطلاعات بند ہیں۔ جب تک آپ سسٹم کی ترتیبات میں انہیں '
-              'فعال نہیں کرتے، نماز کی اطلاعات ظاہر نہیں ہوں گی۔',
-          'هن ايپ لاءِ اطلاعون بند آهن۔ جيستائين توهان سسٽم سيٽنگز ۾ انهن کي '
-              'فعال نه ڪندا، نماز جون اطلاعون ظاهر نه ٿينديون۔',
-          'تم إيقاف الإشعارات لهذا التطبيق. لن تظهر تنبيهات الصلاة '
-              'حتى تمكّنها في إعدادات النظام.',
-        )),
-        actions: [
-          TextButton(
-            onPressed: () => messenger.hideCurrentMaterialBanner(),
-            child: Text(settings.translate('Dismiss', 'بند کریں', 'بند ڪريو', 'إغلاق')),
-          ),
-        ],
-      ),
-    );
+    final health = await NotificationHealth.check();
+    if (!mounted) return;
+    setState(() => _notifHealth = health);
   }
 
   @override
@@ -267,15 +245,15 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // The 7-day notification schedule is only ever rebuilt from main() or a
-    // settings change. Rescheduling on resume keeps azan/reminders firing for
-    // users who leave the app open for more than a week without changing
-    // anything. No new dependencies; safe no-op on web.
+    // The notification schedule is only ever rebuilt from main(), a settings
+    // change, or the background job. Rescheduling on resume keeps azan and
+    // reminders firing for users who leave the app open for a long stretch
+    // without changing anything. No new dependencies; safe no-op on web.
     //
     // Time-gate: only reschedule if more than 1 hour has passed since the last
-    // schedule. This prevents the cancelAll() + reschedule gap that could cause
-    // a prayer notification to be missed if the app is opened near prayer time
-    // on slow devices (Samsung S8, Vivo Y21).
+    // schedule, so opening and closing the app repeatedly does not churn the
+    // whole batch. Rescheduling no longer clears the queue first - each id is
+    // overwritten in place - so there is no window with nothing pending.
     if (state == AppLifecycleState.resumed && !kIsWeb) {
       final now = DateTime.now();
       final lastSched = _lastScheduled;
@@ -283,6 +261,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
         _lastScheduled = now;
         NotificationService.instance.scheduleWeeklyNotifications();
       }
+      // The user may have just come back from the very settings page that fixes
+      // this, so re-read it rather than waiting for the next launch.
+      _refreshNotificationHealth();
     }
   }
 
@@ -372,12 +353,100 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                   ),
                 ),
               ),
+
+            // Sits at the foot of the body rather than the top, where the
+            // hamburger already lives. Shown only while something is actually
+            // wrong, so it disappears by itself once the user fixes it.
+            if (settings.notificationsEnabled &&
+                _notifHealth != null &&
+                !_notifHealth!.isHealthy)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _NotificationWarningBar(
+                  health: _notifHealth!,
+                  settings: settings,
+                  onTap: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationHealthScreen(),
+                      ),
+                    );
+                    _refreshNotificationHealth();
+                  },
+                ),
+              ),
           ],
         ),
       ),
       bottomNavigationBar: _SukkurNavBar(
         currentIndex: safeIndex,
         onTap: (i) => setState(() => _currentIndex = i),
+      ),
+    );
+  }
+}
+
+/// A slim, tappable strip saying prayer alerts will not arrive properly.
+///
+/// Deliberately not dismissible: the condition it reports is not cosmetic, and
+/// it removes itself the moment the underlying permission is granted.
+class _NotificationWarningBar extends StatelessWidget {
+  final NotificationHealth health;
+  final SettingsProvider settings;
+  final VoidCallback onTap;
+
+  const _NotificationWarningBar({
+    required this.health,
+    required this.settings,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Silenced is a stronger claim than late, and warrants a stronger colour.
+    final Color background =
+        health.isSilenced ? const Color(0xFFB3261E) : const Color(0xFFB26A00);
+    final String message = health.isSilenced
+        ? settings.translate(
+            'Prayer alerts are off. Tap to fix',
+            'نماز کی اطلاعات بند ہیں۔ ٹھیک کرنے کے لیے دبائیں',
+            'نماز جون اطلاعون بند آهن. درست ڪرڻ لاءِ دٻايو',
+            'تنبيهات الصلاة متوقفة. اضغط للإصلاح',
+          )
+        : settings.translate(
+            'Prayer alerts may be late. Tap to fix',
+            'نماز کی اطلاعات دیر سے آ سکتی ہیں۔ ٹھیک کرنے کے لیے دبائیں',
+            'نماز جون اطلاعون دير سان اچي سگهن ٿيون. درست ڪرڻ لاءِ دٻايو',
+            'قد تتأخر تنبيهات الصلاة. اضغط للإصلاح',
+          );
+
+    return Material(
+      color: background,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded,
+                  color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.white, size: 20),
+            ],
+          ),
+        ),
       ),
     );
   }

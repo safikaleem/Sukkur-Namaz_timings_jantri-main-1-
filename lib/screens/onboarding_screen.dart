@@ -6,6 +6,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/notification_service.dart';
+import '../utils/world_location.dart';
 
 /// Measured height of the setup checklist at scale 1.0. Shorter screens scale
 /// everything down proportionally so it still fits in one view. Verified by
@@ -102,8 +103,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
           List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
           String city = 'Unknown Location';
           if (placemarks.isNotEmpty) {
-            final p = placemarks.first;
-            city = p.locality ?? p.subAdministrativeArea ?? p.administrativeArea ?? p.country ?? 'Unknown Location';
+            city = cityNameFrom(placemarks.first) ?? 'Unknown Location';
           }
           // A user setting up while in Sukkur is refused here and handed the
           // Jantri instead - it is more accurate than the calculation.

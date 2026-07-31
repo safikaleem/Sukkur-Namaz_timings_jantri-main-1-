@@ -57,12 +57,15 @@ class _ClockScreenState extends State<ClockScreen> {
   }
 
   void _loadTimings() {
-    _today = TimingsData.instance.timingFor(DateTime.now());
+    _today = TimingsData.instance.timingFor(TimingsData.instance.nowForTimings());
     _computeNextPrayer();
   }
 
   void _computeNextPrayer() {
-    final now = DateTime.now();
+    // The timings' own clock, not the device's: for a world city read on its
+    // own time zone this is the city's current time, so the countdown lands on
+    // the same moment the notification does.
+    final now = TimingsData.instance.nowForTimings();
     _today = TimingsData.instance.timingFor(now);
     if (_today == null) {
       _state = null;
@@ -155,7 +158,7 @@ class _ClockScreenState extends State<ClockScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${_state!.prayer.time} ${_state!.prayer.isPm ? 'PM' : 'AM'}',
+                              '${_state!.prayer.displayTime} ${_state!.prayer.displayIsPm ? 'PM' : 'AM'}',
                               textDirection: TextDirection.ltr,
                               style: TextStyle(
                                 fontSize: 15,

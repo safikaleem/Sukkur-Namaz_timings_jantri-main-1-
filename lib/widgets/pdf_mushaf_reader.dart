@@ -298,40 +298,51 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
             ),
           ),
           Expanded(
-            child: PdfView(
-              controller: _pdfController!,
-              scrollDirection: Axis.horizontal,
-              pageSnapping: true,
-              reverse: true, // RTL reading direction
-              physics: const BouncingScrollPhysics(),
-              builders: PdfViewBuilders<DefaultBuilderOptions>(
-                options: const DefaultBuilderOptions(),
-                pageBuilder: _buildPage,
+            // `reverse` on a horizontal pager is resolved against the ambient
+            // text direction, so under an RTL app language it cancels out the
+            // reverse below and the mushaf turns the wrong way. Pinning the
+            // pager to LTR keeps swipe-right on the next page in every
+            // language; only the pager is wrapped, so the page-number field
+            // above still lays out in the reader's own direction.
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: PdfView(
+                controller: _pdfController!,
+                scrollDirection: Axis.horizontal,
+                pageSnapping: true,
+                reverse: true, // RTL reading direction
+                physics: const BouncingScrollPhysics(),
+                builders: PdfViewBuilders<DefaultBuilderOptions>(
+                  options: const DefaultBuilderOptions(),
+                  pageBuilder: _buildPage,
+                ),
+                // pdfx keeps every rendered page for the life of this widget,
+                // so the higher resolution is paid once per page, not on each
+                // swipe.
+                renderer: (PdfPage page) {
+                  final scale = _renderWidthPx / page.width;
+                  return page.render(
+                    width: page.width * scale,
+                    height: page.height * scale,
+                    format: PdfPageImageFormat.jpeg,
+                    // The scan inside the PDF is itself a JPEG; at 100 the
+                    // re-encode skips chroma subsampling, so the colour-coded
+                    // tajweed marks do not pick up a second generation of
+                    // fringing.
+                    quality: 100,
+                    backgroundColor: '#ffffff',
+                  );
+                },
+                backgroundDecoration: BoxDecoration(
+                  color: widget.isDark ? const Color(0xFF1E1E2E) : const Color(0xFFFDFBF7),
+                ),
+                onPageChanged: (page) {
+                  final int localPage = page; // pdfx onPageChanged gives 1-indexed page number
+                  final int pdfStartPage = (widget.parahNumber == 1) ? 1 : QuranData.parahs[widget.parahNumber - 1].startPage;
+                  final int globalPage = localPage + pdfStartPage - 1;
+                  widget.settings.updateParahProgress(widget.parahNumber, globalPage);
+                },
               ),
-              // pdfx keeps every rendered page for the life of this widget, so
-              // the higher resolution is paid once per page, not on each swipe.
-              renderer: (PdfPage page) {
-                final scale = _renderWidthPx / page.width;
-                return page.render(
-                  width: page.width * scale,
-                  height: page.height * scale,
-                  format: PdfPageImageFormat.jpeg,
-                  // The scan inside the PDF is itself a JPEG; at 100 the
-                  // re-encode skips chroma subsampling, so the colour-coded
-                  // tajweed marks do not pick up a second generation of fringing.
-                  quality: 100,
-                  backgroundColor: '#ffffff',
-                );
-              },
-              backgroundDecoration: BoxDecoration(
-                color: widget.isDark ? const Color(0xFF1E1E2E) : const Color(0xFFFDFBF7),
-              ),
-              onPageChanged: (page) {
-                final int localPage = page; // pdfx onPageChanged gives 1-indexed page number
-                final int pdfStartPage = (widget.parahNumber == 1) ? 1 : QuranData.parahs[widget.parahNumber - 1].startPage;
-                final int globalPage = localPage + pdfStartPage - 1;
-                widget.settings.updateParahProgress(widget.parahNumber, globalPage);
-              },
             ),
           ),
         ],

@@ -2,6 +2,9 @@
 class FlutterLocalNotificationsPlugin {
   Future<void> initialize(dynamic settings) async {}
   Future<void> cancelAll() async {}
+  Future<void> cancel(int id) async {}
+  Future<List<PendingNotificationRequest>> pendingNotificationRequests() async =>
+      const [];
   Future<void> zonedSchedule(int id, String? title, String? body,
       dynamic scheduledDate, dynamic notificationDetails,
       {dynamic androidScheduleMode,
@@ -11,6 +14,15 @@ class FlutterLocalNotificationsPlugin {
       dynamic notificationDetails,
       {String? payload}) async {}
   T? resolvePlatformSpecificImplementation<T>() => null;
+}
+
+/// Web has no scheduling queue to report on, so this only ever arrives empty.
+class PendingNotificationRequest {
+  final int id;
+  final String? title;
+  final String? body;
+  final String? payload;
+  const PendingNotificationRequest(this.id, this.title, this.body, this.payload);
 }
 
 class AndroidInitializationSettings {

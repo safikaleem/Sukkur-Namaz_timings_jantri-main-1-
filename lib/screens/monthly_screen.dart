@@ -556,7 +556,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
       // 10 jantri entries for Sukkur, 6 calculated ones for a world city.
       final times = day.allTimings;
       cellText = columnIndex - 1 < times.length
-          ? times[columnIndex - 1].time
+          ? times[columnIndex - 1].displayTime
           : '--:--';
     }
 

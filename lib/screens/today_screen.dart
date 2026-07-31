@@ -62,7 +62,8 @@ class _TodayScreenState extends State<TodayScreen> {
   }
 
   void _computeNextPrayer() {
-    final now = DateTime.now();
+    // The timings' own clock - see TimingsData.nowForTimings.
+    final now = TimingsData.instance.nowForTimings();
     // If user is viewing today but date crossed midnight, refresh
     if (DateUtils.isSameDay(_selectedDate, now)) {
       _today = TimingsData.instance.timingFor(now);
@@ -425,7 +426,7 @@ class _TodayPrayerCard extends StatelessWidget {
         : null;
 
     final timeWidget = Text(
-      '${prayer.time} ${prayer.isPm ? 'PM' : 'AM'}',
+      '${prayer.displayTime} ${prayer.displayIsPm ? 'PM' : 'AM'}',
       textDirection: TextDirection.ltr,
       style: TextStyle(
         fontSize: isCompact ? 12 : 13,

@@ -69,14 +69,18 @@ class WidgetService {
       // Ensure TimingsData is loaded (crucial for background task)
       await TimingsData.instance.load();
 
-      final now = DateTime.now();
+      // The timings' own clock, so the widget's countdown agrees with the app
+      // and the notification rather than reading a world city on device time.
+      final now = TimingsData.instance.nowForTimings();
       final today = TimingsData.instance.timingFor(now);
       if (today == null) return;
 
       final state = computePrayerState(now, today);
 
       await HomeWidget.saveWidgetData('prayer_name', state?.prayer.name ?? 'Fajr');
-      await HomeWidget.saveWidgetData('prayer_time', state?.prayer.time ?? '');
+      // displayTime, not time: the widget layouts expect the Jantri's 12-hour
+      // form, which a calculated city no longer stores natively.
+      await HomeWidget.saveWidgetData('prayer_time', state?.prayer.displayTime ?? '');
       await HomeWidget.saveWidgetData('is_elapsed', state?.isElapsed ?? false);
 
       Duration duration = state?.duration ?? Duration.zero;
@@ -104,7 +108,7 @@ class WidgetService {
       // Save all prayer times
       for (final p in today.allTimings) {
         await HomeWidget.saveWidgetData(
-            'time_${p.name.replaceAll(' ', '_')}', p.time);
+            'time_${p.name.replaceAll(' ', '_')}', p.displayTime);
       }
 
       // Notify every registered widget provider

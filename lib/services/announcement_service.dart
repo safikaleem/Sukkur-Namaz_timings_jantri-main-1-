@@ -28,13 +28,7 @@ class AnnouncementService {
         final bool enabled = announcement['enabled'] as bool? ?? false;
         final String? id = announcement['id'] as String?;
         if (enabled && id != null && id.isNotEmpty) {
-          // Show each announcement only once: skip if this id was already shown.
-          final prefs = await SharedPreferences.getInstance();
-          if (prefs.getString('last_announcement_id') == id) return;
           if (context.mounted) {
-            // Persist before showing so it isn't re-shown on next launch even
-            // if the user dismisses it.
-            await prefs.setString('last_announcement_id', id);
             await _showAnnouncementDialog(context, id, announcement, isLocal: false);
           }
           return;
@@ -69,9 +63,22 @@ class AnnouncementService {
     bool isLocal,
     String? imageUrl,
     String? title,
+    String? description,
   ) async {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final messenger = ScaffoldMessenger.of(context);
+
+    // If there is no image, we just share text directly without showing a loading dialog
+    if (!isLocal && (imageUrl == null || imageUrl.isEmpty)) {
+      String shareText = '';
+      if (title != null && title.isNotEmpty) shareText += '$title\n\n';
+      if (description != null && description.isNotEmpty) shareText += description;
+      
+      if (shareText.trim().isEmpty) shareText = 'Sukkur Prayer Timings Announcement';
+      
+      await SharePlus.instance.share(ShareParams(text: shareText.trim()));
+      return;
+    }
 
     BuildContext? loadingCtx;
     showDialog(
@@ -296,7 +303,7 @@ class AnnouncementService {
                     if (!kIsWeb)
                       ElevatedButton.icon(
                       onPressed: () {
-                        _saveAndShareImage(context, isLocal, imageUrl, title);
+                        _saveAndShareImage(context, isLocal, imageUrl, title, description);
                       },
                       icon: const Icon(Icons.share_rounded, size: 16),
                       label: Text(

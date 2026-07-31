@@ -3,7 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import '../providers/settings_provider.dart';
+import '../services/city_search.dart';
 import '../utils/app_theme.dart';
+import '../utils/world_location.dart';
+import 'city_search_screen.dart';
 
 class WorldPrayersScreen extends StatefulWidget {
   const WorldPrayersScreen({super.key});
@@ -13,7 +16,6 @@ class WorldPrayersScreen extends StatefulWidget {
 }
 
 class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
-  final TextEditingController _cityController = TextEditingController();
   bool _isLoading = false;
 
   final List<String> _calculationMethods = [
@@ -45,10 +47,6 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
         return settings.translate('Shafi', 'شافعی', 'شافعي', 'شافعي');
     }
   }
-
-  // The rule itself lives on SettingsProvider, so every entry point - here,
-  // onboarding, and prefs restored at launch - blocks Sukkur the same way.
-  bool _looksLikeSukkur(String? name) => SukkurLocation.matchesName(name);
 
   /// Shown instead of switching to calculated timings, in every language.
   /// Nothing else happens - deliberately: a rejected Sukkur attempt must not
@@ -111,8 +109,7 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
       );
       String city = 'Unknown Location';
       if (placemarks.isNotEmpty) {
-        final p = placemarks.first;
-        city = p.locality ?? p.subAdministrativeArea ?? p.administrativeArea ?? p.country ?? 'Unknown Location';
+        city = cityNameFrom(placemarks.first) ?? 'Unknown Location';
       }
 
       // Standing in (or near) Sukkur: the provider refuses to store it and
@@ -147,62 +144,34 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
     }
   }
 
-  Future<void> _searchCity(SettingsProvider settings) async {
-    final query = _cityController.text.trim();
-    if (query.isEmpty) return;
+  /// Opens the live city picker and applies whatever comes back.
+  ///
+  /// The picker itself never offers Sukkur, so a rejection here would mean the
+  /// bundled list disagreed with [SukkurLocation] - handled anyway rather than
+  /// trusted.
+  Future<void> _pickCity(SettingsProvider settings) async {
+    final chosen = await Navigator.of(context).push<CityResult>(
+      MaterialPageRoute(builder: (_) => const CitySearchScreen()),
+    );
+    if (chosen == null || !mounted) return;
 
-    if (_looksLikeSukkur(query)) {
-      _showUseJantriMessage(settings);
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
-      await setLocaleIdentifier(settings.localeIdentifier);
-      List<Location> locations = await locationFromAddress(query);
-      if (locations.isNotEmpty) {
-        final loc = locations.first;
-        List<Placemark> placemarks = await placemarkFromCoordinates(
-          loc.latitude,
-          loc.longitude,
-        );
-        String city = query;
-        if (placemarks.isNotEmpty) {
-          final p = placemarks.first;
-          city = p.locality ?? p.subAdministrativeArea ?? query;
-        }
-
-        // The typed word passed the name check, but the place it resolved to
-        // may still be Sukkur or a town right beside it - which the provider
-        // rejects, keeping the Jantri in charge.
-        final accepted =
-            await settings.setLocation(loc.latitude, loc.longitude, city);
-        if (!accepted) {
-          if (mounted) setState(() => _isLoading = false);
-          _showUseJantriMessage(settings);
-          return;
-        }
-        await settings.setLocationMode(LocationMode.world);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-            '${settings.translate('Location updated: ', 'مقام اپڈیٹ ہو گیا: ', 'جڳهه اپڊيٽ ٿي وئي: ', 'تم تحديث الموقع: ')}$city'
-          )));
-          _cityController.clear();
-        }
-        _returnToTimings();
-      } else {
-        throw Exception('Location not found');
+      final accepted = await settings.setLocation(
+          chosen.latitude, chosen.longitude, chosen.name);
+      if (!accepted) {
+        if (mounted) setState(() => _isLoading = false);
+        _showUseJantriMessage(settings);
+        return;
       }
-    } catch (e) {
+      await settings.setLocationMode(LocationMode.world);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-          '${settings.translate('Could not find location: ', 'مقام نہیں مل سکا: ', 'جڳهه نه ملي سگهي: ', 'تعذر العثور على الموقع: ')}$query'
+          '${settings.translate('Location updated: ', 'مقام اپڈیٹ ہو گیا: ', 'جڳهه اپڊيٽ ٿي وئي: ', 'تم تحديث الموقع: ')}${chosen.name}'
         )));
       }
+      _returnToTimings();
     } finally {
       if (mounted) {
         setState(() {
@@ -228,12 +197,6 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
       '${settings.translate('Location updated: ', 'مقام اپڈیٹ ہو گیا: ', 'جڳهه اپڊيٽ ٿي وئي: ', 'تم تحديث الموقع: ')}$city'
     )));
     _returnToTimings();
-  }
-
-  @override
-  void dispose() {
-    _cityController.dispose();
-    super.dispose();
   }
 
   @override
@@ -297,42 +260,51 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
                   ),
                   const SizedBox(height: 16),
                     
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _cityController,
-                          style: TextStyle(color: textColor),
-                          decoration: InputDecoration(
-                            hintText: settings.translate('Enter city name (e.g., London)', 'شہر کا نام درج کریں', 'شهر جو نالو لکو', 'أدخل اسم المدينة'),
-                            hintStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: settings.displayThemeCardBorder(isDark)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: settings.displayThemeCardBorder(isDark)),
+                  // Looks like a search field but opens the full-screen picker:
+                  // the results list needs the whole screen, and typing here
+                  // then jumping would lose the first letters.
+                  InkWell(
+                    onTap: _isLoading ? null : () => _pickCity(settings),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: settings.displayThemeCardBorder(isDark)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.search, color: AppTheme.accent, size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              settings.translate(
+                                  'Search any city in the world',
+                                  'دنیا کا کوئی بھی شہر تلاش کریں',
+                                  'دنيا جو ڪو به شهر ڳوليو',
+                                  'ابحث عن أي مدينة في العالم'),
+                              style: TextStyle(
+                                color: isDark ? Colors.white54 : Colors.black54,
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      IconButton(
-                        onPressed: _isLoading ? null : () => _searchCity(settings),
-                        icon: const Icon(Icons.search),
-                        color: Colors.white,
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppTheme.accent,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
             ),
+
+            // Only worth asking once a city is on file, and only shown when the
+            // phone is somewhere else - in the city itself both answers give
+            // the identical result, so the question would be noise.
+            if (settings.hasStoredWorldCity && _clockOffsetMinutes(settings) != 0) ...[
+              const SizedBox(height: 16),
+              _buildAlertTimezoneCard(settings, isDark, textColor),
+            ],
 
             const SizedBox(height: 16),
 
@@ -407,6 +379,155 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// How far the stored city's clock sits from the phone's, right now. Zero
+  /// means the two agree and the alert-timezone question does not arise.
+  int _clockOffsetMinutes(SettingsProvider settings) {
+    final zone = settings.cityTimezone;
+    final lng = settings.longitude;
+    if (zone == null || lng == null) return 0;
+    final cityOffset = WorldLocation.utcOffsetFor(zone, lng, DateTime.now());
+    return (cityOffset - DateTime.now().timeZoneOffset).inMinutes;
+  }
+
+  String _offsetLabel(SettingsProvider settings) {
+    final minutes = _clockOffsetMinutes(settings);
+    final ahead = minutes > 0;
+    final abs = minutes.abs();
+    final hours = abs ~/ 60;
+    final mins = abs % 60;
+    final span = mins == 0 ? '$hours' : '$hours:${mins.toString().padLeft(2, '0')}';
+    final city = settings.cityName ?? '';
+    // Two separate translate() calls rather than one with a conditional key:
+    // the coverage test only sees a literal first argument, and a key it cannot
+    // see is a key that silently falls back to English for every world language.
+    final template = ahead
+        ? settings.translate(
+            '{city} is {n} hours ahead of your phone.',
+            '{city} آپ کے فون سے {n} گھنٹے آگے ہے۔',
+            '{city} توهان جي فون کان {n} ڪلاڪ اڳتي آهي.',
+            '{city} يسبق هاتفك بـ {n} ساعات.',
+          )
+        : settings.translate(
+            '{city} is {n} hours behind your phone.',
+            '{city} آپ کے فون سے {n} گھنٹے پیچھے ہے۔',
+            '{city} توهان جي فون کان {n} ڪلاڪ پوئتي آهي.',
+            '{city} يتأخر عن هاتفك بـ {n} ساعات.',
+          );
+    return template.replaceAll('{city}', city).replaceAll('{n}', span);
+  }
+
+  /// Which clock a watched city's alerts should ring on.
+  ///
+  /// The times on screen are the city's either way - this decides only the
+  /// moment the phone buzzes, and what the countdown counts towards.
+  Widget _buildAlertTimezoneCard(
+      SettingsProvider settings, bool isDark, Color textColor) {
+    final muted = isDark ? Colors.white54 : Colors.black54;
+    final followsDevice = settings.worldAlertsFollowDevice;
+
+    Widget option({
+      required bool selected,
+      required String title,
+      required String detail,
+      required VoidCallback onTap,
+    }) =>
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  selected
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_unchecked,
+                  color: selected ? AppTheme.accent : muted,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: textColor)),
+                      const SizedBox(height: 2),
+                      Text(detail,
+                          style: TextStyle(fontSize: 12, color: muted)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: settings.displayThemeCard(isDark),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: settings.displayThemeCardBorder(isDark)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            settings.translate('Notification Time Zone', 'اطلاع کا ٹائم زون',
+                'اطلاع جو ٽائم زون', 'المنطقة الزمنية للإشعار'),
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.accent),
+          ),
+          const SizedBox(height: 6),
+          Text(_offsetLabel(settings),
+              style: TextStyle(fontSize: 12, color: muted)),
+          const SizedBox(height: 4),
+          Text(
+            settings.translate(
+              'The times shown stay the same either way. This only decides when the notification rings.',
+              'دکھائے گئے اوقات دونوں صورتوں میں ایک جیسے رہیں گے۔ اس سے صرف یہ طے ہوتا ہے کہ اطلاع کب بجے گی۔',
+              'ڏيکاريل وقت ٻنهي صورتن ۾ ساڳيا رهندا. هن سان رڳو اهو طئي ٿيندو ته اطلاع ڪڏهن وڄندي.',
+              'الأوقات المعروضة تبقى كما هي في الحالتين. هذا يحدد فقط وقت رنين الإشعار.',
+            ),
+            style: TextStyle(fontSize: 12, color: muted),
+          ),
+          const SizedBox(height: 12),
+          option(
+            selected: !followsDevice,
+            title: settings.translate("City's time", 'شہر کا وقت', 'شهر جو وقت',
+                'توقيت المدينة'),
+            detail: settings.translate(
+              'Rings at the real prayer moment in that city. Recommended.',
+              'اس شہر میں نماز کے اصل وقت پر بجے گی۔ تجویز کردہ۔',
+              'ان شهر ۾ نماز جي اصل وقت تي وڄندي. تجويز ڪيل.',
+              'يرن في وقت الصلاة الحقيقي في تلك المدينة. موصى به.',
+            ),
+            onTap: () => settings.setWorldAlertsFollowDevice(false),
+          ),
+          option(
+            selected: followsDevice,
+            title: settings.translate("My phone's time", 'میرے فون کا وقت',
+                'منهنجي فون جو وقت', 'توقيت هاتفي'),
+            detail: settings.translate(
+              'Rings at the time shown on screen, on your own clock.',
+              'اسکرین پر دکھائے گئے وقت پر، آپ کی اپنی گھڑی کے مطابق بجے گی۔',
+              'اسڪرين تي ڏيکاريل وقت تي، توهان جي پنهنجي گھڙي مطابق وڄندي.',
+              'يرن في الوقت المعروض على الشاشة، حسب ساعتك.',
+            ),
+            onTap: () => settings.setWorldAlertsFollowDevice(true),
+          ),
+        ],
       ),
     );
   }

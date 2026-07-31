@@ -10,6 +10,7 @@ import '../providers/settings_provider.dart' show SettingsProvider, DarkModeOpti
 import '../utils/alert_mode.dart';
 import '../utils/app_theme.dart';
 import '../screens/about_screen.dart';
+import '../screens/notification_health_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/world_prayers_screen.dart';
 
@@ -116,6 +117,24 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                     },
                   ),
 
+                  // ── Notification Health ─────────────────────────
+                  // A test notification proves the app can show one *now*; this
+                  // is the separate question of whether the phone will still
+                  // deliver the ones scheduled for hours from now.
+                  _DrawerItem(
+                    icon: Icons.health_and_safety_outlined,
+                    label: settings.translate('Notification Health',
+                        'اطلاعات کی حالت', 'اطلاعن جي حالت', 'حالة الإشعارات'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const NotificationHealthScreen()),
+                      );
+                    },
+                  ),
+
                   const _Divider(),
 
                   // ── Contact Us (inline) ─────────────────────
@@ -162,7 +181,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Current Version ───────────────────────────
                   _DrawerItem(
                     icon: Icons.new_releases_rounded,
-                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.1.3'}',
+                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.1.4'}',
                     onTap: () => _showWhatsNewDialog(context),
                   ),
 
@@ -284,7 +303,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.1.3';
+    final versionStr = _version.isNotEmpty ? _version : '1.1.4';
 
     showDialog(
       context: context,
@@ -379,21 +398,57 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Version 1.1.3 ──────────────────────────────────
+                  // ── Version 1.1.4 ──────────────────────────────────
                   _buildNewFeatureItem(
                     context,
                     settings,
                     settings.translate(
-                      'Monthly Jantri Now Fully Translated',
-                      'ماہانہ جنتری اب مکمل ترجمہ شدہ',
-                      'مهينووار جنتري هاڻي مڪمل ترجمو ٿيل',
-                      'الجدول الشهري مترجم بالكامل الآن',
+                      'Complete 16 Line Tajweed Quran',
+                      'مکمل ۱۶ سطری تجویدی قرآن',
+                      'مڪمل 16 سٽن وارو تجويدي قرآن',
+                      'مصحف التجويد الكامل بستة عشر سطرًا',
                     ),
                     settings.translate(
-                      'The Monthly Schedule column headings - Date, Intiha e Sehar, Fajar, Zuhar and the rest - now appear in your chosen language instead of English, for both the Sukkur Jantri and world city timings.',
-                      'ماہانہ شیڈیول کے کالموں کے عنوانات - تاریخ، انتہائے سحر، فجر، ظہر اور باقی سب - اب انگریزی کی بجائے آپ کی منتخب کردہ زبان میں دکھائی دیتے ہیں، سکھر کی جنتری اور دنیا بھر کے شہروں دونوں کے لیے۔',
-                      'مهينووار شيڊيول جي ڪالمن جا عنوان - تاريخ، انتهاءِ سحر، فجر، ظهر ۽ باقي سڀ - هاڻي انگريزيءَ بدران توهان جي چونڊيل ٻوليءَ ۾ ڏيکارجن ٿا، سکر جي جنتري ۽ دنيا جي شهرن ٻنهي لاءِ.',
-                      'تظهر عناوين أعمدة الجدول الشهري - التاريخ ونهاية السحر والفجر والظهر وغيرها - الآن بلغتك المختارة بدلاً من الإنجليزية، لجنتري سكر ولمدن العالم معًا.',
+                      'The full colour coded Tajweed Quran is built into the app - all thirty Paras, readable offline, with translation and your reading position remembered.',
+                      'مکمل رنگین تجویدی قرآن ایپ میں شامل ہے - تیس کے تیس پارے، انٹرنیٹ کے بغیر پڑھیں، ترجمے کے ساتھ، اور آپ کا صفحہ محفوظ رہتا ہے۔',
+                      'مڪمل رنگين تجويدي قرآن ايپ ۾ شامل آهي - ٽيهه ئي پارا، انٽرنيٽ کان سواءِ پڙهو، ترجمي سان، ۽ توهان جو صفحو محفوظ رهي ٿو.',
+                      'مصحف التجويد الملون كامل داخل التطبيق - الأجزاء الثلاثون كلها، يُقرأ دون إنترنت، مع الترجمة وحفظ موضع قراءتك.',
+                    ),
+                    icon: Icons.auto_stories_rounded,
+                    iconColor: const Color(0xFF00695C),
+                  ),
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    settings.translate(
+                      'World Prayer Timings for Any City',
+                      'دنیا کے کسی بھی شہر کے نماز کے اوقات',
+                      'دنيا جي ڪنهن به شهر جا نماز جا وقت',
+                      'أوقات الصلاة لأي مدينة في العالم',
+                    ),
+                    settings.translate(
+                      'Search any city in the world, or use your current location, and get its six daily prayer times. You can also pick the calculation method and the Asr juristic method yourself.',
+                      'دنیا کے کسی بھی شہر کو تلاش کریں یا اپنا موجودہ مقام استعمال کریں اور وہاں کے چھ نمازوں کے اوقات دیکھیں۔ حساب کا طریقہ اور عصر کا فقہی طریقہ بھی آپ خود منتخب کر سکتے ہیں۔',
+                      'دنيا جي ڪنهن به شهر کي ڳوليو يا پنهنجي موجوده جڳهه استعمال ڪريو ۽ اتان جي ڇهن نمازن جا وقت ڏسو. حساب جو طريقو ۽ عصر جو فقهي طريقو به توهان پاڻ چونڊي سگهو ٿا.',
+                      'ابحث عن أي مدينة في العالم أو استخدم موقعك الحالي لتحصل على أوقات الصلوات الست فيها. ويمكنك أيضًا اختيار طريقة الحساب ومذهب العصر بنفسك.',
+                    ),
+                    icon: Icons.travel_explore_rounded,
+                    iconColor: const Color(0xFF0277BD),
+                  ),
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    settings.translate(
+                      'Now Available in Ten Languages',
+                      'اب دس زبانوں میں دستیاب',
+                      'هاڻي ڏهن ٻولين ۾ دستياب',
+                      'متوفر الآن بعشر لغات',
+                    ),
+                    settings.translate(
+                      'The whole app - prayer names, notifications, the monthly schedule and every screen - is available in English, Urdu, Sindhi, Arabic, Turkish, French, Hindi, Bengali, Indonesian and Persian.',
+                      'پوری ایپ - نمازوں کے نام، اطلاعات، ماہانہ شیڈیول اور ہر اسکرین - انگریزی، اردو، سندھی، عربی، ترکی، فرانسیسی، ہندی، بنگالی، انڈونیشی اور فارسی میں دستیاب ہے۔',
+                      'سڄي ايپ - نمازن جا نالا، اطلاعون، مهينووار شيڊيول ۽ هر اسڪرين - انگريزي، اردو، سنڌي، عربي، ترڪي، فرانسيسي، هندي، بنگالي، انڊونيشي ۽ فارسي ۾ دستياب آهي.',
+                      'التطبيق بأكمله - أسماء الصلوات والإشعارات والجدول الشهري وكل شاشة - متاح بالإنجليزية والأردية والسندية والعربية والتركية والفرنسية والهندية والبنغالية والإندونيسية والفارسية.',
                     ),
                     icon: Icons.translate_rounded,
                     iconColor: const Color(0xFF8E24AA),
@@ -402,70 +457,52 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                     context,
                     settings,
                     settings.translate(
-                      'Sharper Quran Pages',
-                      'قرآن کے صفحات زیادہ واضح',
-                      'قرآن جا صفحا وڌيڪ چٽا',
-                      'صفحات القرآن أكثر وضوحًا',
+                      'World Cities Now Show Their Own Local Time',
+                      'دنیا کے شہر اب اپنے مقامی وقت کے مطابق',
+                      'دنيا جا شهر هاڻي پنهنجي مقامي وقت مطابق',
+                      'مدن العالم تعرض توقيتها المحلي الآن',
                     ),
                     settings.translate(
-                      'Mushaf pages are now rendered at your screen\'s own resolution with proper filtering, so the text looks noticeably crisper on high resolution displays.',
-                      'مصحف کے صفحات اب آپ کی اسکرین کی اصل ریزولیوشن پر تیار ہوتے ہیں، اس لیے زیادہ ریزولیوشن والی اسکرینوں پر تحریر نمایاں طور پر صاف نظر آتی ہے۔',
-                      'مصحف جا صفحا هاڻي توهان جي اسڪرين جي اصل ريزوليوشن تي تيار ٿين ٿا، ان ڪري وڏي ريزوليوشن واري اسڪرين تي لکڻي گهڻي صاف نظر اچي ٿي.',
-                      'تُعرض صفحات المصحف الآن بدقة شاشتك نفسها مع معالجة أفضل، فيبدو النص أوضح بكثير على الشاشات عالية الدقة.',
+                      'Prayer times for a selected city were being shown on your own phone\'s clock, which could put them hours out. Every city is now calculated in its own time zone, with summer time handled automatically.',
+                      'منتخب شہر کے نماز کے اوقات آپ کے اپنے فون کی گھڑی کے مطابق دکھائے جا رہے تھے، جس سے وہ کئی گھنٹے غلط ہو سکتے تھے۔ اب ہر شہر کا حساب اس کے اپنے ٹائم زون میں ہوتا ہے، اور سمر ٹائم خود بخود شامل ہو جاتا ہے۔',
+                      'چونڊيل شهر جا نماز جا وقت توهان جي پنهنجي فون جي گھڙي مطابق ڏيکاريا پيا وڃن، جنهن سان اهي ڪيترائي ڪلاڪ غلط ٿي سگهيا ٿي. هاڻي هر شهر جو حساب سندس پنهنجي ٽائم زون ۾ ٿئي ٿو، ۽ سمر ٽائيم پاڻمرادو شامل ٿئي ٿو.',
+                      'كانت أوقات الصلاة للمدينة المختارة تُعرض بساعة هاتفك، ما قد يجعلها خاطئة بساعات. تُحسب كل مدينة الآن بمنطقتها الزمنية، مع مراعاة التوقيت الصيفي تلقائيًا.',
                     ),
-                    icon: Icons.menu_book_rounded,
-                    iconColor: const Color(0xFF00897B),
-                  ),
-                  _buildNewFeatureItem(
-                    context,
-                    settings,
-                    settings.translate(
-                      'Redesigned Home Screen Widgets',
-                      'ہوم اسکرین ویجٹس کی نئی شکل',
-                      'هوم اسڪرين ويجٽس جي نئين شڪل',
-                      'تصميم جديد لأدوات الشاشة الرئيسية',
-                    ),
-                    settings.translate(
-                      'The home screen widgets have a slimmer, cleaner look, and the circle clock widget now shows AM/PM alongside the time.',
-                      'ہوم اسکرین کے ویجٹس اب زیادہ پتلے اور صاف ہیں، اور سرکل کلاک ویجٹ میں وقت کے ساتھ AM/PM بھی دکھایا جاتا ہے۔',
-                      'هوم اسڪرين جا ويجٽ هاڻي وڌيڪ سنهڙا ۽ صاف آهن، ۽ سرڪل ڪلاڪ ويجٽ ۾ وقت سان گڏ AM/PM به ڏيکاريو وڃي ٿو.',
-                      'أصبحت أدوات الشاشة الرئيسية أنحف وأوضح، وتعرض أداة الساعة الدائرية الآن ص/م بجانب الوقت.',
-                    ),
-                    icon: Icons.widgets_rounded,
-                    iconColor: const Color(0xFF3F51B5),
-                  ),
-                  _buildNewFeatureItem(
-                    context,
-                    settings,
-                    settings.translate(
-                      'Sukkur Always Uses the Jantri',
-                      'سکھر ہمیشہ جنتری کے مطابق',
-                      'سکر هميشه جنتري مطابق',
-                      'سكر تعتمد الجنتري دائمًا',
-                    ),
-                    settings.translate(
-                      'Sukkur now always shows the authentic Jantri timings and never falls back to calculated ones. After choosing a city you are also taken straight to the Times screen.',
-                      'سکھر اب ہمیشہ اصل جنتری کے اوقات دکھاتا ہے اور کبھی حساب کیے گئے اوقات پر منتقل نہیں ہوتا۔ شہر منتخب کرنے کے بعد آپ سیدھا اوقات کی اسکرین پر پہنچ جاتے ہیں۔',
-                      'سکر هاڻي هميشه اصل جنتري جا وقت ڏيکاري ٿو ۽ ڪڏهن به حساب ڪيل وقتن تي نه ويندو. شهر چونڊڻ کان پوءِ توهان سڌو وقتن جي اسڪرين تي پهچي ويندا.',
-                      'تعرض سكر الآن دائمًا أوقات الجنتري الأصلية ولا تنتقل أبدًا إلى الأوقات المحسوبة. وبعد اختيار مدينة تنتقل مباشرة إلى شاشة الأوقات.',
-                    ),
-                    icon: Icons.verified_rounded,
+                    icon: Icons.public_rounded,
                     iconColor: const Color(0xFF1E88E5),
                   ),
                   _buildNewFeatureItem(
                     context,
                     settings,
                     settings.translate(
-                      'Your Last City Is Remembered',
-                      'آپ کا آخری شہر محفوظ',
-                      'توهان جو آخري شهر محفوظ',
-                      'حفظ آخر مدينة اخترتها',
+                      'Correct Timings for Northern Cities',
+                      'شمالی شہروں کے درست اوقات',
+                      'اترين شهرن جا درست وقت',
+                      'أوقات صحيحة للمدن الشمالية',
                     ),
                     settings.translate(
-                      'Switching back to World Prayer Timings returns you to the city you were last using, instead of asking you to choose it again.',
-                      'ورلڈ پریئر ٹائمنگز پر واپس جانے پر آپ کو وہی شہر ملتا ہے جو آپ آخری بار استعمال کر رہے تھے، دوبارہ منتخب کرنے کی ضرورت نہیں رہتی۔',
-                      'ورلڊ پريئر ٽائمنگز تي واپس وڃڻ تي توهان کي اهوئي شهر ملي ٿو جيڪو توهان آخري ڀيرو استعمال ڪري رهيا هئا، وري چونڊڻ جي ضرورت نه ٿي رهي.',
-                      'عند العودة إلى أوقات الصلاة العالمية تجد المدينة التي كنت تستخدمها آخر مرة، دون الحاجة إلى اختيارها من جديد.',
+                      'Cities such as London and Glasgow now use the twilight rule their own mosques follow, and an Isha that falls after midnight is no longer read as midday.',
+                      'لندن اور گلاسگو جیسے شہروں میں اب وہی شفق کا اصول استعمال ہوتا ہے جو وہاں کی مساجد اپناتی ہیں، اور آدھی رات کے بعد آنے والی عشاء اب دوپہر نہیں سمجھی جاتی۔',
+                      'لنڊن ۽ گلاسگو جهڙن شهرن ۾ هاڻي اهوئي شفق جو اصول استعمال ٿئي ٿو جيڪو اتان جون مسجدون اپنائين ٿيون، ۽ اڌ رات کان پوءِ ايندڙ عشا هاڻي منجهند نه سمجهي ويندي.',
+                      'تستخدم مدن مثل لندن وغلاسكو الآن قاعدة الشفق التي تتبعها مساجدها، ولم تعد صلاة العشاء الواقعة بعد منتصف الليل تُقرأ على أنها ظهرًا.',
+                    ),
+                    icon: Icons.nights_stay_rounded,
+                    iconColor: const Color(0xFF5E35B1),
+                  ),
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    settings.translate(
+                      'City Names Always Appear',
+                      'شہر کا نام ہمیشہ ظاہر',
+                      'شهر جو نالو هميشه ظاهر',
+                      'اسم المدينة يظهر دائمًا',
+                    ),
+                    settings.translate(
+                      'Some cities, London among them, were saved with a blank name and showed nothing on the Times screen. The name is now always found.',
+                      'کچھ شہر، جن میں لندن بھی شامل ہے، خالی نام کے ساتھ محفوظ ہو جاتے تھے اور اوقات کی اسکرین پر کچھ نظر نہیں آتا تھا۔ اب نام ہمیشہ مل جاتا ہے۔',
+                      'ڪجهه شهر، جن ۾ لنڊن به شامل آهي، خالي نالي سان محفوظ ٿي ويندا هئا ۽ وقتن جي اسڪرين تي ڪجهه نظر نه ايندو هو. هاڻي نالو هميشه ملي ٿو.',
+                      'كانت بعض المدن، ومنها لندن، تُحفظ باسم فارغ فلا يظهر شيء في شاشة الأوقات. أصبح الاسم يُعثر عليه دائمًا الآن.',
                     ),
                     icon: Icons.location_city_rounded,
                     iconColor: const Color(0xFF43A047),
@@ -474,36 +511,72 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                     context,
                     settings,
                     settings.translate(
-                      'Clearer Analogue Clock',
-                      'اینالاگ گھڑی زیادہ واضح',
-                      'اينالاگ گھڙي وڌيڪ چٽي',
-                      'ساعة تناظرية أوضح',
+                      'Choose Your Notification Time Zone',
+                      'اطلاع کا ٹائم زون خود منتخب کریں',
+                      'اطلاع جو ٽائم زون پاڻ چونڊيو',
+                      'اختر المنطقة الزمنية للإشعار',
                     ),
                     settings.translate(
-                      'The analogue clock hands are slimmer and easier to read across every clock style.',
-                      'اینالاگ گھڑی کی سوئیاں اب پتلی اور ہر کلاک اسٹائل میں پڑھنے میں آسان ہیں۔',
-                      'اينالاگ گھڙيءَ جون سُيون هاڻي سنهڙيون ۽ هر ڪلاڪ اسٽائل ۾ پڙهڻ ۾ آسان آهن.',
-                      'أصبحت عقارب الساعة التناظرية أنحف وأسهل قراءة في جميع أنماط الساعة.',
+                      'If you follow a city you are not in, you can now choose whether alerts ring at that city\'s real prayer moment or at the time shown on your own clock.',
+                      'اگر آپ کسی ایسے شہر کے اوقات دیکھ رہے ہیں جہاں آپ موجود نہیں، تو اب آپ خود طے کر سکتے ہیں کہ اطلاع اس شہر کے اصل وقت پر بجے یا آپ کی اپنی گھڑی کے مطابق۔',
+                      'جيڪڏهن توهان اهڙي شهر جا وقت ڏسي رهيا آهيو جتي توهان موجود ناهيو، ته هاڻي توهان پاڻ طئي ڪري سگهو ٿا ته اطلاع ان شهر جي اصل وقت تي وڄي يا توهان جي پنهنجي گھڙي مطابق.',
+                      'إذا كنت تتابع مدينة لست فيها، يمكنك الآن اختيار أن يرن التنبيه في وقت الصلاة الحقيقي لتلك المدينة أو في الوقت المعروض على ساعتك.',
                     ),
                     icon: Icons.schedule_rounded,
+                    iconColor: const Color(0xFF00897B),
+                  ),
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    settings.translate(
+                      'More Dependable Prayer Alerts',
+                      'نماز کی اطلاعات زیادہ قابلِ اعتماد',
+                      'نماز جون اطلاعون وڌيڪ ڀروسي جوڳيون',
+                      'تنبيهات صلاة أكثر موثوقية',
+                    ),
+                    settings.translate(
+                      'Alerts are now scheduled two weeks ahead and are replaced one by one instead of being cleared first, so the phone is never left with no prayer alerts pending.',
+                      'اطلاعات اب دو ہفتے پہلے سے مقرر ہوتی ہیں اور پہلے مٹانے کے بجائے ایک ایک کر کے تبدیل ہوتی ہیں، اس لیے فون کبھی بھی اطلاعات کے بغیر نہیں رہتا۔',
+                      'اطلاعون هاڻي ٻه هفتا اڳ ۾ مقرر ٿين ٿيون ۽ پهرين ميٽڻ بدران هڪ هڪ ڪري تبديل ٿين ٿيون، ان ڪري فون ڪڏهن به اطلاعن کان سواءِ نه ٿو رهي.',
+                      'تُجدول التنبيهات الآن قبل أسبوعين وتُستبدل واحدًا تلو الآخر بدل مسحها أولًا، فلا يبقى الهاتف دون تنبيهات صلاة معلّقة.',
+                    ),
+                    icon: Icons.notifications_active_rounded,
+                    iconColor: const Color(0xFF3F51B5),
+                  ),
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    settings.translate(
+                      'New Notification Health Screen',
+                      'اطلاعات کی حالت کی نئی اسکرین',
+                      'اطلاعن جي حالت جي نئين اسڪرين',
+                      'شاشة جديدة لحالة الإشعارات',
+                    ),
+                    settings.translate(
+                      'If your phone is set to delay or block prayer alerts, the app now tells you and offers a Fix button for each setting instead of staying silent about it.',
+                      'اگر آپ کا فون نماز کی اطلاعات کو دیر یا بند کر رہا ہو تو ایپ اب خاموش رہنے کی بجائے آپ کو بتاتی ہے اور ہر ترتیب کے لیے ٹھیک کرنے کا بٹن دیتی ہے۔',
+                      'جيڪڏهن توهان جو فون نماز جون اطلاعون دير يا بند ڪري رهيو هجي ته ايپ هاڻي خاموش رهڻ بدران توهان کي ٻڌائي ٿي ۽ هر ترتيب لاءِ درست ڪرڻ جو بٽڻ ڏئي ٿي.',
+                      'إذا كان هاتفك يؤخر تنبيهات الصلاة أو يمنعها، يخبرك التطبيق الآن ويقدم زر إصلاح لكل إعداد بدل أن يصمت.',
+                    ),
+                    icon: Icons.health_and_safety_rounded,
                     iconColor: const Color(0xFFF9A825),
                   ),
                   _buildNewFeatureItem(
                     context,
                     settings,
                     settings.translate(
-                      'Neater Screen Layout',
-                      'اسکرین کی بہتر ترتیب',
-                      'اسڪرين جي بهتر ترتيب',
-                      'تنسيق أنظف للشاشة',
+                      'Quran Page Turning Fixed in Every Language',
+                      'قرآن کے صفحے ہر زبان میں درست پلٹتے ہیں',
+                      'قرآن جا صفحا هر ٻوليءَ ۾ درست ورن ٿا',
+                      'تصفح صفحات القرآن صحيح بكل اللغات',
                     ),
                     settings.translate(
-                      'The advisory note at the bottom of the Today and Monthly screens now sits flush against the navigation bar, with no leftover gap.',
-                      'آج اور ماہانہ اسکرین کے نیچے دی گئی ہدایت اب نیویگیشن بار سے بالکل ملی ہوئی ہے، درمیان میں کوئی خالی جگہ نہیں رہی۔',
-                      'اڄ ۽ مهينووار اسڪرين جي هيٺان ڏنل هدايت هاڻي نيويگيشن بار سان بلڪل لڳل آهي، وچ ۾ ڪا خالي جاءِ نه رهي.',
-                      'أصبح التنبيه أسفل شاشتي اليوم والشهر ملاصقًا لشريط التنقل تمامًا، دون فراغ متبقٍ.',
+                      'In the 16 line Tajweed Quran, swiping right moves to the next page in every language, not only in English.',
+                      'سولہ سطری تجویدی قرآن میں دائیں سوائپ کرنے پر اگلا صفحہ اب ہر زبان میں آتا ہے، صرف انگریزی میں نہیں۔',
+                      'سورهن سٽن واري تجويدي قرآن ۾ ساڄي پاسي سوائپ ڪرڻ سان ايندڙ صفحو هاڻي هر ٻوليءَ ۾ اچي ٿو، رڳو انگريزيءَ ۾ نه.',
+                      'في مصحف التجويد ذي الستة عشر سطرًا، يؤدي السحب يمينًا إلى الصفحة التالية بكل اللغات، لا بالإنجليزية وحدها.',
                     ),
-                    icon: Icons.tune_rounded,
+                    icon: Icons.menu_book_rounded,
                     iconColor: const Color(0xFF6D4C41),
                   ),
                 ],

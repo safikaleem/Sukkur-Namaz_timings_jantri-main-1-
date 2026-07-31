@@ -65,7 +65,11 @@ class NotificationService {
     'Isha': 'العشاء',
   };
 
-  static const _baseIds = {
+  /// First notification id for each prayer; a day's alert is this plus its day
+  /// offset, so consecutive entries must stay further apart than
+  /// [scheduleHorizonDays]. Exposed so a test can prove that holds.
+  @visibleForTesting
+  static const baseIds = {
     'Intiha e Sehar': 100,
     'Fajar': 150,
     'Tulu Aftab': 200,
@@ -268,17 +272,94 @@ class NotificationService {
 
   }
 
+  /// The zone the timings currently on file are expressed in.
+  ///
+  /// A world city's times are that city's own wall clock, so they have to be
+  /// pinned to that city's zone. Reading them as device-local would fire
+  /// London's 20:50 Maghrib at 20:50 in Pakistan - four hours early. The Jantri
+  /// is always device-local, which is what [tz.local] already gives.
+  tz.Location _timingsLocation(SharedPreferences prefs) {
+    final isWorld = (prefs.getString('location_mode') ?? 'sukkur') == 'world';
+    // The user can ask for a watched city's alerts to land on their own clock
+    // instead - see TimingsData.alertTimezoneKey. tz.local is exactly that.
+    final followsDevice =
+        (prefs.getString(TimingsData.alertTimezoneKey) ?? 'city') == 'device';
+    final zone = prefs.getString('city_timezone');
+    if (isWorld && !followsDevice && zone != null && zone.isNotEmpty) {
+      try {
+        return tz.getLocation(zone);
+      } catch (_) {
+        // Unknown zone id - fall back to the device's own.
+      }
+    }
+    return tz.local;
+  }
+
+  /// Reads [prayerDt]'s wall-clock fields as a time *in* [location].
+  tz.TZDateTime _atWallClock(tz.Location location, DateTime prayerDt) =>
+      tz.TZDateTime(location, prayerDt.year, prayerDt.month, prayerDt.day,
+          prayerDt.hour, prayerDt.minute);
+
+  /// How far ahead prayers are scheduled.
+  ///
+  /// Two weeks rather than one: the WorkManager job that refreshes this is
+  /// itself throttled by Doze and OEM battery managers, so a phone that
+  /// suppresses it for several days used to run clean out of alarms and go
+  /// silent. The horizon now outlasts a long gap between refreshes.
+  static const int scheduleHorizonDays = 14;
+
+  /// Every notification id written by the last successful run.
+  ///
+  /// Rescheduling used to open with `cancelAll()`, which left a window - one
+  /// that lasted until the batch finished - where the phone held *no* prayer
+  /// alarms at all. On an OEM that kills background work mid-run, that window
+  /// never closed and the user simply stopped being notified. Now each id is
+  /// overwritten in place (a schedule with an existing id replaces it) and only
+  /// ids that this run did not rewrite are cancelled, once it is safely done.
+  static const _scheduledIdsKey = 'scheduled_notification_ids';
+
+  /// Notification id for custom reminder [index] on day [dayOffset].
+  ///
+  /// Reminder ids live above 9000 so they cannot collide with prayers, and are
+  /// spaced by 100 so a reminder's later days cannot run into the next
+  /// reminder's earlier ones - which is exactly what a 10-wide gap did once the
+  /// horizon grew past ten days.
+  static int reminderNotificationId(int index, int dayOffset) =>
+      9000 + (index * 100) + dayOffset;
+
+  /// Cancels the ids the previous run left behind that this one did not rewrite,
+  /// then records the current set for next time.
+  Future<void> _dropStaleNotifications(
+      SharedPreferences prefs, Set<int> writtenIds) async {
+    final previous = (prefs.getStringList(_scheduledIdsKey) ?? const [])
+        .map(int.tryParse)
+        .whereType<int>();
+    for (final id in previous) {
+      if (writtenIds.contains(id)) continue;
+      try {
+        await _plugin!.cancel(id);
+      } catch (e) {
+        debugPrint('Failed to cancel stale notification $id: $e');
+      }
+    }
+    await prefs.setStringList(
+        _scheduledIdsKey, writtenIds.map((id) => '$id').toList());
+  }
+
   Future<void> scheduleWeeklyNotifications() async {
     if (kIsWeb || _plugin == null) return;
-
-    await _plugin!.cancelAll();
 
     // Recreate channels to ensure sound settings are current (e.g. after
     // azan selection change or if user modified channel in system settings).
     await recreationChannels();
 
     final prefs = await SharedPreferences.getInstance();
-    if (!(prefs.getBool('notifications_enabled') ?? true)) return;
+    if (!(prefs.getBool('notifications_enabled') ?? true)) {
+      // Switched off outright - here the clean sweep is the intent.
+      await _plugin!.cancelAll();
+      await prefs.remove(_scheduledIdsKey);
+      return;
+    }
 
     // On Android 12+ exact-alarm permission can be revoked (by the user or an
     // OEM battery manager). Rather than let zonedSchedule throw and abort the
@@ -300,12 +381,18 @@ class NotificationService {
     debugPrint('Schedule Mode: ${canExact ? "EXACT" : "INEXACT (Fallback)"}');
 
     final selectedAzanIndex = prefs.getInt('selected_azan_index') ?? 3;
+    final timingsLocation = _timingsLocation(prefs);
 
     // Ensure TimingsData is loaded (crucial for background task)
     await TimingsData.instance.load();
 
-    final now = DateTime.now();
-    for (int dayOffset = 0; dayOffset < 7; dayOffset++) {
+    // In the timings' own frame, so "has this prayer already passed?" is asked
+    // against the same clock the times are written in.
+    final now = TimingsData.instance.nowForTimings();
+    // Everything this run writes, so the stale ids from the last run - and only
+    // those - can be cleared at the end.
+    final writtenIds = <int>{};
+    for (int dayOffset = 0; dayOffset < scheduleHorizonDays; dayOffset++) {
       final date = now.add(Duration(days: dayOffset));
       final timing = TimingsData.instance.timingFor(date);
       if (timing == null) continue;
@@ -329,8 +416,8 @@ class NotificationService {
           mode = AlertMode.loud;
         }
 
-        final tzDateTime = tz.TZDateTime.from(prayerDt, tz.local);
-        final notifId = (_baseIds[prayer.name] ?? 0) + dayOffset;
+        final tzDateTime = _atWallClock(timingsLocation, prayerDt);
+        final notifId = (baseIds[prayer.name] ?? 0) + dayOffset;
 
         final langCode = prefs.getString('language_code') ?? 'english';
         final isSukkurMode =
@@ -360,14 +447,22 @@ class NotificationService {
             uiLocalNotificationDateInterpretation:
                 UILocalNotificationDateInterpretation.absoluteTime,
           );
+          writtenIds.add(notifId);
         } catch (e) {
           debugPrint('Failed to schedule notification $notifId: $e');
         }
       }
     }
 
-    await _scheduleCustomReminders(prefs, now, scheduleMode);
-    await _scheduleWeeklyFridayNotification(prefs, now, scheduleMode);
+    writtenIds.addAll(
+        await _scheduleCustomReminders(prefs, now, scheduleMode));
+    writtenIds.addAll(
+        await _scheduleWeeklyFridayNotification(prefs, now, scheduleMode));
+
+    // Only now, with every replacement safely in place, drop what this run no
+    // longer needs - a prayer switched off, a deleted reminder, a day that has
+    // fallen off the end of the horizon.
+    await _dropStaleNotifications(prefs, writtenIds);
 
     // Schedule Auto-Silent alarms
     final autoSilentEnabled = prefs.getBool('auto_silent_enabled') ?? false;
@@ -527,8 +622,9 @@ class NotificationService {
     );
   }
 
-  /// Schedules the weekly Friday 8 AM notification for Surah Al-Kahf
-  Future<void> _scheduleWeeklyFridayNotification(
+  /// Schedules the weekly Friday 8 AM notification for Surah Al-Kahf, returning
+  /// the id it wrote (empty if it could not be scheduled).
+  Future<Set<int>> _scheduleWeeklyFridayNotification(
       SharedPreferences prefs, DateTime now, AndroidScheduleMode scheduleMode) async {
     final language = prefs.getString('language_code') ??
         (prefs.getBool('is_sindhi') == true
@@ -647,23 +743,29 @@ class NotificationService {
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       );
+      return {8000};
     } catch (e) {
       debugPrint('Failed to schedule Friday notification: $e');
+      return {};
     }
   }
 
-  /// Reads the user's custom reminders and schedules them across the next 7 days.
-  Future<void> _scheduleCustomReminders(
+  /// Reads the user's custom reminders and schedules them across the horizon,
+  /// returning every notification id it wrote.
+  Future<Set<int>> _scheduleCustomReminders(
       SharedPreferences prefs, DateTime now,
       AndroidScheduleMode scheduleMode) async {
+    final written = <int>{};
     final raw = prefs.getString('custom_reminders');
-    if (raw == null) return;
+    if (raw == null) return written;
+
+    final reminderLocation = _timingsLocation(prefs);
 
     List list;
     try {
       list = jsonDecode(raw) as List;
     } catch (_) {
-      return;
+      return written;
     }
 
     for (int i = 0; i < list.length; i++) {
@@ -677,7 +779,7 @@ class NotificationService {
       final timingName = _reminderPrayerToTiming[prayerName];
       if (timingName == null) continue;
 
-      for (int dayOffset = 0; dayOffset < 7; dayOffset++) {
+      for (int dayOffset = 0; dayOffset < scheduleHorizonDays; dayOffset++) {
         final date = now.add(Duration(days: dayOffset));
         final timing = TimingsData.instance.timingFor(date);
         if (timing == null) continue;
@@ -691,12 +793,16 @@ class NotificationService {
         }
         if (pt == null) continue;
 
-        final fireAt = pt.toDateTime(date: date).add(Duration(minutes: offset));
-        if (fireAt.isBefore(now)) continue;
-
-        final tzDt = tz.TZDateTime.from(fireAt, tz.local);
-        // Reminder ids live in the 9000+ range to avoid clashing with prayers.
-        final id = 9000 + (i * 10) + dayOffset;
+        // Built in the timings' own zone before the offset is applied, so a
+        // reminder for a world city tracks that city's clock like the prayer
+        // itself does. TZDateTime compares as an absolute instant, so the
+        // "already passed" check stays correct whatever zone it is in.
+        final tzDt = _atWallClock(reminderLocation, pt.toDateTime(date: date))
+            .add(Duration(minutes: offset));
+        // Against the real instant, not [now]: [now] carries the timings' own
+        // wall clock, which for a watched city is not the same point in time.
+        if (tzDt.isBefore(DateTime.now())) continue;
+        final id = reminderNotificationId(i, dayOffset);
 
         final reminderLang = prefs.getString('language_code') ?? 'english';
         final String reminderTitle = (label == null || label.isEmpty)
@@ -739,11 +845,13 @@ class NotificationService {
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
         );
+        written.add(id);
         } catch (e) {
           debugPrint('Failed to schedule reminder $id: $e');
         }
       }
     }
+    return written;
   }
 
   /// Title and body for a prayer-time alert.
@@ -927,6 +1035,46 @@ class NotificationService {
       return await android.areNotificationsEnabled() ?? true;
     }
     return true;
+  }
+
+  /// Whether Android will honour an exact alarm right now.
+  ///
+  /// False means every prayer falls back to inexact scheduling, which Android
+  /// deliberately batches - the alert still arrives, but late. The permission
+  /// can be withdrawn long after onboarding granted it, so this is worth asking
+  /// again rather than assuming.
+  Future<bool> canScheduleExactAlarms() async {
+    if (kIsWeb || _plugin == null) return true;
+    final android = _plugin!.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    return await android?.canScheduleExactNotifications() ?? true;
+  }
+
+  /// Asks for the exact-alarm permission, sending the user to the system page.
+  Future<void> requestExactAlarms() async {
+    if (kIsWeb || _plugin == null) return;
+    final android = _plugin!.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await android?.requestExactAlarmsPermission();
+  }
+
+  /// Asks for the POST_NOTIFICATIONS permission (Android 13+).
+  Future<void> requestNotificationsPermission() async {
+    if (kIsWeb || _plugin == null) return;
+    final android = _plugin!.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await android?.requestNotificationsPermission();
+  }
+
+  /// Alerts already handed to the OS, soonest first. What the health screen
+  /// shows as proof that something really is queued.
+  Future<List<PendingNotificationRequest>> pendingNotifications() async {
+    if (kIsWeb || _plugin == null) return const [];
+    try {
+      return await _plugin!.pendingNotificationRequests();
+    } catch (_) {
+      return const [];
+    }
   }
 
   Future<bool> isPrayerEnabled(String prayerName) async {
