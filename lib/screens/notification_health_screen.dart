@@ -331,6 +331,31 @@ class _NotificationHealthScreenState extends State<NotificationHealthScreen>
   Widget _actions(SettingsProvider settings) {
     return Column(
       children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.1),
+            border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 24),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  settings.translate(
+                      'Not receiving prayer alerts? Press Reschedule now',
+                      'نماز کی اطلاعات موصول نہیں ہو رہیں؟ ابھی دوبارہ شیڈول کریں دبائیں',
+                      'نماز جون اطلاعون نه پيون ملن؟ هاڻي ٻيهر شيڊول ڪريو کي دٻايو',
+                      'لا تتلقى تنبيهات الصلاة؟ اضغط على إعادة الجدولة الآن'),
+                  style: const TextStyle(fontSize: 13, color: Colors.orange, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
           child: FilledButton.icon(

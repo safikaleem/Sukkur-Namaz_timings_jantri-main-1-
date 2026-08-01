@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import '../services/notification_service.dart';
-import '../providers/settings_provider.dart' show SettingsProvider, DarkModeOption, LocationMode;
+import '../providers/settings_provider.dart' show SettingsProvider, DarkModeOption;
 import '../utils/alert_mode.dart';
 import '../utils/app_theme.dart';
 import '../screens/about_screen.dart';
@@ -107,16 +107,6 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                     },
                   ),
 
-                  // ── Test Notifications ──────────────────────────
-                  _DrawerItem(
-                    icon: Icons.notifications_active_rounded,
-                    label: settings.translate('Test Notifications', 'اطلاعات کی جانچ کریں', 'نوٽيفڪيشن چيڪ ڪريو', 'اختبار الإشعارات'),
-                    onTap: () async {
-                      await NotificationService.instance.showTestNotification();
-                      if (context.mounted) Navigator.pop(context);
-                    },
-                  ),
-
                   // ── Notification Health ─────────────────────────
                   // A test notification proves the app can show one *now*; this
                   // is the separate question of whether the phone will still
@@ -143,22 +133,24 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   const _Divider(),
 
                   // ── About ───────────────────────────────────
-                  if (settings.locationMode == LocationMode.sukkur)
-                    _DrawerItem(
-                      icon: Icons.info_outline_rounded,
-                      label: settings.translate(
-                          'About Sukkur Salah',
-                          'سکھر صلاۃ کے بارے میں',
-                          'سکر صلاۃ بابت',
-                          'حول صلاة سكر'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const AboutScreen()),
-                        );
-                      },
-                    ),
+                  // Shown in every mode. The screen itself drops the Jantri
+                  // image for a world city and keeps the text, so a traveller
+                  // still gets to read what the app is.
+                  _DrawerItem(
+                    icon: Icons.info_outline_rounded,
+                    label: settings.translate(
+                        'About Sukkur Salah',
+                        'سکھر صلاة کے بارے میں',
+                        'سکر صلاة بابت',
+                        'حول صلاة سكر'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AboutScreen()),
+                      );
+                    },
+                  ),
 
                   // ── Rate the App ────────────────────────────
                   _DrawerItem(
@@ -172,8 +164,8 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                     icon: Icons.share_rounded,
                     label: settings.translate(
                         'Invite Friends to Sukkur Salah',
-                        'دوستوں کو سکھر صلاۃ میں مدعو کریں',
-                        'دوستن کي سکر صلاۃ ۾ دعوت ڏيو',
+                        'دوستوں کو سکھر صلاة میں مدعو کریں',
+                        'دوستن کي سکر صلاة ۾ دعوت ڏيو',
                         'شارك التطبيق'),
                     onTap: () => _shareApp(context),
                   ),
@@ -232,8 +224,8 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Text(
                 settings.translate(
                     'Share Sukkur Salah with your friends and family',
-                    'سکھر صلاۃ اپنے دوستوں اور خاندان کے ساتھ شیئر کریں',
-                    'سکر صلاۃ پنهنجي دوستن ۽ خاندان سان شيئر ڪريو',
+                    'سکھر صلاة اپنے دوستوں اور خاندان کے ساتھ شیئر کریں',
+                    'سکر صلاة پنهنجي دوستن ۽ خاندان سان شيئر ڪريو',
                     'شارك صلاة سكر مع أصدقائك وعائلتك'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -269,8 +261,8 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                         ShareParams(
                           text: settings.translate(
                               'Sukkur Salah – Namaz timings for Sukkur. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
-                              'سکھر صلاۃ - سکھر کے نماز کے اوقات۔ ابھی ڈاؤن لوڈ کریں:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
-                              'سکر صلاۃ - سکر جي نماز جا وقت۔ هينئر ڊائونلوڊ ڪريو:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+                              'سکھر صلاة - سکھر کے نماز کے اوقات۔ ابھی ڈاؤن لوڈ کریں:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+                              'سکر صلاة - سکر جي نماز جا وقت۔ هينئر ڊائونلوڊ ڪريو:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
                               'صلاة سكر - مواقيت الصلاة في سكر. حمل الآن:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah'),
                         ),
                       );
@@ -684,7 +676,7 @@ class _DrawerHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            settings.translate('Sukkur Salah', 'سکھر صلاۃ', 'سکر صلاۃ', 'صلاة سكر'),
+            settings.translate('Sukkur Salah', 'سکھر صلاة', 'سکر صلاة', 'صلاة سكر'),
             style: TextStyle(
               fontSize: settings.isRtl ? 28 : 24,
               fontWeight: FontWeight.bold,

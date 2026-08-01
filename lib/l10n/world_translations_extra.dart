@@ -18,6 +18,8 @@ const Map<String, String> prayerNameAliases = {
 
 const Map<String, Map<String, String>> additionalTranslations = {
   'bengali': {
+    'About Sukkur Salah app features': 'সুক্কুর সালাহ অ্যাপের বৈশিষ্ট্য সম্পর্কে',
+    'About Sukkur Jantri': 'সুক্কুর জান্ত্রি সম্পর্কে',
     // City picker
     'Search city': 'শহর খুঁজুন',
     'Search any city in the world': 'বিশ্বের যেকোনো শহর খুঁজুন',
@@ -229,8 +231,11 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'حضرت ڈاکٹر حفیظ اللہ صاحب': 'হযরত ডক্টর হাফিজুল্লাহ সাহেব',
     'قَدَّسَ اللہ سِرَّہُ': 'কাদ্দাসাল্লাহু সিররাহু',
     '✓  Facing Qibla': '✓  আপনি কিবলামুখী',
+    'Not receiving prayer alerts? Press Reschedule now': 'নামাজের সতর্কতা পাচ্ছেন না? এখনই পুনরায় শিডিউল করুন চাপুন',
   },
   'indonesian': {
+    'About Sukkur Salah app features': 'Tentang fitur aplikasi Sukkur Salah',
+    'About Sukkur Jantri': 'Tentang Sukkur Jantri',
     // City picker
     'Search city': 'Cari kota',
     'Search any city in the world': 'Cari kota mana pun di dunia',
@@ -442,8 +447,11 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'حضرت ڈاکٹر حفیظ اللہ صاحب': 'Hazrat Dr Hafeezullah Sahib',
     'قَدَّسَ اللہ سِرَّہُ': 'Qaddasallahu sirrahu',
     '✓  Facing Qibla': '✓  Menghadap Kiblat',
+    'Not receiving prayer alerts? Press Reschedule now': 'Tidak menerima peringatan sholat? Tekan Jadwalkan ulang sekarang',
   },
   'turkish': {
+    'About Sukkur Salah app features': 'Sukkur Salah uygulaması özellikleri hakkında',
+    'About Sukkur Jantri': 'Sukkur Jantri hakkında',
     // City picker
     'Search city': 'Şehir ara',
     'Search any city in the world': 'Dünyadaki herhangi bir şehri ara',
@@ -655,8 +663,11 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'حضرت ڈاکٹر حفیظ اللہ صاحب': 'Hazret Dr Hafizullah Sahib',
     'قَدَّسَ اللہ سِرَّہُ': 'Kaddesallahu sırrahu',
     '✓  Facing Qibla': '✓  Kıbleye dönüksünüz',
+    'Not receiving prayer alerts? Press Reschedule now': 'Namaz bildirimleri almıyor musunuz? Şimdi yeniden planla\'ya basın',
   },
   'french': {
+    'About Sukkur Salah app features': 'À propos des fonctionnalités de Sukkur Salah',
+    'About Sukkur Jantri': 'À propos de Sukkur Jantri',
     // City picker
     'Search city': 'Rechercher une ville',
     'Search any city in the world': 'Rechercher n\'importe quelle ville du monde',
@@ -869,8 +880,11 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'حضرت ڈاکٹر حفیظ اللہ صاحب': 'Hazrat Dr Hafeezullah Sahib',
     'قَدَّسَ اللہ سِرَّہُ': 'Qaddasallahu sirrahu',
     '✓  Facing Qibla': '✓  Vous êtes face à la Qibla',
+    'Not receiving prayer alerts? Press Reschedule now': 'Vous ne recevez pas d\'alertes de prière ? Appuyez sur Reprogrammer maintenant',
   },
   'hindi': {
+    'About Sukkur Salah app features': 'सुक्कुर सालाह ऐप की विशेषताओं के बारे में',
+    'About Sukkur Jantri': 'सुक्कुर जंत्री के बारे में',
     // City picker
     'Search city': 'शहर खोजें',
     'Search any city in the world': 'दुनिया का कोई भी शहर खोजें',
@@ -1082,8 +1096,11 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'حضرت ڈاکٹر حفیظ اللہ صاحب': 'हज़रत डॉ. हफ़ीज़ुल्लाह साहब',
     'قَدَّسَ اللہ سِرَّہُ': 'क़द्दसल्लाहु सिर्रहु',
     '✓  Facing Qibla': '✓  आप क़िबला की ओर हैं',
+    'Not receiving prayer alerts? Press Reschedule now': 'नमाज़ के अलर्ट नहीं मिल रहे हैं? अभी फिर से शेड्यूल करें दबाएं',
   },
   'persian': {
+    'About Sukkur Salah app features': 'درباره ویژگی‌های برنامه سکر صلاة',
+    'About Sukkur Jantri': 'درباره جنتری سکر',
     // City picker
     'Search city': 'جست‌وجوی شهر',
     'Search any city in the world': 'جست‌وجوی هر شهری در جهان',
@@ -1295,5 +1312,6 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'حضرت ڈاکٹر حفیظ اللہ صاحب': 'حضرت دکتر حفیظ‌الله صاحب',
     'قَدَّسَ اللہ سِرَّہُ': 'قَدَّسَ اللهُ سِرَّهُ',
     '✓  Facing Qibla': '✓  رو به قبله هستید',
+    'Not receiving prayer alerts? Press Reschedule now': 'هشدارهای نماز را دریافت نمی‌کنید؟ اکنون دوباره زمان‌بندی کنید را فشار دهید',
   },
 };

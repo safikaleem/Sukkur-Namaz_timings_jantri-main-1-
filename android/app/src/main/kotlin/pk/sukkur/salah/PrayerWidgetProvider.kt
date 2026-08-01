@@ -878,6 +878,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
                 "Isha"    -> "العشاء"
                 else      -> key
             }
+        }
         if (language == "bengali") {
             return when (key) {
                 "Subah"   -> "ইন্তিহায়ে সেহর"
@@ -968,20 +969,18 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
                 else      -> key
             }
         }
-        } else {
-            return when (key) {
-                "Subah"   -> if (multiLine) "Intiha\ne Sehar" else "Intiha e Sehar"
-                "Fajar"   -> "Fajar"
-                "Tulu"    -> if (multiLine) "Tulu\nAftab" else "Tulu Aftab"
-                "Ishraq"  -> "Ishraq"
-                "Zawal"   -> "Zawal"
-                "Zuhar"   -> "Zuhar"
-                "Misl"    -> if (multiLine) "Misl\nAwwal" else "Misl Awwal"
-                "Asr"     -> "Asr"
-                "Maghrib" -> "Maghrib"
-                "Isha"    -> "Isha"
-                else      -> key
-            }
+        return when (key) {
+            "Subah"   -> if (multiLine) "Intiha\ne Sehar" else "Intiha e Sehar"
+            "Fajar"   -> "Fajar"
+            "Tulu"    -> if (multiLine) "Tulu\nAftab" else "Tulu Aftab"
+            "Ishraq"  -> "Ishraq"
+            "Zawal"   -> "Zawal"
+            "Zuhar"   -> "Zuhar"
+            "Misl"    -> if (multiLine) "Misl\nAwwal" else "Misl Awwal"
+            "Asr"     -> "Asr"
+            "Maghrib" -> "Maghrib"
+            "Isha"    -> "Isha"
+            else      -> key
         }
     }
 
@@ -1508,7 +1507,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             views.setViewVisibility(R.id.widget_circle_digital_box, View.GONE)
             views.setViewVisibility(R.id.widget_circle_clock_digital, View.GONE)
             try {
-                val dialBitmap = getClockDialBitmap(context, language)
+                val dialBitmap = getClockDialBitmap(context)
                 views.setImageViewBitmap(R.id.widget_circle_clock_dial_dynamic, dialBitmap)
                 views.setViewVisibility(R.id.widget_circle_clock_dial_dynamic, View.VISIBLE)
             } catch (e: Exception) {}
@@ -1533,6 +1532,12 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
                 "urdu" -> "وقت گزر چکا ہے"
                 "sindhi" -> "وقت گذري چڪو آهي"
                 "arabic" -> "الوقت المنقضي"
+                "persian" -> "زمان سپری‌شده"
+                "bengali" -> "সময় অতিবাহিত"
+                "hindi" -> "बीता हुआ समय"
+                "turkish" -> "Geçen süre"
+                "indonesian" -> "Waktu berlalu"
+                "french" -> "Temps écoulé"
                 else -> "Time elapsed"
             }
         } else {
@@ -1540,6 +1545,12 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
                 "urdu" -> "باقی وقت"
                 "sindhi" -> "باقي وقت"
                 "arabic" -> "الوقت المتبقي"
+                "persian" -> "زمان باقی‌مانده"
+                "bengali" -> "বাকি সময়"
+                "hindi" -> "शेष समय"
+                "turkish" -> "Kalan süre"
+                "indonesian" -> "Sisa waktu"
+                "french" -> "Temps restant"
                 else -> "Time remaining"
             }
         }
@@ -1550,7 +1561,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         return views
     }
 
-    private fun getClockDialBitmap(context: Context, language: String): Bitmap {
+    private fun getClockDialBitmap(context: Context): Bitmap {
         val size = (110 * context.resources.displayMetrics.density).toInt()
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -1585,7 +1596,10 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
 
         for (i in 1..12) {
             val angle = Math.PI / 6 * (i - 3)
-            val numStr = toLocalizedNumerals(i, language)
+            // Western digits on the dial, like every other time in the widgets -
+            // the prayer times, the countdown and AM/PM are all 0-9 regardless of
+            // language. Only the dates read in the language's own numerals.
+            val numStr = i.toString()
 
             val tickOuter = radius
             val tickInner = radius - 8f * context.resources.displayMetrics.density
