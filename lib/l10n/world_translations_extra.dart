@@ -18,8 +18,21 @@ const Map<String, String> prayerNameAliases = {
 
 const Map<String, Map<String, String>> additionalTranslations = {
   'bengali': {
+    'Update Available': 'আপডেট উপলব্ধ',
+    'A new version of the app is available.':
+        'অ্যাপের একটি নতুন সংস্করণ পাওয়া যাচ্ছে।',
+    'Later': 'পরে',
     'About Sukkur Salah app features': 'সুক্কুর সালাহ অ্যাপের বৈশিষ্ট্য সম্পর্কে',
     'About Sukkur Jantri': 'সুক্কুর জান্ত্রি সম্পর্কে',
+    // Widget picker
+    'Swipe to preview and add a widget to your home screen':
+        'উইজেট দেখতে ও হোম স্ক্রিনে যোগ করতে স্বাইপ করুন',
+    'Add to Home Screen': 'হোম স্ক্রিনে যোগ করুন',
+    'How to add this': 'কীভাবে যোগ করবেন',
+    'Add it from the home screen': 'হোম স্ক্রিন থেকে যোগ করুন',
+    'This phone cannot add widgets from inside an app.\n\nPress and hold an empty spot on your home screen, tap Widgets, find Sukkur Salah, then pick the size you want.':
+        'এই ফোনটি অ্যাপের ভেতর থেকে উইজেট যোগ করতে পারে না।\n\nহোম স্ক্রিনের খালি জায়গায় চেপে ধরে রাখুন, উইজেটস-এ ট্যাপ করুন, সুক্কুর সালাহ খুঁজুন, তারপর পছন্দের আকার বেছে নিন।',
+    'OK': 'ঠিক আছে',
     // City picker
     'Search city': 'শহর খুঁজুন',
     'Search any city in the world': 'বিশ্বের যেকোনো শহর খুঁজুন',
@@ -234,8 +247,21 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Not receiving prayer alerts? Press Reschedule now': 'নামাজের সতর্কতা পাচ্ছেন না? এখনই পুনরায় শিডিউল করুন চাপুন',
   },
   'indonesian': {
+    'Update Available': 'Pembaruan Tersedia',
+    'A new version of the app is available.':
+        'Versi baru aplikasi telah tersedia.',
+    'Later': 'Nanti',
     'About Sukkur Salah app features': 'Tentang fitur aplikasi Sukkur Salah',
     'About Sukkur Jantri': 'Tentang Sukkur Jantri',
+    // Widget picker
+    'Swipe to preview and add a widget to your home screen':
+        'Geser untuk melihat pratinjau dan menambahkan widget ke layar beranda Anda',
+    'Add to Home Screen': 'Tambahkan ke Layar Beranda',
+    'How to add this': 'Cara menambahkannya',
+    'Add it from the home screen': 'Tambahkan dari layar beranda',
+    'This phone cannot add widgets from inside an app.\n\nPress and hold an empty spot on your home screen, tap Widgets, find Sukkur Salah, then pick the size you want.':
+        'Ponsel ini tidak dapat menambahkan widget dari dalam aplikasi.\n\nTekan dan tahan area kosong di layar beranda, ketuk Widget, cari Sukkur Salah, lalu pilih ukuran yang Anda inginkan.',
+    'OK': 'OK',
     // City picker
     'Search city': 'Cari kota',
     'Search any city in the world': 'Cari kota mana pun di dunia',
@@ -450,8 +476,21 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Not receiving prayer alerts? Press Reschedule now': 'Tidak menerima peringatan sholat? Tekan Jadwalkan ulang sekarang',
   },
   'turkish': {
+    'Update Available': 'Güncelleme Mevcut',
+    'A new version of the app is available.':
+        'Uygulamanın yeni bir sürümü mevcut.',
+    'Later': 'Daha Sonra',
     'About Sukkur Salah app features': 'Sukkur Salah uygulaması özellikleri hakkında',
     'About Sukkur Jantri': 'Sukkur Jantri hakkında',
+    // Widget picker
+    'Swipe to preview and add a widget to your home screen':
+        'Widget önizlemek ve ana ekranınıza eklemek için kaydırın',
+    'Add to Home Screen': 'Ana Ekrana Ekle',
+    'How to add this': 'Nasıl eklenir',
+    'Add it from the home screen': 'Ana ekrandan ekleyin',
+    'This phone cannot add widgets from inside an app.\n\nPress and hold an empty spot on your home screen, tap Widgets, find Sukkur Salah, then pick the size you want.':
+        'Bu telefon uygulama içinden widget ekleyemez.\n\nAna ekranda boş bir yere basılı tutun, Widget\'lara dokunun, Sukkur Salah\'ı bulun, ardından istediğiniz boyutu seçin.',
+    'OK': 'Tamam',
     // City picker
     'Search city': 'Şehir ara',
     'Search any city in the world': 'Dünyadaki herhangi bir şehri ara',
@@ -666,8 +705,21 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Not receiving prayer alerts? Press Reschedule now': 'Namaz bildirimleri almıyor musunuz? Şimdi yeniden planla\'ya basın',
   },
   'french': {
+    'Update Available': 'Mise à jour disponible',
+    'A new version of the app is available.':
+        "Une nouvelle version de l'application est disponible.",
+    'Later': 'Plus tard',
     'About Sukkur Salah app features': 'À propos des fonctionnalités de Sukkur Salah',
     'About Sukkur Jantri': 'À propos de Sukkur Jantri',
+    // Widget picker
+    'Swipe to preview and add a widget to your home screen':
+        'Balayez pour prévisualiser et ajouter un widget à votre écran d\'accueil',
+    'Add to Home Screen': 'Ajouter à l\'écran d\'accueil',
+    'How to add this': 'Comment l\'ajouter',
+    'Add it from the home screen': 'Ajoutez-le depuis l\'écran d\'accueil',
+    'This phone cannot add widgets from inside an app.\n\nPress and hold an empty spot on your home screen, tap Widgets, find Sukkur Salah, then pick the size you want.':
+        'Ce téléphone ne peut pas ajouter de widgets depuis une application.\n\nAppuyez longuement sur un espace vide de votre écran d\'accueil, touchez Widgets, trouvez Sukkur Salah, puis choisissez la taille souhaitée.',
+    'OK': 'OK',
     // City picker
     'Search city': 'Rechercher une ville',
     'Search any city in the world': 'Rechercher n\'importe quelle ville du monde',
@@ -883,8 +935,21 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Not receiving prayer alerts? Press Reschedule now': 'Vous ne recevez pas d\'alertes de prière ? Appuyez sur Reprogrammer maintenant',
   },
   'hindi': {
+    'Update Available': 'अपडेट उपलब्ध है',
+    'A new version of the app is available.':
+        'ऐप का नया संस्करण उपलब्ध है।',
+    'Later': 'बाद में',
     'About Sukkur Salah app features': 'सुक्कुर सालाह ऐप की विशेषताओं के बारे में',
     'About Sukkur Jantri': 'सुक्कुर जंत्री के बारे में',
+    // Widget picker
+    'Swipe to preview and add a widget to your home screen':
+        'विजेट देखने और होम स्क्रीन पर जोड़ने के लिए स्वाइप करें',
+    'Add to Home Screen': 'होम स्क्रीन पर जोड़ें',
+    'How to add this': 'इसे कैसे जोड़ें',
+    'Add it from the home screen': 'होम स्क्रीन से जोड़ें',
+    'This phone cannot add widgets from inside an app.\n\nPress and hold an empty spot on your home screen, tap Widgets, find Sukkur Salah, then pick the size you want.':
+        'यह फ़ोन ऐप के भीतर से विजेट नहीं जोड़ सकता।\n\nहोम स्क्रीन पर खाली जगह दबाकर रखें, विजेट्स पर टैप करें, सुक्कुर सालाह ढूंढें, फिर अपनी पसंद का आकार चुनें।',
+    'OK': 'ठीक है',
     // City picker
     'Search city': 'शहर खोजें',
     'Search any city in the world': 'दुनिया का कोई भी शहर खोजें',
@@ -1099,8 +1164,21 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Not receiving prayer alerts? Press Reschedule now': 'नमाज़ के अलर्ट नहीं मिल रहे हैं? अभी फिर से शेड्यूल करें दबाएं',
   },
   'persian': {
+    'Update Available': 'به‌روزرسانی موجود است',
+    'A new version of the app is available.':
+        'نسخه جدیدی از برنامه در دسترس است.',
+    'Later': 'بعداً',
     'About Sukkur Salah app features': 'درباره ویژگی‌های برنامه سکر صلاة',
     'About Sukkur Jantri': 'درباره جنتری سکر',
+    // Widget picker
+    'Swipe to preview and add a widget to your home screen':
+        'برای پیش‌نمایش و افزودن ویجت به صفحه اصلی بکشید',
+    'Add to Home Screen': 'افزودن به صفحه اصلی',
+    'How to add this': 'چگونه اضافه کنیم',
+    'Add it from the home screen': 'از صفحه اصلی اضافه کنید',
+    'This phone cannot add widgets from inside an app.\n\nPress and hold an empty spot on your home screen, tap Widgets, find Sukkur Salah, then pick the size you want.':
+        'این گوشی نمی‌تواند ویجت را از داخل برنامه اضافه کند.\n\nروی نقطه‌ای خالی در صفحه اصلی فشار دهید و نگه دارید، روی ویجت‌ها ضربه بزنید، سکر الصلاة را پیدا کنید، سپس اندازه دلخواه را انتخاب کنید.',
+    'OK': 'باشه',
     // City picker
     'Search city': 'جست‌وجوی شهر',
     'Search any city in the world': 'جست‌وجوی هر شهری در جهان',

@@ -13,7 +13,7 @@ import '../screens/about_screen.dart';
 import '../screens/notification_health_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/world_prayers_screen.dart';
-
+import 'widget_selection_sheet.dart';
 class SettingsDrawer extends StatefulWidget {
   final VoidCallback? onTapSukkur;
   /// Fired once the world screen has actually settled on a city, so the shell
@@ -92,7 +92,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   
                   _LanguageSection(settings: settings),
                   _DarkModeSection(settings: settings),
-                  _CircleWidgetSection(settings: settings),
+                  _PrayerWidgetSection(settings: settings),
 
                   _DrawerItem(
                     icon: Icons.settings_rounded,
@@ -1651,105 +1651,51 @@ class _ContactUsInline extends StatelessWidget {
   }
 }
 
-// ── Circle Widget expandable section ──────────────────────────────────
-class _CircleWidgetSection extends StatefulWidget {
+// ── Prayer Widget section ──────────────────────────────────
+class _PrayerWidgetSection extends StatelessWidget {
   final SettingsProvider settings;
-  const _CircleWidgetSection({required this.settings});
-
-  @override
-  State<_CircleWidgetSection> createState() => _CircleWidgetSectionState();
-}
-
-class _CircleWidgetSectionState extends State<_CircleWidgetSection> {
-  bool _expanded = false;
-
-  String _currentLabel(SettingsProvider settings) {
-    switch (widget.settings.circleWidgetStyle) {
-      case 'analog':
-        return settings.translate('Analog', 'اینالاگ', 'اينالاگ', 'تناظري');
-      case 'digital':
-      default:
-        return settings.translate('Digital', 'ڈیجیٹل', 'ڊجيٽل', 'رقمي');
-    }
-  }
+  const _PrayerWidgetSection({required this.settings});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final settings = widget.settings;
     final isRtl = settings.isRtl;
-    final current = settings.circleWidgetStyle;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        InkWell(
-          onTap: () => setState(() => _expanded = !_expanded),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            child: Row(
-              children: [
-                Icon(Icons.widgets_rounded,
-                    color: isDark ? Colors.white54 : Colors.black54, size: 20),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    settings.translate('Widget Clock', 'ویجیٹ کلاک', 'ويجيٽ ڪلاڪ', 'ساعة الودجت'),
-                    style: TextStyle(
-                      fontSize: isRtl ? 17 : 14,
-                      color: isDark ? const Color(0xDEFFFFFF) : Colors.black87,
-                    ),
-                  ),
-                ),
-                Text(
-                  _currentLabel(settings),
-                  style: TextStyle(
-                    fontSize: isRtl ? 15 : 12,
-                    color: AppTheme.accent,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                AnimatedRotation(
-                  turns: _expanded ? 0.5 : 0,
-                  duration: const Duration(milliseconds: 200),
-                  child: Icon(Icons.keyboard_arrow_down_rounded,
-                      color: isDark ? Colors.white38 : Colors.black38,
-                      size: 20),
-                ),
-              ],
-            ),
+    return InkWell(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => WidgetSelectionSheet(
+            settings: settings,
+            isDark: isDark,
+            isRtl: isRtl,
           ),
-        ),
-        AnimatedCrossFade(
-          duration: const Duration(milliseconds: 220),
-          crossFadeState:
-              _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-          firstChild: const SizedBox(width: double.infinity),
-          secondChild: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(52, 0, 20, 12),
-            child: Row(
-              children: [
-                _DarkModeOptionBtn(
-                  label: settings.translate('Digital', 'ڈیجیٹل', 'ڊجيٽل', 'رقمي'),
-                  selected: current == 'digital',
-                  isDark: isDark,
-                  onTap: () =>
-                      settings.setCircleWidgetStyle('digital'),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            Icon(Icons.widgets_rounded,
+                color: isDark ? Colors.white54 : Colors.black54, size: 20),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                settings.translate('Prayer Widgets', 'نماز ویجیٹس', 'نماز ويجيٽس', 'ودجت الصلاة'),
+                style: TextStyle(
+                  fontSize: isRtl ? 17 : 14,
+                  color: isDark ? const Color(0xDEFFFFFF) : Colors.black87,
                 ),
-                const SizedBox(width: 8),
-                _DarkModeOptionBtn(
-                  label: settings.translate('Analog', 'اینالاگ', 'اينالاگ', 'تناظري'),
-                  selected: current == 'analog',
-                  isDark: isDark,
-                  onTap: () =>
-                      settings.setCircleWidgetStyle('analog'),
-                ),
-              ],
+              ),
             ),
-          ),
+            Icon(Icons.add_circle_outline,
+                color: isDark ? Colors.white38 : Colors.black38,
+                size: 20),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

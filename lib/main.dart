@@ -24,7 +24,9 @@ import 'widgets/translation_reader.dart' show purgeLegacySurahCache;
 import 'utils/app_theme.dart';
 import 'widgets/settings_drawer.dart';
 import 'package:workmanager/workmanager.dart';
+import 'package:upgrader/upgrader.dart';
 import 'services/announcement_service.dart';
+// import 'services/update_service.dart';
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -206,6 +208,14 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
+/// Built once, not per rebuild: the upgrader holds the fetched store version
+/// and the timestamp of the last prompt, and a fresh instance on every frame
+/// would throw both away.
+///
+/// [Duration.zero] replaces the three-day default, so the prompt is offered
+/// again on the very next launch rather than being hidden for three days.
+final _upgrader = Upgrader(durationUntilAlertAgain: Duration.zero);
+
 class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   int _currentIndex = 0;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -217,8 +227,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      AnnouncementService.checkForAnnouncement(context);
       _refreshNotificationHealth();
+      AnnouncementService.checkForAnnouncement(context);
     });
   }
 
@@ -317,67 +327,79 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
           if (mounted) setState(() => _currentIndex = 0);
         },
       ),
-      body: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: [
-            // All screens
-            IndexedStack(
-              index: safeIndex,
-              children: screens,
-            ),
+      // Wraps the whole body so the "update available" prompt can appear over
+      // any tab. upgrader reads the published Play Store listing itself, so
+      // nothing has to be hosted or bumped by hand after a release.
+      body: UpgradeAlert(
+        upgrader: _upgrader,
+        // "Ignore" writes the version to preferences and suppresses the prompt
+        // for good, which is the one outcome that can leave someone on an old
+        // build permanently. "Later" stays: it clears the prompt for now and,
+        // with the wait below set to nothing, it returns on the next launch and
+        // keeps returning until the update is actually installed.
+        showIgnore: false,
+        child: SafeArea(
+          bottom: false,
+          child: Stack(
+            children: [
+              // All screens
+              IndexedStack(
+                index: safeIndex,
+                children: screens,
+              ),
 
-            // Persistent hamburger overlay on screens that don't have one
-            if (screens[safeIndex] is! TasbeehScreen)
-              Positioned(
-                top: 12,
-                left: isRtl ? null : 16,
-                right: isRtl ? 16 : null,
-                child: GestureDetector(
-                  onTap: () => _openDrawer(isRtl),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withOpacity(0.05)
-                          : Colors.black.withOpacity(0.04),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.menu_rounded,
-                      size: 22,
-                      color: isDark ? Colors.white : Colors.black87,
+              // Persistent hamburger overlay on screens that don't have one
+              if (screens[safeIndex] is! TasbeehScreen)
+                Positioned(
+                  top: 12,
+                  left: isRtl ? null : 16,
+                  right: isRtl ? 16 : null,
+                  child: GestureDetector(
+                    onTap: () => _openDrawer(isRtl),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.05)
+                            : Colors.black.withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.menu_rounded,
+                        size: 22,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-            // Sits at the foot of the body rather than the top, where the
-            // hamburger already lives. Shown only while something is actually
-            // wrong, so it disappears by itself once the user fixes it.
-            if (settings.notificationsEnabled &&
-                _notifHealth != null &&
-                !_notifHealth!.isHealthy)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: _NotificationWarningBar(
-                  health: _notifHealth!,
-                  settings: settings,
-                  onTap: () async {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const NotificationHealthScreen(),
-                      ),
-                    );
-                    _refreshNotificationHealth();
-                  },
+              // Sits at the foot of the body rather than the top, where the
+              // hamburger already lives. Shown only while something is actually
+              // wrong, so it disappears by itself once the user fixes it.
+              if (settings.notificationsEnabled &&
+                  _notifHealth != null &&
+                  !_notifHealth!.isHealthy)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: _NotificationWarningBar(
+                    health: _notifHealth!,
+                    settings: settings,
+                    onTap: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationHealthScreen(),
+                        ),
+                      );
+                      _refreshNotificationHealth();
+                    },
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: _SukkurNavBar(
