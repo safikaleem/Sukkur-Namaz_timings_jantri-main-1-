@@ -18,6 +18,14 @@ const Map<String, String> prayerNameAliases = {
 
 const Map<String, Map<String, String>> additionalTranslations = {
   'bengali': {
+    'Search Any City Instantly': 'যেকোনো শহর সঙ্গে সঙ্গে খুঁজুন',
+    'Type a single letter and cities appear straight away, each with its country and coordinates. Over two hundred thousand places are built into the app, so the search needs no internet at all.': 'একটি অক্ষর লিখলেই শহর সঙ্গে সঙ্গে দেখা যায়, প্রতিটির সঙ্গে তার দেশ ও অবস্থান। দুই লক্ষেরও বেশি স্থান অ্যাপের ভিতরেই আছে, তাই খুঁজতে ইন্টারনেট লাগে না।',
+    'Works Inside the Arctic Circle Too': 'সুমেরু বৃত্তের ভিতরেও কাজ করে',
+    'In places like Longyearbyen and Tromso the sun can stay up, or stay down, for weeks, and the app could not show a timetable at all. Those days now follow the nearest workable latitude, as the scholars advise.': 'লংইয়ারবিয়েন ও ট্রমসোর মতো জায়গায় সূর্য কয়েক সপ্তাহ ধরে ওঠে না বা ডোবে না, এবং অ্যাপ সেখানে সময়সূচি দেখাতেই পারত না। সেই দিনগুলোর জন্য এখন নিকটতম উপযোগী অক্ষাংশ অনুসরণ করা হয়, যেমনটি আলেমগণ পরামর্শ দেন।',
+    'Pick Your Home Screen Widget': 'নিজের হোম স্ক্রিন উইজেট বেছে নিন',
+    'A new sheet shows every home screen widget with a picture of it, so you can see how each one looks before adding it.': 'একটি নতুন তালিকা প্রতিটি হোম স্ক্রিন উইজেট তার ছবিসহ দেখায়, যাতে যোগ করার আগেই দেখতে পারেন কোনটি কেমন দেখায়।',
+    'You Will Be Told About New Updates': 'নতুন আপডেটের খবর পেয়ে যাবেন',
+    'When a newer version reaches the Play Store, the app now tells you as soon as you open it, and keeps reminding you until you install it.': 'প্লে স্টোরে নতুন সংস্করণ এলে অ্যাপ খোলামাত্রই আপনাকে জানায়, এবং ইনস্টল না করা পর্যন্ত মনে করিয়ে দিতে থাকে।',
     'Update Available': 'আপডেট উপলব্ধ',
     'A new version of the app is available.':
         'অ্যাপের একটি নতুন সংস্করণ পাওয়া যাচ্ছে।',
@@ -247,6 +255,14 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Not receiving prayer alerts? Press Reschedule now': 'নামাজের সতর্কতা পাচ্ছেন না? এখনই পুনরায় শিডিউল করুন চাপুন',
   },
   'indonesian': {
+    'Search Any City Instantly': 'Cari Kota Mana Pun Seketika',
+    'Type a single letter and cities appear straight away, each with its country and coordinates. Over two hundred thousand places are built into the app, so the search needs no internet at all.': 'Ketik satu huruf dan kota langsung muncul, masing-masing dengan negara dan koordinatnya. Lebih dari dua ratus ribu tempat tersimpan di dalam aplikasi, jadi pencarian tidak memerlukan internet sama sekali.',
+    'Works Inside the Arctic Circle Too': 'Berfungsi di Dalam Lingkar Arktik Juga',
+    'In places like Longyearbyen and Tromso the sun can stay up, or stay down, for weeks, and the app could not show a timetable at all. Those days now follow the nearest workable latitude, as the scholars advise.': 'Di tempat seperti Longyearbyen dan Tromso matahari bisa tidak terbenam, atau tidak terbit, selama berminggu-minggu, dan aplikasi sama sekali tidak dapat menampilkan jadwal. Hari-hari itu kini mengikuti garis lintang terdekat yang dapat dihitung, sesuai anjuran para ulama.',
+    'Pick Your Home Screen Widget': 'Pilih Widget Layar Utama Anda',
+    'A new sheet shows every home screen widget with a picture of it, so you can see how each one looks before adding it.': 'Lembar baru menampilkan setiap widget layar utama beserta gambarnya, sehingga Anda dapat melihat tampilannya sebelum menambahkannya.',
+    'You Will Be Told About New Updates': 'Anda Akan Diberi Tahu Tentang Pembaruan Baru',
+    'When a newer version reaches the Play Store, the app now tells you as soon as you open it, and keeps reminding you until you install it.': 'Ketika versi baru tersedia di Play Store, aplikasi langsung memberi tahu Anda saat dibuka, dan terus mengingatkan sampai Anda memasangnya.',
     'Update Available': 'Pembaruan Tersedia',
     'A new version of the app is available.':
         'Versi baru aplikasi telah tersedia.',
@@ -476,6 +492,14 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Not receiving prayer alerts? Press Reschedule now': 'Tidak menerima peringatan sholat? Tekan Jadwalkan ulang sekarang',
   },
   'turkish': {
+    'Search Any City Instantly': 'Her Şehri Anında Arayın',
+    'Type a single letter and cities appear straight away, each with its country and coordinates. Over two hundred thousand places are built into the app, so the search needs no internet at all.': 'Tek bir harf yazın, şehirler hemen görünsün; her biri ülkesi ve koordinatlarıyla birlikte. İki yüz binden fazla yer uygulamanın içinde yer alır, bu yüzden arama internet gerektirmez.',
+    'Works Inside the Arctic Circle Too': 'Kuzey Kutup Dairesi İçinde de Çalışır',
+    'In places like Longyearbyen and Tromso the sun can stay up, or stay down, for weeks, and the app could not show a timetable at all. Those days now follow the nearest workable latitude, as the scholars advise.': 'Longyearbyen ve Tromso gibi yerlerde güneş haftalarca batmayabilir ya da doğmayabilir ve uygulama hiçbir vakit cetveli gösteremiyordu. O günler artık, âlimlerin tavsiye ettiği gibi, hesaplanabilen en yakın enlemi izliyor.',
+    'Pick Your Home Screen Widget': 'Ana Ekran Widget\'ınızı Seçin',
+    'A new sheet shows every home screen widget with a picture of it, so you can see how each one looks before adding it.': 'Yeni bir sayfa her ana ekran widget\'ını resmiyle birlikte gösterir; böylece eklemeden önce nasıl göründüğünü görebilirsiniz.',
+    'You Will Be Told About New Updates': 'Yeni Güncellemelerden Haberdar Olacaksınız',
+    'When a newer version reaches the Play Store, the app now tells you as soon as you open it, and keeps reminding you until you install it.': 'Play Store\'a yeni bir sürüm geldiğinde uygulama, siz açar açmaz size bildirir ve yükleyene kadar hatırlatmayı sürdürür.',
     'Update Available': 'Güncelleme Mevcut',
     'A new version of the app is available.':
         'Uygulamanın yeni bir sürümü mevcut.',
@@ -705,6 +729,14 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Not receiving prayer alerts? Press Reschedule now': 'Namaz bildirimleri almıyor musunuz? Şimdi yeniden planla\'ya basın',
   },
   'french': {
+    'Search Any City Instantly': 'Recherchez n\'importe quelle ville instantanément',
+    'Type a single letter and cities appear straight away, each with its country and coordinates. Over two hundred thousand places are built into the app, so the search needs no internet at all.': 'Tapez une seule lettre et les villes apparaissent aussitôt, chacune avec son pays et ses coordonnées. Plus de deux cent mille lieux sont intégrés à l\'application, la recherche ne nécessite donc aucune connexion.',
+    'Works Inside the Arctic Circle Too': 'Fonctionne aussi dans le cercle polaire',
+    'In places like Longyearbyen and Tromso the sun can stay up, or stay down, for weeks, and the app could not show a timetable at all. Those days now follow the nearest workable latitude, as the scholars advise.': 'Dans des lieux comme Longyearbyen et Tromso, le soleil peut rester levé, ou couché, pendant des semaines, et l\'application ne pouvait afficher aucun horaire. Ces jours suivent désormais la latitude exploitable la plus proche, comme le recommandent les savants.',
+    'Pick Your Home Screen Widget': 'Choisissez votre widget d\'écran d\'accueil',
+    'A new sheet shows every home screen widget with a picture of it, so you can see how each one looks before adding it.': 'Une nouvelle fiche présente chaque widget d\'écran d\'accueil avec une image, pour voir à quoi il ressemble avant de l\'ajouter.',
+    'You Will Be Told About New Updates': 'Vous serez informé des nouvelles mises à jour',
+    'When a newer version reaches the Play Store, the app now tells you as soon as you open it, and keeps reminding you until you install it.': 'Lorsqu\'une version plus récente arrive sur le Play Store, l\'application vous en informe dès son ouverture et continue de vous le rappeler jusqu\'à ce que vous l\'installiez.',
     'Update Available': 'Mise à jour disponible',
     'A new version of the app is available.':
         "Une nouvelle version de l'application est disponible.",
@@ -935,6 +967,14 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Not receiving prayer alerts? Press Reschedule now': 'Vous ne recevez pas d\'alertes de prière ? Appuyez sur Reprogrammer maintenant',
   },
   'hindi': {
+    'Search Any City Instantly': 'कोई भी शहर तुरंत खोजें',
+    'Type a single letter and cities appear straight away, each with its country and coordinates. Over two hundred thousand places are built into the app, so the search needs no internet at all.': 'एक अक्षर लिखते ही शहर तुरंत दिखने लगते हैं, हर एक के साथ उसका देश और निर्देशांक। दो लाख से अधिक स्थान ऐप के भीतर ही मौजूद हैं, इसलिए खोज के लिए इंटरनेट की ज़रूरत नहीं।',
+    'Works Inside the Arctic Circle Too': 'आर्कटिक वृत्त के भीतर भी काम करता है',
+    'In places like Longyearbyen and Tromso the sun can stay up, or stay down, for weeks, and the app could not show a timetable at all. Those days now follow the nearest workable latitude, as the scholars advise.': 'लोंगइयरब्येन और ट्रोम्सो जैसी जगहों पर सूरज हफ़्तों तक न डूबता है न निकलता है, और ऐप वहाँ कोई समय-सारणी दिखा ही नहीं पाता था। उन दिनों के लिए अब निकटतम व्यवहार्य अक्षांश के अनुसार समय लिए जाते हैं, जैसा उलमा मार्गदर्शन करते हैं।',
+    'Pick Your Home Screen Widget': 'अपना होम स्क्रीन विजेट चुनें',
+    'A new sheet shows every home screen widget with a picture of it, so you can see how each one looks before adding it.': 'एक नई सूची हर होम स्क्रीन विजेट को उसकी तस्वीर के साथ दिखाती है, ताकि जोड़ने से पहले आप देख सकें कि हर एक कैसा लगेगा।',
+    'You Will Be Told About New Updates': 'नए अपडेट की जानकारी मिल जाएगी',
+    'When a newer version reaches the Play Store, the app now tells you as soon as you open it, and keeps reminding you until you install it.': 'जब प्ले स्टोर पर नया संस्करण आता है, ऐप खोलते ही आपको बता देता है, और जब तक आप इंस्टॉल न कर लें याद दिलाता रहता है।',
     'Update Available': 'अपडेट उपलब्ध है',
     'A new version of the app is available.':
         'ऐप का नया संस्करण उपलब्ध है।',
@@ -1164,6 +1204,14 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'Not receiving prayer alerts? Press Reschedule now': 'नमाज़ के अलर्ट नहीं मिल रहे हैं? अभी फिर से शेड्यूल करें दबाएं',
   },
   'persian': {
+    'Search Any City Instantly': 'هر شهری را فوراً جست‌وجو کنید',
+    'Type a single letter and cities appear straight away, each with its country and coordinates. Over two hundred thousand places are built into the app, so the search needs no internet at all.': 'یک حرف بنویسید و شهرها بی‌درنگ نمایان می‌شوند، هر یک همراه با کشور و مختصاتش. بیش از دویست هزار مکان درون برنامه قرار دارد، بنابراین جست‌وجو به اینترنت نیازی ندارد.',
+    'Works Inside the Arctic Circle Too': 'در مدار قطب شمال هم کار می‌کند',
+    'In places like Longyearbyen and Tromso the sun can stay up, or stay down, for weeks, and the app could not show a timetable at all. Those days now follow the nearest workable latitude, as the scholars advise.': 'در جاهایی مانند لانگ‌یربین و ترومسو خورشید می‌تواند هفته‌ها غروب نکند یا طلوع نکند، و برنامه اصلاً نمی‌توانست جدولی نشان دهد. آن روزها اکنون از نزدیک‌ترین عرض جغرافیایی قابل محاسبه پیروی می‌کنند، همان‌گونه که علما راهنمایی می‌کنند.',
+    'Pick Your Home Screen Widget': 'ابزارک صفحه اصلی خود را انتخاب کنید',
+    'A new sheet shows every home screen widget with a picture of it, so you can see how each one looks before adding it.': 'صفحه‌ای تازه هر ابزارک صفحه اصلی را همراه با تصویرش نشان می‌دهد تا پیش از افزودن ببینید هر کدام چگونه به نظر می‌رسد.',
+    'You Will Be Told About New Updates': 'از به‌روزرسانی‌های تازه باخبر می‌شوید',
+    'When a newer version reaches the Play Store, the app now tells you as soon as you open it, and keeps reminding you until you install it.': 'وقتی نسخه‌ای تازه در پلی استور منتشر شود، برنامه به‌محض باز شدن به شما اطلاع می‌دهد و تا زمانی که نصبش کنید یادآوری را ادامه می‌دهد.',
     'Update Available': 'به‌روزرسانی موجود است',
     'A new version of the app is available.':
         'نسخه جدیدی از برنامه در دسترس است.',

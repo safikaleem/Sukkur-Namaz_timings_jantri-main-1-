@@ -173,7 +173,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Current Version ───────────────────────────
                   _DrawerItem(
                     icon: Icons.new_releases_rounded,
-                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.1.4'}',
+                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.1.5'}',
                     onTap: () => _showWhatsNewDialog(context),
                   ),
 
@@ -295,7 +295,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.1.4';
+    final versionStr = _version.isNotEmpty ? _version : '1.1.5';
 
     showDialog(
       context: context,
@@ -390,7 +390,10 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Version 1.1.4 ──────────────────────────────────
+                  // ── Version 1.1.5 ──────────────────────────────────
+                  // Everything since 1.1.3 is still listed: 1.1.4 went out
+                  // only hours earlier, so almost every user reaching this
+                  // dialog is coming from 1.1.3 and has seen none of it.
                   _buildNewFeatureItem(
                     context,
                     settings,
@@ -425,6 +428,24 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                       'ابحث عن أي مدينة في العالم أو استخدم موقعك الحالي لتحصل على أوقات الصلوات الست فيها. ويمكنك أيضًا اختيار طريقة الحساب ومذهب العصر بنفسك.',
                     ),
                     icon: Icons.travel_explore_rounded,
+                    iconColor: const Color(0xFF0277BD),
+                  ),
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    settings.translate(
+                      'Search Any City Instantly',
+                      'کوئی بھی شہر فوراً تلاش کریں',
+                      'ڪو به شهر فوري طور ڳوليو',
+                      'ابحث عن أي مدينة فورًا',
+                    ),
+                    settings.translate(
+                      'Type a single letter and cities appear straight away, each with its country and coordinates. Over two hundred thousand places are built into the app, so the search needs no internet at all.',
+                      'ایک حرف لکھتے ہی شہر سامنے آ جاتے ہیں، ہر ایک کے ساتھ اس کا ملک اور نقشے کے مقامات۔ دو لاکھ سے زیادہ مقامات ایپ کے اندر موجود ہیں، اس لیے تلاش کے لیے انٹرنیٹ کی ضرورت نہیں۔',
+                      'هڪ اکر لکڻ سان ئي شهر سامهون اچي وڃن ٿا، هر هڪ سان گڏ ان جو ملڪ ۽ نقشي جا نقطا. ٻه لک کان وڌيڪ جڳهون ايپ اندر موجود آهن، ان ڪري ڳولا لاءِ انٽرنيٽ جي ضرورت ناهي.',
+                      'اكتب حرفًا واحدًا فتظهر المدن فورًا، ومع كل منها بلدها وإحداثياتها. أكثر من مئتي ألف موقع مضمّنة داخل التطبيق، فلا تحتاج البحث إلى إنترنت.',
+                    ),
+                    icon: Icons.search_rounded,
                     iconColor: const Color(0xFF0277BD),
                   ),
                   _buildNewFeatureItem(
@@ -480,6 +501,24 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                     ),
                     icon: Icons.nights_stay_rounded,
                     iconColor: const Color(0xFF5E35B1),
+                  ),
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    settings.translate(
+                      'Works Inside the Arctic Circle Too',
+                      'قطبِ شمالی کے علاقوں میں بھی کام کرتا ہے',
+                      'قطب شمالي وارن علائقن ۾ به ڪم ڪري ٿو',
+                      'يعمل داخل الدائرة القطبية أيضًا',
+                    ),
+                    settings.translate(
+                      'In places like Longyearbyen and Tromso the sun can stay up, or stay down, for weeks, and the app could not show a timetable at all. Those days now follow the nearest workable latitude, as the scholars advise.',
+                      'لانگ ایئربین اور ٹرومسو جیسے مقامات پر سورج کئی ہفتوں تک نہ ڈوبتا ہے نہ نکلتا ہے، اور ایپ وہاں اوقات دکھا ہی نہیں سکتی تھی۔ ان دنوں کے لیے اب قریب ترین قابلِ عمل عرض البلد کے مطابق اوقات لیے جاتے ہیں، جیسا کہ علماء کی رہنمائی ہے۔',
+                      'لانگ ايئربين ۽ ٽرومسو جهڙن هنڌن تي سج ڪيترائي هفتا نه لهندو آهي نه اڀرندو آهي، ۽ ايپ اتي وقت ڏيکاري ئي نه سگهندي هئي. انهن ڏينهن لاءِ هاڻي ويجهي ۾ ويجهي قابل عمل ويڪرائي ڦاڪ مطابق وقت ورتا وڃن ٿا، جيئن عالمن جي رهنمائي آهي.',
+                      'في أماكن مثل لونجيربين وترومسو قد تبقى الشمس طالعة أو غائبة لأسابيع، ولم يكن التطبيق يستطيع عرض جدول أصلًا. تتبع تلك الأيام الآن أقرب خط عرض صالح، وفق ما يرشد إليه أهل العلم.',
+                    ),
+                    icon: Icons.ac_unit_rounded,
+                    iconColor: const Color(0xFF00838F),
                   ),
                   _buildNewFeatureItem(
                     context,
@@ -552,6 +591,42 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                     ),
                     icon: Icons.health_and_safety_rounded,
                     iconColor: const Color(0xFFF9A825),
+                  ),
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    settings.translate(
+                      'Pick Your Home Screen Widget',
+                      'اپنا ہوم اسکرین ویجٹ منتخب کریں',
+                      'پنهنجو هوم اسڪرين ويجٽ چونڊيو',
+                      'اختر أداة الشاشة الرئيسية',
+                    ),
+                    settings.translate(
+                      'A new sheet shows every home screen widget with a picture of it, so you can see how each one looks before adding it.',
+                      'ایک نئی فہرست ہر ہوم اسکرین ویجٹ کو اس کی تصویر کے ساتھ دکھاتی ہے، تاکہ آپ لگانے سے پہلے دیکھ سکیں کہ ہر ایک کیسا لگے گا۔',
+                      'هڪ نئين فهرست هر هوم اسڪرين ويجٽ کي ان جي تصوير سان ڏيکاري ٿي، ته جيئن توهان لڳائڻ کان اڳ ڏسي سگهو ته هر هڪ ڪيئن لڳندو.',
+                      'تعرض قائمة جديدة كل أداة للشاشة الرئيسية مع صورة لها، لترى شكل كل واحدة قبل إضافتها.',
+                    ),
+                    icon: Icons.dashboard_customize_rounded,
+                    iconColor: const Color(0xFF7B1FA2),
+                  ),
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    settings.translate(
+                      'You Will Be Told About New Updates',
+                      'نئی اپ ڈیٹ کی اطلاع مل جائے گی',
+                      'نئين اپڊيٽ جي اطلاع ملي ويندي',
+                      'سيتم إعلامك بالتحديثات الجديدة',
+                    ),
+                    settings.translate(
+                      'When a newer version reaches the Play Store, the app now tells you as soon as you open it, and keeps reminding you until you install it.',
+                      'جب پلے اسٹور پر نیا ورژن آ جائے تو ایپ کھولتے ہی آپ کو بتا دیتی ہے، اور جب تک آپ اسے انسٹال نہ کر لیں یاد دلاتی رہتی ہے۔',
+                      'جڏهن پلي اسٽور تي نئون ورزن اچي وڃي ته ايپ کولڻ سان ئي توهان کي ٻڌائي ٿي، ۽ جيستائين توهان ان کي انسٽال نه ڪريو ياد ڏياريندي رهي ٿي.',
+                      'عندما يصل إصدار أحدث إلى متجر Play، يخبرك التطبيق فور فتحه، ويظل يذكّرك حتى تثبّته.',
+                    ),
+                    icon: Icons.system_update_rounded,
+                    iconColor: const Color(0xFF2E7D32),
                   ),
                   _buildNewFeatureItem(
                     context,
