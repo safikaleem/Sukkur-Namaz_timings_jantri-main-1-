@@ -173,7 +173,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Current Version ───────────────────────────
                   _DrawerItem(
                     icon: Icons.new_releases_rounded,
-                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.1.5'}',
+                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.1.6'}',
                     onTap: () => _showWhatsNewDialog(context),
                   ),
 
@@ -295,7 +295,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.1.5';
+    final versionStr = _version.isNotEmpty ? _version : '1.1.6';
 
     showDialog(
       context: context,
@@ -390,6 +390,62 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Version 1.1.6 ──────────────────────────────────
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    settings.translate(
+                      'Read Straight Through the Quran',
+                      'قرآن بغیر رکے پڑھیں',
+                      'قرآن بنا رڪجي پڙهو',
+                      'اقرأ القرآن دون توقف',
+                    ),
+                    settings.translate(
+                      'Reading no longer stops at the end of a Para. Pull past the last page and the next Para opens by itself, so a Surah spread over two Paras is read without a break.',
+                      'اب پارے کے آخر پر پڑھنا نہیں رکتا۔ آخری صفحے سے آگے کھینچیں تو اگلا پارہ خود کھل جاتا ہے، اس لیے دو پاروں میں پھیلی ہوئی سورت بغیر رکے پڑھی جاتی ہے۔',
+                      'هاڻي پاري جي آخر تي پڙهڻ نه ٿو رڪجي. آخري صفحي کان اڳتي ڇڪيو ته ايندڙ پارو پاڻ کلي وڃي ٿو، ان ڪري ٻن پارن ۾ پکڙيل سورت بنا رڪجي پڙهي وڃي ٿي.',
+                      'لم تعد القراءة تتوقف عند نهاية الجزء. اسحب بعد الصفحة الأخيرة فينفتح الجزء التالي من تلقاء نفسه، فتُقرأ السورة الممتدة على جزأين دون انقطاع.',
+                    ),
+                    icon: Icons.auto_stories_rounded,
+                    iconColor: const Color(0xFF00695C),
+                  ),
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    settings.translate(
+                      'Choose Your City When You Set Up',
+                      'سیٹ اپ کے وقت اپنا شہر منتخب کریں',
+                      'سيٽ اپ وقت پنهنجو شهر چونڊيو',
+                      'اختر مدينتك عند الإعداد',
+                    ),
+                    settings.translate(
+                      'The first screen now lets you search for your city or use your location, instead of depending on GPS alone. Choosing Sukkur still gives you the Jantri.',
+                      'پہلی اسکرین اب آپ کو اپنا شہر تلاش کرنے یا اپنا مقام استعمال کرنے دیتی ہے، صرف GPS پر انحصار کے بجائے۔ سکھر منتخب کرنے پر آپ کو جنتری ہی ملتی ہے۔',
+                      'پهرين اسڪرين هاڻي توهان کي پنهنجو شهر ڳولڻ يا پنهنجو مقام استعمال ڪرڻ ڏئي ٿي، رڳو GPS تي ڀروسي جي بدران. سکر چونڊڻ تي توهان کي جنتري ئي ملي ٿي.',
+                      'أصبحت الشاشة الأولى تتيح لك البحث عن مدينتك أو استخدام موقعك، بدلًا من الاعتماد على GPS وحده. واختيار سكر يمنحك التقويم كما هو.',
+                    ),
+                    icon: Icons.location_city_rounded,
+                    iconColor: const Color(0xFF0277BD),
+                  ),
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    settings.translate(
+                      'Fajar Named Correctly in World Timings',
+                      'عالمی اوقات میں فجر کا درست نام',
+                      'عالمي وقتن ۾ فجر جو صحيح نالو',
+                      'تسمية الفجر بشكل صحيح في المواقيت العالمية',
+                    ),
+                    settings.translate(
+                      'The note under world prayer timings said Subah Sadiq where the app itself shows Fajar. It now says Fajar, in every language.',
+                      'عالمی نماز کے اوقات کے نیچے دیے گئے نوٹ میں صبح صادق لکھا تھا جبکہ ایپ خود فجر دکھاتی ہے۔ اب ہر زبان میں فجر لکھا ہے۔',
+                      'عالمي نماز جي وقتن هيٺان ڏنل نوٽ ۾ صبح صادق لکيل هو جڏهن ته ايپ پاڻ فجر ڏيکاري ٿي. هاڻي هر ٻوليءَ ۾ فجر لکيل آهي.',
+                      'كانت الملاحظة أسفل مواقيت الصلاة العالمية تذكر الصبح الصادق بينما يعرض التطبيق الفجر. أصبحت الآن تذكر الفجر بكل اللغات.',
+                    ),
+                    icon: Icons.wb_twilight_rounded,
+                    iconColor: const Color(0xFF8E24AA),
+                  ),
+
                   // ── Version 1.1.5 ──────────────────────────────────
                   // Everything since 1.1.3 is still listed: 1.1.4 went out
                   // only hours earlier, so almost every user reaching this
