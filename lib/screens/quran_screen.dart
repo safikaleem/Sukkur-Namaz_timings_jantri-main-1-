@@ -518,41 +518,40 @@ class _QuranScreenState extends State<QuranScreen> {
         color: const Color(0xFF00897B),
         borderRadius: BorderRadius.circular(24.0),
       ),
+      // Every label is scaled down to fit rather than allowed to wrap: these
+      // are one-word column headings, and at a large font setting the fixed
+      // widths below are narrower than the words themselves - which is how
+      // "Name" came to render as "Nam" over "e".
       child: Row(
         children: [
           SizedBox(
             width: 48,
-            child: Center(
-              child: Text(
-                settings.translate('No.', 'نمبر', 'نمبر', 'رقم'),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-              ),
+            child: _HeaderLabel(
+              settings.translate('No.', 'نمبر', 'نمبر', 'رقم'),
+              fontSize: 13,
             ),
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: Text(
+            child: _HeaderLabel(
               settings.translate('Name', 'نام', 'نالو', 'الاسم'),
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+              fontSize: 15,
+              alignment: AlignmentDirectional.centerStart,
             ),
           ),
           SizedBox(
             width: 40,
-            child: Center(
-              child: Text(
-                settings.translate('Read', 'پڑھیں', 'پڙهو', 'اقرأ'),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-              ),
+            child: _HeaderLabel(
+              settings.translate('Read', 'پڑھیں', 'پڙهو', 'اقرأ'),
+              fontSize: 14,
             ),
           ),
           const SizedBox(width: 8),
           SizedBox(
             width: 75,
-            child: Center(
-              child: Text(
-                settings.translate('Page', 'صفحہ', 'صفحو', 'صفحة'),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-              ),
+            child: _HeaderLabel(
+              settings.translate('Page', 'صفحہ', 'صفحو', 'صفحة'),
+              fontSize: 14,
             ),
           ),
           const SizedBox(width: 32),
@@ -654,6 +653,7 @@ class _QuranScreenState extends State<QuranScreen> {
                         const SizedBox(width: 16),
                         // Arabic and English Name
                         Expanded(
+                          flex: _kNameFlex,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -673,6 +673,10 @@ class _QuranScreenState extends State<QuranScreen> {
                               const SizedBox(height: 2),
                               Text(
                                 parah.english,
+                                // Wrap by word, never mid-word, and stop at two
+                                // lines rather than growing the row.
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: isDark ? Colors.white54 : Colors.black54,
                                   fontSize: 13,
@@ -682,48 +686,10 @@ class _QuranScreenState extends State<QuranScreen> {
                             ],
                           ),
                         ),
-                        // Percentage Pill
-                        Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD8F3EC),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${_translateNumber(parahPercent, settings)}%',
-                            style: const TextStyle(
-                              color: Color(0xFF006D5B),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        // Page Number Pill
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00897B), Color(0xFF00695C)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.menu_book_rounded, size: 14, color: Colors.white70),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${settings.translate("Page", "صفحہ", "صفحو", "صفحة")} ${_translateNumber(parah.startPage, settings)}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
+                        _TilePills(
+                          percentLabel: '${_translateNumber(parahPercent, settings)}%',
+                          pageLabel:
+                              '${settings.translate("Page", "صفحہ", "صفحو", "صفحة")} ${_translateNumber(parah.startPage, settings)}',
                         ),
                         const SizedBox(width: 12),
                         // Favorite Icon
@@ -1118,6 +1084,7 @@ class _QuranScreenState extends State<QuranScreen> {
                         const SizedBox(width: 16),
                         // Arabic and English Name
                         Expanded(
+                          flex: _kNameFlex,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -1137,6 +1104,10 @@ class _QuranScreenState extends State<QuranScreen> {
                               const SizedBox(height: 2),
                                 Text(
                                   '${surah.english}$_metaSeparator${surah.revelationType == 'Meccan' ? settings.translate('Makki', 'مکی', 'مڪي', 'مكية') : settings.translate('Madani', 'مدنی', 'مدني', 'مدنية')}$_metaSeparator${_translateNumber(surah.totalAyahs, settings)} ${settings.translate('Ayahs', 'آیات', 'آيتون', 'آيات')}',
+                                  // Wrap by word, never mid-word, and stop at
+                                  // two lines rather than growing the row.
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     color: isDark ? Colors.white54 : Colors.black54,
                                     fontSize: 12,
@@ -1146,48 +1117,10 @@ class _QuranScreenState extends State<QuranScreen> {
                             ],
                           ),
                         ),
-                        // Percentage Pill
-                        Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD8F3EC),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${_translateNumber(surahPercent, settings)}%',
-                            style: const TextStyle(
-                              color: Color(0xFF006D5B),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        // Page Number Pill
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00897B), Color(0xFF00695C)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.menu_book_rounded, size: 14, color: Colors.white70),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${settings.translate("Page", "صفحہ", "صفحو", "صفحة")} ${_translateNumber(QuranData.surahStartPages[surah.number] ?? 1, settings)}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
+                        _TilePills(
+                          percentLabel: '${_translateNumber(surahPercent, settings)}%',
+                          pageLabel:
+                              '${settings.translate("Page", "صفحہ", "صفحو", "صفحة")} ${_translateNumber(QuranData.surahStartPages[surah.number] ?? 1, settings)}',
                         ),
                         const SizedBox(width: 12),
                         // Favorite Icon
@@ -1286,6 +1219,117 @@ class _QuranScreenState extends State<QuranScreen> {
           fontSize: 13,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+}
+
+/// A single-word column heading that shrinks to fit instead of wrapping.
+class _HeaderLabel extends StatelessWidget {
+  final String text;
+  final double fontSize;
+  final AlignmentGeometry alignment;
+
+  const _HeaderLabel(
+    this.text, {
+    required this.fontSize,
+    this.alignment = Alignment.center,
+  });
+
+  @override
+  Widget build(BuildContext context) => FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: alignment,
+        child: Text(
+          text,
+          maxLines: 1,
+          softWrap: false,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: fontSize,
+          ),
+        ),
+      );
+}
+
+/// How the width of a list row is split between the name and the two pills.
+///
+/// Both sides used to take whatever they wanted, and since only the name was
+/// Expanded it was the one that paid: raise the system font size and the pills
+/// grew until the name had less room than a single word, so "Tilkal Rusul"
+/// broke into "Til / ka / l / Ru / su / l". Fixed shares mean neither side can
+/// starve the other at any font setting.
+const int _kNameFlex = 5;
+const int _kPillsFlex = 4;
+
+/// The progress and page pills at the end of a Quran list row.
+///
+/// Scaled down to fit their share rather than demanding it, so a large font
+/// setting shrinks the pills - which are glanceable either way - instead of
+/// destroying the name beside them.
+class _TilePills extends StatelessWidget {
+  final String percentLabel;
+  final String pageLabel;
+
+  const _TilePills({required this.percentLabel, required this.pageLabel});
+
+  @override
+  Widget build(BuildContext context) {
+    return Flexible(
+      flex: _kPillsFlex,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerEnd,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD8F3EC),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                percentLabel,
+                maxLines: 1,
+                style: const TextStyle(
+                  color: Color(0xFF006D5B),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF00897B), Color(0xFF00695C)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.menu_book_rounded, size: 14, color: Colors.white70),
+                  const SizedBox(width: 4),
+                  Text(
+                    pageLabel,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
