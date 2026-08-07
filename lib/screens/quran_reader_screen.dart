@@ -6,7 +6,7 @@ import '../widgets/pdf_mushaf_reader.dart';
 import '../widgets/translation_reader.dart';
 import '../data/quran_data.dart';
 
-class QuranReaderScreen extends StatelessWidget {
+class QuranReaderScreen extends StatefulWidget {
   final int surahNumber;
   final String surahNameEn;
   final String surahNameArabic;
@@ -25,6 +25,42 @@ class QuranReaderScreen extends StatelessWidget {
     this.initialAyah = 1,
     this.parahNumber,
   });
+
+  @override
+  State<QuranReaderScreen> createState() => _QuranReaderScreenState();
+}
+
+class _QuranReaderScreenState extends State<QuranReaderScreen> {
+  late String _titleEn;
+  late String _titleArabic;
+  late String _titleLocal;
+
+  /// Mushaf page the reader opens at. The reader runs continuously from there
+  /// across parah boundaries, so this is a starting point only.
+  late final int _startPage;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleEn = widget.surahNameEn;
+    _titleArabic = widget.surahNameArabic;
+    _titleLocal = widget.surahNameLocal;
+    _startPage = widget.initialPage.clamp(1, kQuranPageCount);
+  }
+
+  /// Retitles the screen when reading crosses into another parah - but only
+  /// when it was opened as a parah in the first place. Opened at a surah, the
+  /// surah's name stays put: it is what the reader asked for, and it is still
+  /// what the translation tab beside this one is showing.
+  void _onParahChanged(int parah) {
+    if (widget.parahNumber == null) return;
+    final parahData = QuranData.parahs[parah - 1];
+    setState(() {
+      _titleEn = 'Parah ${parahData.number} – ${parahData.english}';
+      _titleArabic = parahData.arabic;
+      _titleLocal = 'پارہ ${parahData.number}';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,9 +109,9 @@ class QuranReaderScreen extends StatelessWidget {
           title: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (surahNameArabic.isNotEmpty)
+              if (_titleArabic.isNotEmpty)
                 Text(
-                  surahNameArabic,
+                  _titleArabic,
                   textDirection: TextDirection.rtl,
                   style: TextStyle(
                     color: AppTheme.accentGreen,
@@ -92,11 +128,11 @@ class QuranReaderScreen extends StatelessWidget {
                 ),
               const SizedBox(height: 2),
               Text(
-                isRtl ? surahNameLocal : surahNameEn,
+                isRtl ? _titleLocal : _titleEn,
                 style: TextStyle(
                   color: isDark ? Colors.white70 : Colors.black54,
                   fontWeight: FontWeight.w500,
-                  fontSize: surahNameArabic.isNotEmpty ? 13 : 18,
+                  fontSize: _titleArabic.isNotEmpty ? 13 : 18,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -151,25 +187,21 @@ class QuranReaderScreen extends StatelessWidget {
             ),
           ),
         ),
-        body: Builder(
-          builder: (context) {
-            final int pNum = parahNumber ?? QuranData.getParahForPage(initialPage);
-            int pdfStartPage = (pNum == 1) ? 1 : QuranData.parahs[pNum - 1].startPage;
-            int localPage = initialPage - pdfStartPage + 1;
-            if (localPage < 1) localPage = 1;
-            
-            return TabBarView(
-              children: [
-                PdfMushafReader(
-                  settings: settings, 
-                  isDark: isDark, 
-                  initialPage: localPage,
-                  parahNumber: pNum,
-                ),
-                TranslationReader(surahNumber: surahNumber, settings: settings, isDark: isDark, initialAyah: initialAyah),
-              ],
-            );
-          }
+        body: TabBarView(
+          children: [
+            PdfMushafReader(
+              settings: settings,
+              isDark: isDark,
+              initialPage: _startPage,
+              onParahChanged: _onParahChanged,
+            ),
+            TranslationReader(
+              surahNumber: widget.surahNumber,
+              settings: settings,
+              isDark: isDark,
+              initialAyah: widget.initialAyah,
+            ),
+          ],
         ),
       ),
     );
