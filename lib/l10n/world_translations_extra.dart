@@ -253,6 +253,26 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'কাদ্দাসাল্লাহু সিররাহু',
     '✓  Facing Qibla': '✓  আপনি কিবলামুখী',
     'Not receiving prayer alerts? Press Reschedule now': 'নামাজের সতর্কতা পাচ্ছেন না? এখনই পুনরায় শিডিউল করুন চাপুন',
+    // Version 1.1.6 What's New
+    'Read Straight Through the Quran': 'কুরআন থামা ছাড়াই পড়ুন',
+    'Reading no longer stops at the end of a Para. Pull past the last page and the next Para opens by itself, so a Surah spread over two Paras is read without a break.':
+        'পারার শেষে পড়া আর থেমে যায় না। শেষ পৃষ্ঠার পরে টানলেই পরের পারা নিজে থেকে খুলে যায়, তাই দুই পারায় ছড়ানো সূরা বিরতি ছাড়াই পড়া যায়।',
+    'Choose Your City When You Set Up': 'সেটআপের সময় আপনার শহর বেছে নিন',
+    'The first screen now lets you search for your city or use your location, instead of depending on GPS alone. Choosing Sukkur still gives you the Jantri.':
+        'প্রথম স্ক্রিনে এখন কেবল জিপিএসের উপর নির্ভর না করে আপনার শহর খুঁজে নিতে বা অবস্থান ব্যবহার করতে পারেন। সুক্কুর বেছে নিলে আগের মতোই জান্ত্রি পাবেন।',
+    'Fajar Named Correctly in World Timings': 'বিশ্ব সময়সূচিতে ফজরের সঠিক নাম',
+    'The note under world prayer timings said Subah Sadiq where the app itself shows Fajar. It now says Fajar, in every language.':
+        'বিশ্বের নামাজের সময়ের নিচের নোটে সুবহে সাদিক লেখা ছিল, অথচ অ্যাপ নিজে ফজর দেখায়। এখন প্রতিটি ভাষায় ফজর লেখা থাকে।',
+    'Next': 'পরবর্তী',
+    'Please select Sukkur or Other Cities': 'অনুগ্রহ করে সুক্কুর অথবা অন্যান্য শহর বেছে নিন',
+    'Choose a city to continue': 'এগিয়ে যেতে একটি শহর বেছে নিন',
+    'No city selected': 'কোনো শহর নির্বাচন করা হয়নি',
+    'Location denied - search your city instead':
+        'অবস্থানের অনুমতি দেওয়া হয়নি - এর বদলে আপনার শহর খুঁজুন',
+    'No city selected - using Sukkur Jantri. You can choose your city later from World Prayer Timings.':
+        'কোনো শহর নির্বাচন করা হয়নি - সুক্কুর জান্ত্রি ব্যবহার করা হচ্ছে। আপনি পরে বিশ্বের নামাজ থেকে আপনার শহর বেছে নিতে পারেন।',
+    'Select Sukkur from the option above for accurate timings':
+        'সঠিক সময়ের জন্য উপরের অপশন থেকে সুক্কুর নির্বাচন করুন',
   },
   'indonesian': {
     'Search Any City Instantly': 'Cari Kota Mana Pun Seketika',
@@ -490,6 +510,26 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'Qaddasallahu sirrahu',
     '✓  Facing Qibla': '✓  Menghadap Kiblat',
     'Not receiving prayer alerts? Press Reschedule now': 'Tidak menerima peringatan sholat? Tekan Jadwalkan ulang sekarang',
+    // Version 1.1.6 What's New
+    'Read Straight Through the Quran': 'Membaca Al-Quran Tanpa Terhenti',
+    'Reading no longer stops at the end of a Para. Pull past the last page and the next Para opens by itself, so a Surah spread over two Paras is read without a break.':
+        'Bacaan tidak lagi berhenti di akhir Juz. Tarik melewati halaman terakhir dan Juz berikutnya terbuka sendiri, sehingga Surah yang terbentang di dua Juz dibaca tanpa terputus.',
+    'Choose Your City When You Set Up': 'Pilih Kota Anda Saat Penyiapan',
+    'The first screen now lets you search for your city or use your location, instead of depending on GPS alone. Choosing Sukkur still gives you the Jantri.':
+        'Layar pertama kini memungkinkan Anda mencari kota atau menggunakan lokasi Anda, bukan hanya mengandalkan GPS. Memilih Sukkur tetap memberi Anda Jantri.',
+    'Fajar Named Correctly in World Timings': 'Penamaan Subuh yang Benar pada Waktu Dunia',
+    'The note under world prayer timings said Subah Sadiq where the app itself shows Fajar. It now says Fajar, in every language.':
+        'Catatan di bawah waktu shalat dunia menyebut Subah Sadiq padahal aplikasi menampilkan Subuh. Kini tertulis Subuh, dalam semua bahasa.',
+    'Next': 'Berikutnya',
+    'Please select Sukkur or Other Cities': 'Silakan pilih Sukkur atau Kota Lainnya',
+    'Choose a city to continue': 'Pilih kota untuk melanjutkan',
+    'No city selected': 'Belum ada kota dipilih',
+    'Location denied - search your city instead':
+        'Izin lokasi ditolak - cari kota Anda sebagai gantinya',
+    'No city selected - using Sukkur Jantri. You can choose your city later from World Prayer Timings.':
+        'Belum ada kota dipilih - menggunakan Jantri Sukkur. Anda dapat memilih kota Anda nanti dari Waktu Shalat Dunia.',
+    'Select Sukkur from the option above for accurate timings':
+        'Untuk waktu yang akurat, pilih Sukkur dari opsi di atas',
   },
   'turkish': {
     'Search Any City Instantly': 'Her Şehri Anında Arayın',
@@ -727,6 +767,26 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'Kaddesallahu sırrahu',
     '✓  Facing Qibla': '✓  Kıbleye dönüksünüz',
     'Not receiving prayer alerts? Press Reschedule now': 'Namaz bildirimleri almıyor musunuz? Şimdi yeniden planla\'ya basın',
+    // Version 1.1.6 What's New
+    'Read Straight Through the Quran': 'Kuran\'ı Durmadan Okuyun',
+    'Reading no longer stops at the end of a Para. Pull past the last page and the next Para opens by itself, so a Surah spread over two Paras is read without a break.':
+        'Okuma artık cüzün sonunda durmuyor. Son sayfanın ötesine çekin, sonraki cüz kendiliğinden açılır; böylece iki cüze yayılan bir sure kesintisiz okunur.',
+    'Choose Your City When You Set Up': 'Kurulum Sırasında Şehrinizi Seçin',
+    'The first screen now lets you search for your city or use your location, instead of depending on GPS alone. Choosing Sukkur still gives you the Jantri.':
+        'İlk ekran artık yalnızca GPS\'e bağlı kalmak yerine şehrinizi aramanıza veya konumunuzu kullanmanıza izin veriyor. Sukkur\'u seçmek yine Jantri\'yi verir.',
+    'Fajar Named Correctly in World Timings': 'Dünya Vakitlerinde Sabah Adı Düzeltildi',
+    'The note under world prayer timings said Subah Sadiq where the app itself shows Fajar. It now says Fajar, in every language.':
+        'Dünya namaz vakitlerinin altındaki not, uygulama Sabah gösterirken Subh-ı Sadık yazıyordu. Artık her dilde Sabah yazıyor.',
+    'Next': 'İleri',
+    'Please select Sukkur or Other Cities': 'Lütfen Sukkur veya Diğer Şehirler\'i seçin',
+    'Choose a city to continue': 'Devam etmek için bir şehir seçin',
+    'No city selected': 'Şehir seçilmedi',
+    'Location denied - search your city instead':
+        'Konum izni reddedildi - bunun yerine şehrinizi arayın',
+    'No city selected - using Sukkur Jantri. You can choose your city later from World Prayer Timings.':
+        'Şehir seçilmedi - Sukkur Jantri kullanılıyor. Şehrinizi daha sonra Dünya Namaz Vakitleri\'nden seçebilirsiniz.',
+    'Select Sukkur from the option above for accurate timings':
+        'Doğru vakitler için yukarıdaki seçenekten Sukkur\'u seçin',
   },
   'french': {
     'Search Any City Instantly': 'Recherchez n\'importe quelle ville instantanément',
@@ -965,6 +1025,26 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'Qaddasallahu sirrahu',
     '✓  Facing Qibla': '✓  Vous êtes face à la Qibla',
     'Not receiving prayer alerts? Press Reschedule now': 'Vous ne recevez pas d\'alertes de prière ? Appuyez sur Reprogrammer maintenant',
+    // Version 1.1.6 What's New
+    'Read Straight Through the Quran': 'Lire le Coran sans interruption',
+    'Reading no longer stops at the end of a Para. Pull past the last page and the next Para opens by itself, so a Surah spread over two Paras is read without a break.':
+        'La lecture ne s\'arrête plus à la fin d\'un Para. Tirez au-delà de la dernière page et le Para suivant s\'ouvre tout seul, si bien qu\'une sourate répartie sur deux Paras se lit sans coupure.',
+    'Choose Your City When You Set Up': 'Choisissez votre ville lors de la configuration',
+    'The first screen now lets you search for your city or use your location, instead of depending on GPS alone. Choosing Sukkur still gives you the Jantri.':
+        'Le premier écran vous permet désormais de rechercher votre ville ou d\'utiliser votre position, au lieu de dépendre du seul GPS. Choisir Sukkur donne toujours le Jantri.',
+    'Fajar Named Correctly in World Timings': 'Le Fajr correctement nommé dans les horaires mondiaux',
+    'The note under world prayer timings said Subah Sadiq where the app itself shows Fajar. It now says Fajar, in every language.':
+        'La note sous les horaires de prière mondiaux indiquait Subah Sadiq alors que l\'application affiche Fajr. Elle indique désormais Fajr, dans toutes les langues.',
+    'Next': 'Suivant',
+    'Please select Sukkur or Other Cities': 'Veuillez choisir Sukkur ou Autres villes',
+    'Choose a city to continue': 'Choisissez une ville pour continuer',
+    'No city selected': 'Aucune ville sélectionnée',
+    'Location denied - search your city instead':
+        'Localisation refusée - recherchez plutôt votre ville',
+    'No city selected - using Sukkur Jantri. You can choose your city later from World Prayer Timings.':
+        'Aucune ville sélectionnée - le Jantri de Sukkur est utilisé. Vous pourrez choisir votre ville plus tard dans les Horaires de prière mondiaux.',
+    'Select Sukkur from the option above for accurate timings':
+        'Pour des horaires précis, sélectionnez Sukkur dans l\'option ci-dessus',
   },
   'hindi': {
     'Search Any City Instantly': 'कोई भी शहर तुरंत खोजें',
@@ -1202,6 +1282,26 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'क़द्दसल्लाहु सिर्रहु',
     '✓  Facing Qibla': '✓  आप क़िबला की ओर हैं',
     'Not receiving prayer alerts? Press Reschedule now': 'नमाज़ के अलर्ट नहीं मिल रहे हैं? अभी फिर से शेड्यूल करें दबाएं',
+    // Version 1.1.6 What's New
+    'Read Straight Through the Quran': 'क़ुरआन बिना रुके पढ़ें',
+    'Reading no longer stops at the end of a Para. Pull past the last page and the next Para opens by itself, so a Surah spread over two Paras is read without a break.':
+        'पढ़ना अब पारे के अंत पर नहीं रुकता। आख़िरी पन्ने से आगे खींचें और अगला पारा अपने आप खुल जाता है, इसलिए दो पारों में फैली सूरत बिना रुके पढ़ी जाती है।',
+    'Choose Your City When You Set Up': 'सेटअप के समय अपना शहर चुनें',
+    'The first screen now lets you search for your city or use your location, instead of depending on GPS alone. Choosing Sukkur still gives you the Jantri.':
+        'पहली स्क्रीन अब आपको सिर्फ़ जीपीएस पर निर्भर रहने के बजाय अपना शहर खोजने या अपना स्थान इस्तेमाल करने देती है। सुक्कुर चुनने पर आपको जंत्री ही मिलती है।',
+    'Fajar Named Correctly in World Timings': 'विश्व समय में फ़ज्र का सही नाम',
+    'The note under world prayer timings said Subah Sadiq where the app itself shows Fajar. It now says Fajar, in every language.':
+        'विश्व नमाज़ समय के नीचे दी गई टिप्पणी में सुब्ह सादिक लिखा था जबकि ऐप स्वयं फ़ज्र दिखाता है। अब हर भाषा में फ़ज्र लिखा है।',
+    'Next': 'आगे',
+    'Please select Sukkur or Other Cities': 'कृपया सुक्कुर या अन्य शहर चुनें',
+    'Choose a city to continue': 'आगे बढ़ने के लिए एक शहर चुनें',
+    'No city selected': 'कोई शहर चयनित नहीं',
+    'Location denied - search your city instead':
+        'स्थान की अनुमति नहीं मिली - इसके बजाय अपना शहर खोजें',
+    'No city selected - using Sukkur Jantri. You can choose your city later from World Prayer Timings.':
+        'कोई शहर चयनित नहीं - सुक्कुर जंत्री का उपयोग किया जा रहा है। आप बाद में विश्व नमाज़ समय से अपना शहर चुन सकते हैं।',
+    'Select Sukkur from the option above for accurate timings':
+        'सटीक समय के लिए ऊपर दिए विकल्प से सुक्कुर चुनें',
   },
   'persian': {
     'Search Any City Instantly': 'هر شهری را فوراً جست‌وجو کنید',
@@ -1439,5 +1539,25 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'قَدَّسَ اللهُ سِرَّهُ',
     '✓  Facing Qibla': '✓  رو به قبله هستید',
     'Not receiving prayer alerts? Press Reschedule now': 'هشدارهای نماز را دریافت نمی‌کنید؟ اکنون دوباره زمان‌بندی کنید را فشار دهید',
+    // Version 1.1.6 What's New
+    'Read Straight Through the Quran': 'قرآن را بدون توقف بخوانید',
+    'Reading no longer stops at the end of a Para. Pull past the last page and the next Para opens by itself, so a Surah spread over two Paras is read without a break.':
+        'خواندن دیگر در پایان جزء متوقف نمی‌شود. از آخرین صفحه فراتر بکشید تا جزء بعدی خودبه‌خود باز شود، بنابراین سوره‌ای که در دو جزء پخش شده بدون وقفه خوانده می‌شود.',
+    'Choose Your City When You Set Up': 'هنگام راه‌اندازی شهر خود را انتخاب کنید',
+    'The first screen now lets you search for your city or use your location, instead of depending on GPS alone. Choosing Sukkur still gives you the Jantri.':
+        'صفحه نخست اکنون به شما اجازه می‌دهد به جای تکیه بر GPS تنها، شهر خود را جستجو کنید یا از موقعیت خود استفاده کنید. انتخاب سکر همچنان جنتری را به شما می‌دهد.',
+    'Fajar Named Correctly in World Timings': 'نام درست فجر در اوقات جهانی',
+    'The note under world prayer timings said Subah Sadiq where the app itself shows Fajar. It now says Fajar, in every language.':
+        'یادداشت زیر اوقات نماز جهانی صبح صادق نوشته بود در حالی که خود برنامه فجر را نشان می‌دهد. اکنون در همه زبان‌ها فجر نوشته شده است.',
+    'Next': 'بعدی',
+    'Please select Sukkur or Other Cities': 'لطفاً سکر یا شهرهای دیگر را انتخاب کنید',
+    'Choose a city to continue': 'برای ادامه یک شهر انتخاب کنید',
+    'No city selected': 'هیچ شهری انتخاب نشده است',
+    'Location denied - search your city instead':
+        'اجازه موقعیت داده نشد - در عوض شهر خود را جستجو کنید',
+    'No city selected - using Sukkur Jantri. You can choose your city later from World Prayer Timings.':
+        'هیچ شهری انتخاب نشده است - از جنتری سکر استفاده می‌شود. می‌توانید بعداً شهر خود را از اوقات نماز جهانی انتخاب کنید.',
+    'Select Sukkur from the option above for accurate timings':
+        'برای اوقات دقیق، سکر را از گزینه بالا انتخاب کنید',
   },
 };

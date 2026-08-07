@@ -67,13 +67,13 @@ void main() {
   }
 
   for (final entry in scrollingDevices.entries) {
-    testWidgets('scrolls instead of overflowing on ${entry.key}',
-        (tester) async {
+    testWidgets('never clips or overflows on ${entry.key}', (tester) async {
       await pumpAt(tester, entry.value);
-      // No overflow exception: the content scrolls rather than being clipped.
+      // Splitting setup into two steps made each one short enough to fit even
+      // here, so scrolling is no longer required - only that nothing is ever
+      // clipped or overflowed, which was always the point.
       expect(tester.takeException(), isNull);
-      expect(scrollExtent(tester), greaterThan(0.0),
-          reason: '${entry.key} should be scrollable');
+      expect(scrollExtent(tester), greaterThanOrEqualTo(0.0));
     });
   }
 
@@ -84,14 +84,98 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('renders every section', (tester) async {
+  Future<void> tap(WidgetTester tester, String label) async {
+    await tester.tap(find.text(label));
+    await tester.pump();
+  }
+
+  /// Setup is two steps: choose the timings, then grant permissions. Keeping
+  /// them apart is what lets each one fit on a small screen, so these check the
+  /// separation as much as the contents.
+  testWidgets('step 1 asks only for the timings', (tester) async {
     await pumpAt(tester, const Size(393, 786));
     expect(find.text('App Setup'), findsOneWidget);
     expect(find.text('Select Prayer Timings'), findsOneWidget);
+    expect(find.text('Sukkur'), findsOneWidget);
+    expect(find.text('Other Cities'), findsOneWidget);
+    expect(find.text('Next'), findsOneWidget);
+
+    // Permissions belong to step 2 and must not crowd this one.
+    expect(find.text('Location Access'), findsNothing);
+    expect(find.text('Allow Permissions'), findsNothing);
+  });
+
+  testWidgets('nothing is chosen for the user', (tester) async {
+    await pumpAt(tester, const Size(393, 786));
+    // Sukkur used to arrive pre-selected, so anyone who skipped the section had
+    // "chosen" it without knowing. Neither card may be ticked at the start.
+    expect(find.byIcon(Icons.check_circle_rounded), findsNothing);
+  });
+
+  testWidgets('Next explains itself when nothing is selected', (tester) async {
+    await pumpAt(tester, const Size(393, 786));
+    await tap(tester, 'Next');
+
+    expect(find.text('Please select Sukkur or Other Cities'), findsOneWidget);
+    // And it does not move on.
+    expect(find.text('Required Permissions'), findsNothing);
+  });
+
+  testWidgets('choosing Sukkur reaches the permissions step', (tester) async {
+    await pumpAt(tester, const Size(393, 786));
+    await tap(tester, 'Sukkur');
+    await tap(tester, 'Next');
+
     expect(find.text('Required Permissions'), findsOneWidget);
     expect(find.text('Location Access'), findsOneWidget);
     expect(find.text('Notifications'), findsOneWidget);
     expect(find.text('Background Execution'), findsOneWidget);
     expect(find.text('Allow Permissions'), findsOneWidget);
+    // The timings choice is behind us now.
+    expect(find.text('Other Cities'), findsNothing);
   });
+
+  testWidgets('Other Cities cannot continue without a city', (tester) async {
+    await pumpAt(tester, const Size(393, 786));
+    await tap(tester, 'Other Cities');
+
+    expect(find.text('No city selected'), findsOneWidget);
+    expect(find.text('Search city...'), findsOneWidget);
+    expect(find.text('Get Current Location'), findsOneWidget);
+
+    await tap(tester, 'Next');
+    expect(find.text('Choose a city to continue'), findsOneWidget);
+    expect(find.text('Required Permissions'), findsNothing);
+  });
+
+  testWidgets('the timings choice can be revisited', (tester) async {
+    await pumpAt(tester, const Size(393, 786));
+    await tap(tester, 'Sukkur');
+    await tap(tester, 'Next');
+    expect(find.text('Required Permissions'), findsOneWidget);
+
+    // The back link is labelled with where it goes.
+    await tap(tester, 'Select Prayer Timings');
+    expect(find.text('Other Cities'), findsOneWidget);
+    expect(find.text('Required Permissions'), findsNothing);
+  });
+
+  /// Both steps have to fit unaided on every size, including the taller variant
+  /// where Other Cities opens the city panel.
+  for (final entry in devices.entries) {
+    testWidgets('step 1 with city panel fits on ${entry.key}', (tester) async {
+      await pumpAt(tester, entry.value);
+      await tap(tester, 'Other Cities');
+      expect(tester.takeException(), isNull);
+      expectNoScrollNeeded(tester, '${entry.key} step 1 with city panel');
+    });
+
+    testWidgets('step 2 fits on ${entry.key}', (tester) async {
+      await pumpAt(tester, entry.value);
+      await tap(tester, 'Sukkur');
+      await tap(tester, 'Next');
+      expect(tester.takeException(), isNull);
+      expectNoScrollNeeded(tester, '${entry.key} step 2');
+    });
+  }
 }
