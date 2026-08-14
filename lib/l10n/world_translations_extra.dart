@@ -253,6 +253,10 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'কাদ্দাসাল্লাহু সিররাহু',
     '✓  Facing Qibla': '✓  আপনি কিবলামুখী',
     'Not receiving prayer alerts? Press Reschedule now': 'নামাজের সতর্কতা পাচ্ছেন না? এখনই পুনরায় শিডিউল করুন চাপুন',
+    // Version 1.1.7 What's New
+    'Announcements Reach You Again': 'ঘোষণা আবার আপনার কাছে পৌঁছাচ্ছে',
+    'Notices are delivered again: Jumma greetings, Ramzan timetables and Eid prayer announcements now appear when you open the app. They were being sent to an address the app no longer had, so none of them were arriving.':
+        'ঘোষণা আবার পৌঁছাচ্ছে: জুমার শুভেচ্ছা, রমজানের সময়সূচি ও ঈদের নামাজের ঘোষণা এখন অ্যাপ খুললেই দেখা যায়। এগুলো এমন একটি ঠিকানায় পাঠানো হচ্ছিল যা অ্যাপের কাছে আর ছিল না, তাই কোনোটিই পৌঁছাচ্ছিল না।',
     // Version 1.1.6 What's New
     'Read Straight Through the Quran': 'কুরআন থামা ছাড়াই পড়ুন',
     'Reading no longer stops at the end of a Para. Pull past the last page and the next Para opens by itself, so a Surah spread over two Paras is read without a break.':
@@ -510,6 +514,10 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'Qaddasallahu sirrahu',
     '✓  Facing Qibla': '✓  Menghadap Kiblat',
     'Not receiving prayer alerts? Press Reschedule now': 'Tidak menerima peringatan sholat? Tekan Jadwalkan ulang sekarang',
+    // Version 1.1.7 What's New
+    'Announcements Reach You Again': 'Pengumuman Sampai Kepada Anda Lagi',
+    'Notices are delivered again: Jumma greetings, Ramzan timetables and Eid prayer announcements now appear when you open the app. They were being sent to an address the app no longer had, so none of them were arriving.':
+        'Pengumuman tersampaikan lagi: ucapan Jumat, jadwal Ramadan, dan pemberitahuan sholat Id kini muncul saat Anda membuka aplikasi. Semuanya dikirim ke alamat yang tidak lagi dimiliki aplikasi, sehingga tidak ada yang sampai.',
     // Version 1.1.6 What's New
     'Read Straight Through the Quran': 'Membaca Al-Quran Tanpa Terhenti',
     'Reading no longer stops at the end of a Para. Pull past the last page and the next Para opens by itself, so a Surah spread over two Paras is read without a break.':
@@ -767,6 +775,10 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'Kaddesallahu sırrahu',
     '✓  Facing Qibla': '✓  Kıbleye dönüksünüz',
     'Not receiving prayer alerts? Press Reschedule now': 'Namaz bildirimleri almıyor musunuz? Şimdi yeniden planla\'ya basın',
+    // Version 1.1.7 What's New
+    'Announcements Reach You Again': 'Duyurular Size Yeniden Ulaşıyor',
+    'Notices are delivered again: Jumma greetings, Ramzan timetables and Eid prayer announcements now appear when you open the app. They were being sent to an address the app no longer had, so none of them were arriving.':
+        'Duyurular yeniden ulaşıyor: Cuma tebrikleri, Ramazan imsakiyeleri ve bayram namazı duyuruları artık uygulamayı açtığınızda görünüyor. Bunlar uygulamanın artık sahip olmadığı bir adrese gönderiliyordu, bu yüzden hiçbiri ulaşmıyordu.',
     // Version 1.1.6 What's New
     'Read Straight Through the Quran': 'Kuran\'ı Durmadan Okuyun',
     'Reading no longer stops at the end of a Para. Pull past the last page and the next Para opens by itself, so a Surah spread over two Paras is read without a break.':
@@ -1025,6 +1037,10 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'Qaddasallahu sirrahu',
     '✓  Facing Qibla': '✓  Vous êtes face à la Qibla',
     'Not receiving prayer alerts? Press Reschedule now': 'Vous ne recevez pas d\'alertes de prière ? Appuyez sur Reprogrammer maintenant',
+    // Version 1.1.7 What's New
+    'Announcements Reach You Again': 'Les annonces vous parviennent à nouveau',
+    'Notices are delivered again: Jumma greetings, Ramzan timetables and Eid prayer announcements now appear when you open the app. They were being sent to an address the app no longer had, so none of them were arriving.':
+        'Les annonces arrivent de nouveau : vœux du vendredi, horaires du Ramadan et annonces de la prière de l\'Aïd s\'affichent désormais à l\'ouverture de l\'application. Elles étaient envoyées à une adresse que l\'application n\'avait plus, si bien qu\'aucune ne parvenait.',
     // Version 1.1.6 What's New
     'Read Straight Through the Quran': 'Lire le Coran sans interruption',
     'Reading no longer stops at the end of a Para. Pull past the last page and the next Para opens by itself, so a Surah spread over two Paras is read without a break.':
@@ -1282,6 +1298,10 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'क़द्दसल्लाहु सिर्रहु',
     '✓  Facing Qibla': '✓  आप क़िबला की ओर हैं',
     'Not receiving prayer alerts? Press Reschedule now': 'नमाज़ के अलर्ट नहीं मिल रहे हैं? अभी फिर से शेड्यूल करें दबाएं',
+    // Version 1.1.7 What's New
+    'Announcements Reach You Again': 'घोषणाएं फिर से आप तक पहुंच रही हैं',
+    'Notices are delivered again: Jumma greetings, Ramzan timetables and Eid prayer announcements now appear when you open the app. They were being sent to an address the app no longer had, so none of them were arriving.':
+        'घोषणाएं फिर से पहुंच रही हैं: जुमे की मुबारकबाद, रमज़ान की समय-सारणी और ईद की नमाज़ की सूचनाएं अब ऐप खोलते ही दिखती हैं। ये ऐसे पते पर भेजी जा रही थीं जो ऐप के पास रहा ही नहीं था, इसलिए कोई भी नहीं पहुंच रही थी।',
     // Version 1.1.6 What's New
     'Read Straight Through the Quran': 'क़ुरआन बिना रुके पढ़ें',
     'Reading no longer stops at the end of a Para. Pull past the last page and the next Para opens by itself, so a Surah spread over two Paras is read without a break.':
@@ -1539,6 +1559,10 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'قَدَّسَ اللهُ سِرَّهُ',
     '✓  Facing Qibla': '✓  رو به قبله هستید',
     'Not receiving prayer alerts? Press Reschedule now': 'هشدارهای نماز را دریافت نمی‌کنید؟ اکنون دوباره زمان‌بندی کنید را فشار دهید',
+    // Version 1.1.7 What's New
+    'Announcements Reach You Again': 'اطلاعیه‌ها دوباره به شما می‌رسند',
+    'Notices are delivered again: Jumma greetings, Ramzan timetables and Eid prayer announcements now appear when you open the app. They were being sent to an address the app no longer had, so none of them were arriving.':
+        'اطلاعیه‌ها دوباره می‌رسند: تبریک جمعه، جدول رمضان و اطلاعیه‌های نماز عید اکنون با باز کردن برنامه نمایش داده می‌شوند. این‌ها به نشانی‌ای فرستاده می‌شدند که دیگر در برنامه وجود نداشت، بنابراین هیچ‌کدام نمی‌رسید.',
     // Version 1.1.6 What's New
     'Read Straight Through the Quran': 'قرآن را بدون توقف بخوانید',
     'Reading no longer stops at the end of a Para. Pull past the last page and the next Para opens by itself, so a Surah spread over two Paras is read without a break.':

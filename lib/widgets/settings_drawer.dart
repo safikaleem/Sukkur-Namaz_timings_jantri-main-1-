@@ -173,7 +173,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Current Version ───────────────────────────
                   _DrawerItem(
                     icon: Icons.new_releases_rounded,
-                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.1.6'}',
+                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.1.7'}',
                     onTap: () => _showWhatsNewDialog(context),
                   ),
 
@@ -295,7 +295,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.1.6';
+    final versionStr = _version.isNotEmpty ? _version : '1.1.7';
 
     showDialog(
       context: context,
@@ -390,6 +390,26 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Version 1.1.7 ──────────────────────────────────
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    settings.translate(
+                      'Announcements Reach You Again',
+                      'اعلانات دوبارہ آپ تک',
+                      'اعلان وري توهان تائين',
+                      'عودة وصول الإعلانات',
+                    ),
+                    settings.translate(
+                      'Notices are delivered again: Jumma greetings, Ramzan timetables and Eid prayer announcements now appear when you open the app. They were being sent to an address the app no longer had, so none of them were arriving.',
+                      'اعلانات دوبارہ پہنچنے لگے ہیں: جمعہ کی مبارکباد، رمضان کا ٹائم ٹیبل اور عید کی نماز کے اعلانات اب ایپ کھولتے ہی نظر آتے ہیں۔ یہ ایسے پتے پر بھیجے جا رہے تھے جو ایپ کے پاس رہا ہی نہیں تھا، اس لیے کوئی اعلان نہیں پہنچ رہا تھا۔',
+                      'اعلان وري پهچڻ لڳا آهن: جمعي جي مبارڪباد، رمضان جو ٽائيم ٽيبل ۽ عيد جي نماز جا اعلان هاڻي ايپ کولڻ سان ئي نظر اچن ٿا. اهي اهڙي پتي تي موڪليا پيا وڃن جيڪو ايپ وٽ رهيو ئي نه هو، ان ڪري ڪوبه اعلان نه پيو پهچي.',
+                      'عادت الإعلانات تصلك: تظهر تهنئة الجمعة وجداول رمضان وإعلانات صلاة العيد الآن بمجرد فتح التطبيق. كانت تُرسل إلى عنوان لم يعد لدى التطبيق، فلم يكن يصل منها شيء.',
+                    ),
+                    icon: Icons.campaign_rounded,
+                    iconColor: const Color(0xFFD84315),
+                  ),
+
                   // ── Version 1.1.6 ──────────────────────────────────
                   _buildNewFeatureItem(
                     context,

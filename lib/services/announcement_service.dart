@@ -14,10 +14,14 @@ import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
 
 class AnnouncementService {
-  // TODO: Replace this URL with your hosted JSON file URL.
-  // This can be a GitHub raw link, Firebase hosting, or your own website URL.
+  // The hosted announcement file. Deliberately the revision-less raw link: a
+  // Gist raw URL that carries a commit SHA is frozen at that revision, so
+  // edits would never reach anyone. This form always serves the latest save.
+  //
+  // Set "enabled": false in the Gist to stop the popup. It has no memory of
+  // what a user has already seen, so while enabled it shows on every launch.
   static const String announcementUrl =
-      'https://gist.githubusercontent.com/safikaleem/dec1a7453d964e89edc0832d09774cf8/raw/announcement.json';
+      'https://gist.githubusercontent.com/safikaleem/2afecaa5e4b86ab5227ee00a7416646a/raw/announcement.json';
 
   /// Checks if there is a new remote announcement/pamphlet and shows it in a popup.
   /// If remote announcement is not active, falls back to the local Ramzan pamphlet.
