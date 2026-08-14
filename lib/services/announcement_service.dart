@@ -68,35 +68,35 @@ class AnnouncementService {
     String? imageUrl,
     String? title,
     String? description,
+    String announcementId,
   ) async {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
-    final messenger = ScaffoldMessenger.of(context);
-
-    // If there is no image, we just share text directly without showing a loading dialog
-    if (!isLocal && (imageUrl == null || imageUrl.isEmpty)) {
-      String shareText = '';
-      if (title != null && title.isNotEmpty) shareText += '$title\n\n';
-      if (description != null && description.isNotEmpty) shareText += description;
-      
-      if (shareText.trim().isEmpty) shareText = 'Sukkur Prayer Timings Announcement';
-      
-      await SharePlus.instance.share(ShareParams(text: shareText.trim()));
-      return;
-    }
-
     BuildContext? loadingCtx;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext lCtx) {
-        loadingCtx = lCtx;
-        return const Center(
-          child: CircularProgressIndicator(),
-        );
-      },
-    );
 
     try {
+      // If there is no image, we just share text directly without showing a loading dialog
+      if (!isLocal && (imageUrl == null || imageUrl.isEmpty)) {
+        String shareText = '';
+        if (title != null && title.isNotEmpty) shareText += '$title\n\n';
+        if (description != null && description.isNotEmpty) shareText += description;
+
+        if (shareText.trim().isEmpty) shareText = 'Sukkur Prayer Timings Announcement';
+
+        await SharePlus.instance.share(ShareParams(text: shareText.trim()));
+        return;
+      }
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext lCtx) {
+          loadingCtx = lCtx;
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      );
+
       Uint8List bytes;
       if (isLocal) {
         final byteData = await rootBundle.load('assets/images/ramzan_pamphlet.jpg');
@@ -128,18 +128,23 @@ class AnnouncementService {
         }
       }
 
-      final file = File('${tempDir.path}/ramzan_pamphlet.$ext');
+      final file = File('${tempDir.path}/${_shareFileName(announcementId, isLocal)}.$ext');
       await file.writeAsBytes(bytes);
 
       if (loadingCtx != null && loadingCtx!.mounted) {
         Navigator.pop(loadingCtx!);
+        loadingCtx = null;
       }
 
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path)],
-          text: title ??
-              settings.translate('Ramzan Timetable', 'رمضان المبارک کا ٹائم ٹیبل', 'Ramzan Timetable', 'Ramzan Timetable'),
+          // Not `title ?? ...`: the hosted JSON sends "" for an untitled
+          // announcement, and ?? only falls back on null, so the share sheet
+          // opened with an empty message.
+          text: (title != null && title.isNotEmpty)
+              ? title
+              : settings.translate('Ramzan Timetable', 'رمضان المبارک کا ٹائم ٹیبل', 'Ramzan Timetable', 'Ramzan Timetable'),
         ),
       );
     } catch (e) {
@@ -147,16 +152,74 @@ class AnnouncementService {
         Navigator.pop(loadingCtx!);
       }
       debugPrint('Error sharing image: $e');
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            '${settings.translate('Error sharing/saving image:', 'فائل محفوظ یا شیئر کرنے میں خرابی پیش آئی:', 'Error sharing/saving image:', 'Error sharing/saving image:')} $e',
-            style: TextStyle(fontFamily: AppTheme.getFontForLanguage(context, settings.language)),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (context.mounted) {
+        await _showShareError(context, e);
+      }
     }
+  }
+
+  /// A file name for the shared image, taken from the announcement id.
+  ///
+  /// Every announcement used to be written out as 'ramzan_pamphlet' whatever
+  /// it actually was, so a hadith image reached the recipient named after
+  /// Ramzan.
+  static String _shareFileName(String announcementId, bool isLocal) {
+    if (isLocal) return 'ramzan_pamphlet';
+    final cleaned = announcementId.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
+    return cleaned.isEmpty ? 'announcement' : cleaned;
+  }
+
+  /// Reports a share failure on a dialog route rather than in a SnackBar.
+  ///
+  /// The announcement popup is still on screen when sharing fails, and a
+  /// SnackBar is drawn inside the Scaffold - underneath that popup's modal
+  /// barrier. The message was therefore never visible: the spinner appeared,
+  /// vanished, and nothing followed, which is indistinguishable from a button
+  /// that does nothing at all. A dialog goes on the Navigator, above it.
+  ///
+  /// The error text is selectable so it can be copied and reported.
+  static Future<void> _showShareError(BuildContext context, Object error) async {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final font = AppTheme.getFontForLanguage(context, settings.language);
+
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext errCtx) => AlertDialog(
+        backgroundColor: isDark ? AppTheme.surfaceDark : Colors.white,
+        title: Text(
+          settings.translate(
+            'Error sharing/saving image:',
+            'فائل محفوظ یا شیئر کرنے میں خرابی پیش آئی:',
+            'Error sharing/saving image:',
+            'Error sharing/saving image:',
+          ),
+          style: TextStyle(
+            fontFamily: font,
+            fontSize: 16,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: SelectableText(
+            '$error',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? Colors.white70 : Colors.black54,
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(errCtx),
+            child: Text(
+              settings.translate('Close', 'بند کریں', 'Close', 'Close'),
+              style: TextStyle(fontFamily: font),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Displays the announcement popup dialog.
@@ -306,8 +369,26 @@ class AnnouncementService {
                     // Save / Share button (hidden on web due to file system limitations)
                     if (!kIsWeb)
                       ElevatedButton.icon(
-                      onPressed: () {
-                        _saveAndShareImage(context, isLocal, imageUrl, title, description);
+                      // Awaited and guarded: this used to be fire-and-forget,
+                      // so anything thrown on the way to the share sheet became
+                      // an unhandled async error and the button simply did
+                      // nothing, with no trace on screen.
+                      onPressed: () async {
+                        try {
+                          await _saveAndShareImage(
+                            context,
+                            isLocal,
+                            imageUrl,
+                            title,
+                            description,
+                            announcementId,
+                          );
+                        } catch (e) {
+                          debugPrint('Share button failed: $e');
+                          if (context.mounted) {
+                            await _showShareError(context, e);
+                          }
+                        }
                       },
                       icon: const Icon(Icons.share_rounded, size: 16),
                       label: Text(
