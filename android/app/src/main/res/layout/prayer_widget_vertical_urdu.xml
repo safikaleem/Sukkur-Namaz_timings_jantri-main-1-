@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/widget_root_vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_background"
+    android:layoutDirection="rtl"
+    android:padding="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingBottom="8dp">
+        <TextClock
+            android:id="@+id/widget_clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#1A1A2E"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:format12Hour="h:mm a"
+            android:format24Hour="HH:mm" />
+        <TextView
+            android:id="@+id/widget_gregorian"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#888899"
+            android:textSize="11sp" />
+        <TextView
+            android:id="@+id/widget_hijri"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#888899"
+            android:textSize="11sp" />
+        <TextView
+            android:id="@+id/widget_city_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#2196F3"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/prayers_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center_vertical">        <LinearLayout
+            android:id="@+id/row_subah"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingVertical="4dp"
+            android:paddingHorizontal="4dp"
+            android:gravity="center_vertical">
+            <ImageView
+                android:id="@+id/dot_subah"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:src="@drawable/circle_dot"
+                app:tint="#555577" />
+            <TextView
+                android:id="@+id/name_subah"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#888899"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+            <TextView
+                android:id="@+id/time_subah"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#555577"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>        <LinearLayout
+            android:id="@+id/row_fajar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingVertical="4dp"
+            android:paddingHorizontal="4dp"
+            android:gravity="center_vertical">
+            <ImageView
+                android:id="@+id/dot_fajar"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:src="@drawable/circle_dot"
+                app:tint="#555577" />
+            <TextView
+                android:id="@+id/name_fajar"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#888899"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+            <TextView
+                android:id="@+id/time_fajar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#555577"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>        <LinearLayout
+            android:id="@+id/row_tulu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingVertical="4dp"
+            android:paddingHorizontal="4dp"
+            android:gravity="center_vertical">
+            <ImageView
+                android:id="@+id/dot_tulu"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:src="@drawable/circle_dot"
+                app:tint="#555577" />
+            <TextView
+                android:id="@+id/name_tulu"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#888899"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+            <TextView
+                android:id="@+id/time_tulu"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#555577"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>        <LinearLayout
+            android:id="@+id/row_ishraq"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingVertical="4dp"
+            android:paddingHorizontal="4dp"
+            android:gravity="center_vertical">
+            <ImageView
+                android:id="@+id/dot_ishraq"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:src="@drawable/circle_dot"
+                app:tint="#555577" />
+            <TextView
+                android:id="@+id/name_ishraq"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#888899"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+            <TextView
+                android:id="@+id/time_ishraq"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#555577"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>        <LinearLayout
+            android:id="@+id/row_zawal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingVertical="4dp"
+            android:paddingHorizontal="4dp"
+            android:gravity="center_vertical">
+            <ImageView
+                android:id="@+id/dot_zawal"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:src="@drawable/circle_dot"
+                app:tint="#555577" />
+            <TextView
+                android:id="@+id/name_zawal"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#888899"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+            <TextView
+                android:id="@+id/time_zawal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#555577"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>        <LinearLayout
+            android:id="@+id/row_zuhar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingVertical="4dp"
+            android:paddingHorizontal="4dp"
+            android:gravity="center_vertical">
+            <ImageView
+                android:id="@+id/dot_zuhar"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:src="@drawable/circle_dot"
+                app:tint="#555577" />
+            <TextView
+                android:id="@+id/name_zuhar"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#888899"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+            <TextView
+                android:id="@+id/time_zuhar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#555577"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>        <LinearLayout
+            android:id="@+id/row_misl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingVertical="4dp"
+            android:paddingHorizontal="4dp"
+            android:gravity="center_vertical">
+            <ImageView
+                android:id="@+id/dot_misl"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:src="@drawable/circle_dot"
+                app:tint="#555577" />
+            <TextView
+                android:id="@+id/name_misl"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#888899"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+            <TextView
+                android:id="@+id/time_misl"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#555577"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>        <LinearLayout
+            android:id="@+id/row_asr"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingVertical="4dp"
+            android:paddingHorizontal="4dp"
+            android:gravity="center_vertical">
+            <ImageView
+                android:id="@+id/dot_asr"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:src="@drawable/circle_dot"
+                app:tint="#555577" />
+            <TextView
+                android:id="@+id/name_asr"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#888899"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+            <TextView
+                android:id="@+id/time_asr"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#555577"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>        <LinearLayout
+            android:id="@+id/row_maghrib"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingVertical="4dp"
+            android:paddingHorizontal="4dp"
+            android:gravity="center_vertical">
+            <ImageView
+                android:id="@+id/dot_maghrib"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:src="@drawable/circle_dot"
+                app:tint="#555577" />
+            <TextView
+                android:id="@+id/name_maghrib"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#888899"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+            <TextView
+                android:id="@+id/time_maghrib"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#555577"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>        <LinearLayout
+            android:id="@+id/row_isha"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingVertical="4dp"
+            android:paddingHorizontal="4dp"
+            android:gravity="center_vertical">
+            <ImageView
+                android:id="@+id/dot_isha"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:src="@drawable/circle_dot"
+                app:tint="#555577" />
+            <TextView
+                android:id="@+id/name_isha"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#888899"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+            <TextView
+                android:id="@+id/time_isha"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:textColor="#555577"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingTop="8dp">
+        <TextView
+            android:id="@+id/widget_next_prayer_line"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#1A1A2E"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:layout_marginEnd="4dp"
+            android:layout_marginRight="4dp"
+            android:fontFamily="sans-serif-medium" />
+        <Chronometer
+            android:id="@+id/widget_countdown_line"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#1A1A2E"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textDirection="ltr"
+            android:fontFamily="sans-serif-medium" />
+    </LinearLayout>
+</LinearLayout>
+

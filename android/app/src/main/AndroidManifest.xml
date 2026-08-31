@@ -179,6 +179,26 @@
                 android:resource="@xml/prayer_widget_circle_info" />
         </receiver>
 
+        <!-- Vertical Widget -->
+        <receiver
+            android:name="pk.sukkur.salah.PrayerWidgetVerticalProvider"
+            android:exported="true"
+            android:label="Prayer Times (Vertical)">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.USER_PRESENT" />
+                <action android:name="pk.sukkur.salah.ACTION_TICK" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/prayer_widget_vertical_info" />
+        </receiver>
+
+
+
         <!-- Auto Silent Receiver for Jama'at times -->
         <receiver
             android:name="pk.sukkur.salah.AutoSilentReceiver"

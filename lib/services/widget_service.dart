@@ -15,6 +15,8 @@ class WidgetService {
     'pk.sukkur.salah.PrayerWidgetTinyProvider',
     'pk.sukkur.salah.PrayerWidgetSlimProvider',
     'pk.sukkur.salah.PrayerWidgetCircleProvider',
+    'pk.sukkur.salah.PrayerWidgetVerticalProvider',
+    'pk.sukkur.salah.PrayerWidgetHorizontalProvider',
   ];
 
   static Future<void> updateWidget() async {

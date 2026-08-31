@@ -113,7 +113,19 @@ class _WidgetSelectionSheetState extends State<WidgetSelectionSheet> {
       // Digital/Analog toggle, so it has the least height to work with.
       scale: 0.98,
     ),
-  ];
+    _WidgetPreview(
+      name: 'Vertical',
+      nameUr: 'عمودی',
+      nameSd: 'عمودي',
+      nameAr: 'عمودي',
+      cells: '2x4',
+      provider: 'PrayerWidgetVerticalProvider',
+      asset: 'assets/images/widget_vertical_preview.png',
+      ratio: 291 / 560,
+      radius: 0.05,
+      scale: 1.0,
+    ),
+];
 
   bool? _canPin;
 

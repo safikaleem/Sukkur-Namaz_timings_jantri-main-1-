@@ -253,6 +253,10 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'কাদ্দাসাল্লাহু সিররাহু',
     '✓  Facing Qibla': '✓  আপনি কিবলামুখী',
     'Not receiving prayer alerts? Press Reschedule now': 'নামাজের সতর্কতা পাচ্ছেন না? এখনই পুনরায় শিডিউল করুন চাপুন',
+    
+    
+    
+    
     // Version 1.1.7 What's New
     'Announcements Reach You Again': 'ঘোষণা আবার আপনার কাছে পৌঁছাচ্ছে',
     'Notices are delivered again: Jumma greetings, Ramzan timetables and Eid prayer announcements now appear when you open the app. They were being sent to an address the app no longer had, so none of them were arriving.':
@@ -277,6 +281,12 @@ const Map<String, Map<String, String>> additionalTranslations = {
         'কোনো শহর নির্বাচন করা হয়নি - সুক্কুর জান্ত্রি ব্যবহার করা হচ্ছে। আপনি পরে বিশ্বের নামাজ থেকে আপনার শহর বেছে নিতে পারেন।',
     'Select Sukkur from the option above for accurate timings':
         'সঠিক সময়ের জন্য উপরের অপশন থেকে সুক্কুর নির্বাচন করুন',
+                                                    // Version 1.1.8 What's New
+    "What's New in 1.1.8": '1.1.8-এ নতুন কী আছে',
+    "New Live Prayer Widgets": 'নতুন লাইভ নামাজের উইজেট',
+    "Added new vertical widgets to the home screen. These new widgets show your daily prayers with live countdown timings that update continuously, available in both Light and Dark modes.": 'হোম স্ক্রিনে নতুন উল্লম্ব উইজেট যোগ করা হয়েছে। এই নতুন উইজেটগুলো আপনার প্রতিদিনের নামাজের লাইভ কাউন্টডাউন সময় দেখায় যা ক্রমাগত আপডেট হতে থাকে এবং এটি লাইট ও ডার্ক উভয় মোডেই উপলব্ধ।',
+    "Bug Fixes & Improvements": 'বাগ ফিক্স এবং উন্নতি',
+    "Fixed the widget image cropping issue, added the Gregorian date to widgets, and improved the 1-hour grace period logic for Ishraq and Zawal.": 'উইজেট ইমেজ ক্রপিং সমস্যা সমাধান করা হয়েছে, উইজেটে গ্রেগরিয়ান তারিখ যোগ করা হয়েছে এবং ইশরাক ও জাওয়ালের জন্য ১ ঘণ্টার গ্রেস পিরিয়ড লজিক উন্নত করা হয়েছে।',
   },
   'indonesian': {
     'Search Any City Instantly': 'Cari Kota Mana Pun Seketika',
@@ -514,6 +524,10 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'Qaddasallahu sirrahu',
     '✓  Facing Qibla': '✓  Menghadap Kiblat',
     'Not receiving prayer alerts? Press Reschedule now': 'Tidak menerima peringatan sholat? Tekan Jadwalkan ulang sekarang',
+    
+    
+    
+    
     // Version 1.1.7 What's New
     'Announcements Reach You Again': 'Pengumuman Sampai Kepada Anda Lagi',
     'Notices are delivered again: Jumma greetings, Ramzan timetables and Eid prayer announcements now appear when you open the app. They were being sent to an address the app no longer had, so none of them were arriving.':
@@ -538,6 +552,12 @@ const Map<String, Map<String, String>> additionalTranslations = {
         'Belum ada kota dipilih - menggunakan Jantri Sukkur. Anda dapat memilih kota Anda nanti dari Waktu Shalat Dunia.',
     'Select Sukkur from the option above for accurate timings':
         'Untuk waktu yang akurat, pilih Sukkur dari opsi di atas',
+                                                    // Version 1.1.8 What's New
+    "What's New in 1.1.8": 'Apa yang Baru di 1.1.8',
+    "New Live Prayer Widgets": 'Widget Sholat Langsung Baru',
+    "Added new vertical widgets to the home screen. These new widgets show your daily prayers with live countdown timings that update continuously, available in both Light and Dark modes.": 'Menambahkan widget vertikal baru ke layar utama. Widget baru ini menampilkan sholat harian Anda dengan penghitung waktu mundur langsung yang diperbarui terus-menerus, tersedia dalam mode Terang dan Gelap.',
+    "Bug Fixes & Improvements": 'Perbaikan Bug & Peningkatan',
+    "Fixed the widget image cropping issue, added the Gregorian date to widgets, and improved the 1-hour grace period logic for Ishraq and Zawal.": 'Memperbaiki masalah pemotongan gambar widget, menambahkan tanggal Masehi ke widget, dan meningkatkan logika masa tenggang 1 jam untuk Ishraq dan Zawal.',
   },
   'turkish': {
     'Search Any City Instantly': 'Her Şehri Anında Arayın',
@@ -775,6 +795,10 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'Kaddesallahu sırrahu',
     '✓  Facing Qibla': '✓  Kıbleye dönüksünüz',
     'Not receiving prayer alerts? Press Reschedule now': 'Namaz bildirimleri almıyor musunuz? Şimdi yeniden planla\'ya basın',
+    
+    
+    
+    
     // Version 1.1.7 What's New
     'Announcements Reach You Again': 'Duyurular Size Yeniden Ulaşıyor',
     'Notices are delivered again: Jumma greetings, Ramzan timetables and Eid prayer announcements now appear when you open the app. They were being sent to an address the app no longer had, so none of them were arriving.':
@@ -799,6 +823,12 @@ const Map<String, Map<String, String>> additionalTranslations = {
         'Şehir seçilmedi - Sukkur Jantri kullanılıyor. Şehrinizi daha sonra Dünya Namaz Vakitleri\'nden seçebilirsiniz.',
     'Select Sukkur from the option above for accurate timings':
         'Doğru vakitler için yukarıdaki seçenekten Sukkur\'u seçin',
+                                                    // Version 1.1.8 What's New
+    "What's New in 1.1.8": '1.1.8\'deki Yenilikler',
+    "New Live Prayer Widgets": 'Yeni Canlı Namaz Araç Takımları',
+    "Added new vertical widgets to the home screen. These new widgets show your daily prayers with live countdown timings that update continuously, available in both Light and Dark modes.": 'Ana ekrana yeni dikey araç takımları eklendi. Bu yeni araç takımları, günlük namazlarınızı sürekli güncellenen canlı geri sayım süreleriyle gösterir ve hem Açık hem de Koyu modlarda kullanılabilir.',
+    "Bug Fixes & Improvements": 'Hata Düzeltmeleri ve İyileştirmeler',
+    "Fixed the widget image cropping issue, added the Gregorian date to widgets, and improved the 1-hour grace period logic for Ishraq and Zawal.": 'Widget resmi kırpma sorunu düzeltildi, widget\'lara Miladi tarih eklendi ve İşrak ile Zeval için 1 saatlik ek süre mantığı iyileştirildi.',
   },
   'french': {
     'Search Any City Instantly': 'Recherchez n\'importe quelle ville instantanément',
@@ -1037,6 +1067,10 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'Qaddasallahu sirrahu',
     '✓  Facing Qibla': '✓  Vous êtes face à la Qibla',
     'Not receiving prayer alerts? Press Reschedule now': 'Vous ne recevez pas d\'alertes de prière ? Appuyez sur Reprogrammer maintenant',
+    
+    
+    
+    
     // Version 1.1.7 What's New
     'Announcements Reach You Again': 'Les annonces vous parviennent à nouveau',
     'Notices are delivered again: Jumma greetings, Ramzan timetables and Eid prayer announcements now appear when you open the app. They were being sent to an address the app no longer had, so none of them were arriving.':
@@ -1061,6 +1095,12 @@ const Map<String, Map<String, String>> additionalTranslations = {
         'Aucune ville sélectionnée - le Jantri de Sukkur est utilisé. Vous pourrez choisir votre ville plus tard dans les Horaires de prière mondiaux.',
     'Select Sukkur from the option above for accurate timings':
         'Pour des horaires précis, sélectionnez Sukkur dans l\'option ci-dessus',
+                                                    // Version 1.1.8 What's New
+    "What's New in 1.1.8": 'Quoi de neuf dans la 1.1.8',
+    "New Live Prayer Widgets": 'Nouveaux widgets de prière en direct',
+    "Added new vertical widgets to the home screen. These new widgets show your daily prayers with live countdown timings that update continuously, available in both Light and Dark modes.": 'De nouveaux widgets verticaux ont été ajoutés à l\'écran d\'accueil. Ces nouveaux widgets affichent vos prières quotidiennes avec des comptes à rebours en direct qui se mettent à jour en permanence. Ils sont disponibles en mode clair et sombre.',
+    "Bug Fixes & Improvements": 'Corrections de bugs et améliorations',
+    "Fixed the widget image cropping issue, added the Gregorian date to widgets, and improved the 1-hour grace period logic for Ishraq and Zawal.": 'Correction du problème de recadrage de l\'image du widget, ajout de la date grégorienne aux widgets et amélioration de la logique du délai de grâce d\'une heure pour Ishraq et Zawal.',
   },
   'hindi': {
     'Search Any City Instantly': 'कोई भी शहर तुरंत खोजें',
@@ -1298,6 +1338,10 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'क़द्दसल्लाहु सिर्रहु',
     '✓  Facing Qibla': '✓  आप क़िबला की ओर हैं',
     'Not receiving prayer alerts? Press Reschedule now': 'नमाज़ के अलर्ट नहीं मिल रहे हैं? अभी फिर से शेड्यूल करें दबाएं',
+    
+    
+    
+    
     // Version 1.1.7 What's New
     'Announcements Reach You Again': 'घोषणाएं फिर से आप तक पहुंच रही हैं',
     'Notices are delivered again: Jumma greetings, Ramzan timetables and Eid prayer announcements now appear when you open the app. They were being sent to an address the app no longer had, so none of them were arriving.':
@@ -1322,6 +1366,12 @@ const Map<String, Map<String, String>> additionalTranslations = {
         'कोई शहर चयनित नहीं - सुक्कुर जंत्री का उपयोग किया जा रहा है। आप बाद में विश्व नमाज़ समय से अपना शहर चुन सकते हैं।',
     'Select Sukkur from the option above for accurate timings':
         'सटीक समय के लिए ऊपर दिए विकल्प से सुक्कुर चुनें',
+                                                    // Version 1.1.8 What's New
+    "What's New in 1.1.8": '1.1.8 में नया क्या है',
+    "New Live Prayer Widgets": 'नए लाइव नमाज़ विजेट्स',
+    "Added new vertical widgets to the home screen. These new widgets show your daily prayers with live countdown timings that update continuously, available in both Light and Dark modes.": 'होम स्क्रीन पर नए वर्टिकल विजेट्स जोड़े गए हैं। ये नए विजेट्स आपकी दैनिक नमाज़ को लाइव काउंटडाउन टाइमिंग के साथ दिखाते हैं जो लगातार अपडेट होते रहते हैं, और ये लाइट और डार्क दोनों मोड्स में उपलब्ध हैं।',
+    "Bug Fixes & Improvements": 'बग फिक्स और सुधार',
+    "Fixed the widget image cropping issue, added the Gregorian date to widgets, and improved the 1-hour grace period logic for Ishraq and Zawal.": 'विजेट छवि क्रॉपिंग समस्या को ठीक किया गया, विजेट्स में ग्रेगोरियन तिथि जोड़ी गई, और इशराक और ज़वाल के लिए 1 घंटे की ग्रेस अवधि लॉजिक में सुधार किया गया।',
   },
   'persian': {
     'Search Any City Instantly': 'هر شهری را فوراً جست‌وجو کنید',
@@ -1559,6 +1609,10 @@ const Map<String, Map<String, String>> additionalTranslations = {
     'قَدَّسَ اللہ سِرَّہُ': 'قَدَّسَ اللهُ سِرَّهُ',
     '✓  Facing Qibla': '✓  رو به قبله هستید',
     'Not receiving prayer alerts? Press Reschedule now': 'هشدارهای نماز را دریافت نمی‌کنید؟ اکنون دوباره زمان‌بندی کنید را فشار دهید',
+    
+    
+    
+    
     // Version 1.1.7 What's New
     'Announcements Reach You Again': 'اطلاعیه‌ها دوباره به شما می‌رسند',
     'Notices are delivered again: Jumma greetings, Ramzan timetables and Eid prayer announcements now appear when you open the app. They were being sent to an address the app no longer had, so none of them were arriving.':
@@ -1583,5 +1637,13 @@ const Map<String, Map<String, String>> additionalTranslations = {
         'هیچ شهری انتخاب نشده است - از جنتری سکر استفاده می‌شود. می‌توانید بعداً شهر خود را از اوقات نماز جهانی انتخاب کنید.',
     'Select Sukkur from the option above for accurate timings':
         'برای اوقات دقیق، سکر را از گزینه بالا انتخاب کنید',
+                                                    // Version 1.1.8 What's New
+    "What's New in 1.1.8": 'چه خبر در 1.1.8',
+    "New Live Prayer Widgets": 'ویجت‌های عمودی جدید نماز',
+    "Added new vertical widgets to the home screen. These new widgets show your daily prayers with live countdown timings that update continuously, available in both Light and Dark modes.": 'ویجت‌های عمودی جدید به صفحه اصلی اضافه شدند. این ویجت‌های جدید نمازهای روزانه شما را با زمان‌سنج شمارش معکوس زنده که به‌طور پیوسته به‌روزرسانی می‌شود نشان می‌دهند و در هر دو حالت روشن و تاریک در دسترس هستند.',
+    "Bug Fixes & Improvements": 'رفع اشکالات و بهبودها',
+    "Fixed the widget image cropping issue, added the Gregorian date to widgets, and improved the 1-hour grace period logic for Ishraq and Zawal.": 'مشکل برش تصویر ویجت برطرف شد، تاریخ میلادی به ویجت‌ها اضافه شد، و منطق دوره ارفاق ۱ ساعته برای اشراق و زوال بهبود یافت.',
   },
 };
+
+

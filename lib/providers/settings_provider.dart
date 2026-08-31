@@ -360,6 +360,7 @@ class SettingsProvider extends ChangeNotifier {
     if (_notificationsEnabled) {
       await NotificationService.instance.scheduleWeeklyNotifications();
     }
+    notifyListeners();
   }
 
   /// Erases the stored world city outright and returns to the Jantri. For
@@ -383,6 +384,7 @@ class SettingsProvider extends ChangeNotifier {
     if (_notificationsEnabled) {
       await NotificationService.instance.scheduleWeeklyNotifications();
     }
+    notifyListeners();
   }
 
   /// Puts the remembered city back in charge. Returns false when there is
@@ -450,6 +452,7 @@ class SettingsProvider extends ChangeNotifier {
       if (_notificationsEnabled) {
         await NotificationService.instance.scheduleWeeklyNotifications();
       }
+      notifyListeners();
     });
     return true;
   }
@@ -470,6 +473,7 @@ class SettingsProvider extends ChangeNotifier {
       if (_notificationsEnabled) {
         await NotificationService.instance.scheduleWeeklyNotifications();
       }
+      notifyListeners();
     });
   }
 
@@ -485,6 +489,7 @@ class SettingsProvider extends ChangeNotifier {
       if (_notificationsEnabled) {
         await NotificationService.instance.scheduleWeeklyNotifications();
       }
+      notifyListeners();
     });
   }
 

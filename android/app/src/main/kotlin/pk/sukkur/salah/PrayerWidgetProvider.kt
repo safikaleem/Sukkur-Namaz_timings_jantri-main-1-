@@ -92,7 +92,8 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             PrayerWidgetLargeProvider::class.java,
             PrayerWidgetTinyProvider::class.java,
             PrayerWidgetSlimProvider::class.java,
-            PrayerWidgetCircleProvider::class.java
+            PrayerWidgetCircleProvider::class.java,
+            PrayerWidgetVerticalProvider::class.java
         )
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -155,7 +156,8 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             PrayerWidgetLargeProvider::class.java,
             PrayerWidgetTinyProvider::class.java,
             PrayerWidgetSlimProvider::class.java,
-            PrayerWidgetCircleProvider::class.java
+            PrayerWidgetCircleProvider::class.java,
+            PrayerWidgetVerticalProvider::class.java
         )
         for (providerClass in providers) {
             val intent = Intent(context, providerClass).apply {
@@ -180,7 +182,8 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             PrayerWidgetLargeProvider::class.java,
             PrayerWidgetTinyProvider::class.java,
             PrayerWidgetSlimProvider::class.java,
-            PrayerWidgetCircleProvider::class.java
+            PrayerWidgetCircleProvider::class.java,
+            PrayerWidgetVerticalProvider::class.java
         )
         for (providerClass in providers) {
             val comp = ComponentName(context, providerClass)
@@ -294,19 +297,31 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
 
             val isWorld = mode == "world"
 
-            val state = computeState(
-                subah   = if (isWorld) -1 else subahM,
-                fajar   = fajarM,
-                tulu    = tuluM,
-                ishraq  = if (isWorld) -1 else ishraqM,
-                zawal   = if (isWorld) -1 else zawalM,
-                zuhar   = zuharM,
-                misl    = if (isWorld) -1 else mislM,
-                asr     = asrM,
-                maghrib = maghribM,
-                isha    = ishaM,
-                now     = nowMins
-            )
+            val state = if (isWorld) {
+                computeCalculatedState(
+                    fajar   = fajarM,
+                    tulu    = tuluM,
+                    zuhar   = zuharM,
+                    asr     = asrM,
+                    maghrib = maghribM,
+                    isha    = ishaM,
+                    now     = nowMins
+                )
+            } else {
+                computeState(
+                    subah   = subahM,
+                    fajar   = fajarM,
+                    tulu    = tuluM,
+                    ishraq  = ishraqM,
+                    zawal   = zawalM,
+                    zuhar   = zuharM,
+                    misl    = mislM,
+                    asr     = asrM,
+                    maghrib = maghribM,
+                    isha    = ishaM,
+                    now     = nowMins
+                )
+            }
 
             val prayerTime = when (state.highlightKey) {
                 "Subah"   -> fmt(subahRaw,   false, is24)
@@ -363,6 +378,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             PrayerData(
                 stateName    = stateName,
                 prayerTime   = prayerTime,
+                gregorian    = gregorianDate(language),
                 countdown    = countdownStr,
                 isElapsed    = state.isElapsed,
                 mainKey      = state.highlightKey,
@@ -568,7 +584,10 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
     }
 
     private fun toLocalizedNumerals(num: Int, language: String): String {
-        val s = num.toString()
+        return toLocalizedNumerals(num.toString(), language)
+    }
+
+    private fun toLocalizedNumerals(s: String, language: String): String {
         if (language == "urdu" || language == "sindhi" || language == "arabic" || language == "persian") {
             val w = arrayOf("0","1","2","3","4","5","6","7","8","9")
             val a = arrayOf("۰","۱","۲","۳","۴","۵","۶","۷","۸","۹")
@@ -597,6 +616,25 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         "رمضان", "شوال", "ذوالقعده", "ذوالحجه"
     )
 
+    private fun gregorianDate(language: String): String {
+        return try {
+            val locale = when (language) {
+                "urdu" -> java.util.Locale("ur")
+                "arabic" -> java.util.Locale("ar")
+                "sindhi" -> java.util.Locale("sd")
+                "hindi" -> java.util.Locale("hi")
+                "bengali" -> java.util.Locale("bn")
+                "persian" -> java.util.Locale("fa")
+                else -> java.util.Locale.ENGLISH
+            }
+            val df = java.text.SimpleDateFormat("d MMMM yyyy", locale)
+            val dateStr = df.format(java.util.Date())
+            toLocalizedNumerals(dateStr, language)
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
     private fun hijriDate(context: Context, language: String, nowMins: Int, maghribM: Int): String {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -623,6 +661,67 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         val durationMins: Int,
         val highlightKey: String
     )
+
+    private fun computeCalculatedState(
+        fajar: Int, tulu: Int, zuhar: Int, asr: Int, maghrib: Int, isha: Int, now: Int
+    ): State {
+        val calculatedLead = 40
+        val prayers = listOf(
+            Pair("Fajar", fajar),
+            Pair("Tulu Aftab", tulu),
+            Pair("Zuhar", zuhar),
+            Pair("Asr", asr),
+            Pair("Maghrib", maghrib),
+            Pair("Isha", isha)
+        ).filter { it.second >= 0 }.sortedBy { it.second }
+
+        if (prayers.isEmpty()) return State("Fajar", false, 0, "Fajar")
+
+        for (next in prayers) {
+            if (now >= next.second) continue
+
+            val past = prayers.filter { it.second <= now }
+            val untilNext = next.second - now
+
+            if (past.isEmpty() || untilNext <= calculatedLead) {
+                val key = when (next.first) {
+                    "Fajar" -> "Fajar"
+                    "Tulu Aftab" -> "Tulu"
+                    "Zuhar" -> "Zuhar"
+                    "Asr" -> "Asr"
+                    "Maghrib" -> "Maghrib"
+                    "Isha" -> "Isha"
+                    else -> "Fajar"
+                }
+                return State(next.first, false, untilNext, key)
+            }
+            
+            val last = past.last()
+            val key = when (last.first) {
+                "Fajar" -> "Fajar"
+                "Tulu Aftab" -> "Tulu"
+                "Zuhar" -> "Zuhar"
+                "Asr" -> "Asr"
+                "Maghrib" -> "Maghrib"
+                "Isha" -> "Isha"
+                else -> "Fajar"
+            }
+            return State(last.first, true, now - last.second, key)
+        }
+
+        // Past Isha
+        val last = prayers.last()
+        val key = when (last.first) {
+            "Fajar" -> "Fajar"
+            "Tulu Aftab" -> "Tulu"
+            "Zuhar" -> "Zuhar"
+            "Asr" -> "Asr"
+            "Maghrib" -> "Maghrib"
+            "Isha" -> "Isha"
+            else -> "Fajar"
+        }
+        return State(last.first, true, now - last.second, key)
+    }
 
     private fun computeState(
         subah: Int, fajar: Int, tulu: Int, ishraq: Int, zawal: Int, zuhar: Int,
@@ -1449,6 +1548,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         val countdown:  String,
         val isElapsed:  Boolean,
         val mainKey:    String,
+        val gregorian:  String,
         val hijri:      String,
         val sunrise:    String,
         val subah:   String,
@@ -1476,7 +1576,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
     ) {
         companion object {
             fun empty() = PrayerData(
-                "Intiha e Sehar", "--:--", "--:--", false, "Subah", "", "--:--",
+                "Intiha e Sehar", "--:--", "--:--", false, "Subah", "", "", "--:--",
                 "--:--", "--:--", "--:--", "--:--", "--:--", "--:--", "--:--", "--:--", "--:--", "--:--",
                 emptyMap(), -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
             )
@@ -1530,7 +1630,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         val labelStr = if (data.isElapsed) {
             when (language) {
                 "urdu" -> "وقت گزر چکا ہے"
-                "sindhi" -> "وقت گذري چڪو آهي"
+                "sindhi" -> "وقت گذر چڪو آهي"
                 "arabic" -> "الوقت المنقضي"
                 "persian" -> "زمان سپری‌شده"
                 "bengali" -> "সময় অতিবাহিত"
@@ -1617,6 +1717,125 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
 
         return bitmap
     }
+
+    protected fun buildVerticalWidget(context: Context, data: PrayerData, isNight: Boolean, language: String): RemoteViews {
+        val layoutId = if (language == "urdu" || language == "sindhi" || language == "arabic" || language == "persian") 
+            R.layout.prayer_widget_vertical_urdu 
+        else 
+            R.layout.prayer_widget_vertical
+            
+        val views = RemoteViews(context.packageName, layoutId)
+        val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        val mode = prefs.getString("flutter.location_mode", "sukkur")
+        val isWorld = mode == "world"
+
+        val prayers = listOf(
+            "subah" to data.subah,
+            "fajar" to data.fajar,
+            "tulu" to data.tulu,
+            "ishraq" to data.ishraq,
+            "zawal" to data.zawal,
+            "zuhar" to data.zuhar,
+            "misl" to data.misl,
+            "asr" to data.asr,
+            "maghrib" to data.maghrib,
+            "isha" to data.isha
+        )
+
+        // Background is already set in XML, no need to overwrite unless needed
+        
+        val textColor = if (isNight) Color.parseColor("#E0E0E0") else Color.parseColor("#1A1A2E")
+        val mutedColor = if (isNight) Color.parseColor("#A0A0A0") else Color.parseColor("#888899")
+        val highlightColor = if (isNight) Color.parseColor("#64B5F6") else Color.parseColor("#2196F3")
+
+        views.setTextColor(R.id.widget_clock, textColor)
+        views.setTextColor(R.id.widget_gregorian, mutedColor)
+        views.setTextViewText(R.id.widget_gregorian, data.gregorian)
+        views.setTextColor(R.id.widget_hijri, mutedColor)
+        views.setTextViewText(R.id.widget_hijri, data.hijri)
+
+        // Set city name
+        val cityName = if (isWorld) {
+            prefs.getString("flutter.city_name", "Unknown City") ?: "Unknown City"
+        } else {
+            when (language) {
+                "urdu", "sindhi", "arabic", "persian", "pashto" -> "سکھر"
+                "bengali" -> "সুক্কুর"
+                "hindi" -> "सुक्कुर"
+                else -> "Sukkur"
+            }
+        }
+        views.setTextViewText(R.id.widget_city_name, cityName)
+        views.setTextColor(R.id.widget_city_name, highlightColor)
+
+        val activeKey = data.mainKey.lowercase()
+
+        prayers.forEach { (key, timeStr) ->
+            val rowId = context.resources.getIdentifier("row_$key", "id", context.packageName)
+            val nameId = context.resources.getIdentifier("name_$key", "id", context.packageName)
+            val timeId = context.resources.getIdentifier("time_$key", "id", context.packageName)
+            val dotId = context.resources.getIdentifier("dot_$key", "id", context.packageName)
+
+            if (rowId != 0) {
+                // Determine if this prayer should be visible
+                val shouldShow = !isWorld || key in listOf("fajar", "tulu", "zuhar", "asr", "maghrib", "isha")
+                if (!shouldShow || timeStr == "--:--") {
+                    views.setViewVisibility(rowId, View.GONE)
+                } else {
+                    views.setViewVisibility(rowId, View.VISIBLE)
+                    
+                    // Translate name
+                    val translatedName = translatePrayerName(getEnglishNameForKey(key), language)
+                    views.setTextViewText(nameId, translatedName)
+                    views.setTextViewText(timeId, timeStr)
+
+                    if (key == activeKey) {
+                        views.setTextColor(nameId, highlightColor)
+                        views.setTextColor(timeId, highlightColor)
+                        views.setInt(dotId, "setColorFilter", highlightColor)
+                    } else {
+                        views.setTextColor(nameId, mutedColor)
+                        views.setTextColor(timeId, mutedColor)
+                        views.setInt(dotId, "setColorFilter", mutedColor)
+                    }
+                }
+            }
+        }
+
+        // Countdown Line
+        val activeNameTrans = translatePrayerName(data.stateName, language)
+        val label = formatNextPrayerLabel(language, data.isElapsed, activeNameTrans)
+        views.setTextViewText(R.id.widget_next_prayer_line, label)
+        views.setTextColor(R.id.widget_next_prayer_line, textColor)
+        
+        bindChronometer(views, R.id.widget_countdown_line, data.activeMins, data.isElapsed, language)
+        views.setTextColor(R.id.widget_countdown_line, textColor)
+        
+        // Launch intent
+        val intent = Intent(context, Class.forName("pk.sukkur.salah.MainActivity"))
+        val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        views.setOnClickPendingIntent(R.id.widget_root_vertical, pendingIntent)
+
+        return views
+    }
+
+
+
+    protected fun getEnglishNameForKey(key: String): String {
+        return when (key) {
+            "subah" -> "Intiha e Sehar"
+            "fajar" -> "Fajar"
+            "tulu" -> "Tulu Aftab"
+            "ishraq" -> "Ishraq"
+            "zawal" -> "Zawal"
+            "zuhar" -> "Zuhar"
+            "misl" -> "Misl Awwal"
+            "asr" -> "Asr"
+            "maghrib" -> "Maghrib"
+            "isha" -> "Isha"
+            else -> "Fajar"
+        }
+    }
 }
 
 class PrayerWidgetSmallProvider : PrayerWidgetProvider()
@@ -1645,3 +1864,12 @@ class PrayerWidgetCircleProvider : PrayerWidgetProvider() {
     override fun buildViews(context: Context, data: PrayerData, isNight: Boolean, language: String): RemoteViews =
         buildCircleWidget(context, data, isNight, language)
 }
+
+class PrayerWidgetVerticalProvider : PrayerWidgetProvider() {
+    override fun buildViews(context: Context, data: PrayerData, isNight: Boolean, language: String): RemoteViews =
+        buildVerticalWidget(context, data, isNight, language)
+}
+
+
+
+
