@@ -683,6 +683,20 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             val past = prayers.filter { it.second <= now }
             val untilNext = next.second - now
 
+            val last = if (past.isNotEmpty()) past.last() else null
+            
+            // Special rule for Sunrise -> Zuhar (Continue Sunrise plus time until 09:30 AM)
+            if (last != null && last.first == "Tulu Aftab" && next.first == "Zuhar") {
+                val nineThirtyAm = 9 * 60 + 30
+                if (now < nineThirtyAm) {
+                    val key = "Tulu"
+                    return State(last.first, true, now - last.second, key)
+                } else {
+                    val key = "Zuhar"
+                    return State(next.first, false, untilNext, key)
+                }
+            }
+
             if (past.isEmpty() || untilNext <= calculatedLead) {
                 val key = when (next.first) {
                     "Fajar" -> "Fajar"
@@ -696,8 +710,9 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
                 return State(next.first, false, untilNext, key)
             }
             
-            val last = past.last()
-            val key = when (last.first) {
+            
+            val lastPrayer = past.last()
+            val key = when (lastPrayer.first) {
                 "Fajar" -> "Fajar"
                 "Tulu Aftab" -> "Tulu"
                 "Zuhar" -> "Zuhar"
@@ -706,7 +721,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
                 "Isha" -> "Isha"
                 else -> "Fajar"
             }
-            return State(last.first, true, now - last.second, key)
+            return State(lastPrayer.first, true, now - lastPrayer.second, key)
         }
 
         // Past Isha
@@ -727,7 +742,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         subah: Int, fajar: Int, tulu: Int, ishraq: Int, zawal: Int, zuhar: Int,
         misl: Int, asr: Int, maghrib: Int, isha: Int, now: Int
     ): State {
-        val elevenAm = 11 * 60
+        val nineThirtyAm = 9 * 60 + 30
         val nextMidnight = 24 * 60
 
         fun remaining(name: String, target: Int, key: String) =
@@ -757,10 +772,10 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         if (tulu >= 0 && now >= tulu && now < tulu + 7) return elapsed("Tulu Aftab", tulu, "Tulu")
         // Tulu+7 → Ishraq
         if (ishraq >= 0 && tulu >= 0 && now >= tulu + 7 && now < ishraq) return remaining("Ishraq", ishraq, "Ishraq")
-        // Ishraq → 11:00
-        if (ishraq >= 0 && now >= ishraq && now < elevenAm) return elapsed("Ishraq", ishraq, "Ishraq")
-        // 11:00 → Zawal
-        if (zawal >= 0 && now >= elevenAm && now < zawal) return remaining("Zawal", zawal, "Zawal")
+        // Ishraq → 09:30
+        if (ishraq >= 0 && now >= ishraq && now < nineThirtyAm) return elapsed("Ishraq", ishraq, "Ishraq")
+        // 09:30 → Zawal
+        if (zawal >= 0 && now >= nineThirtyAm && now < zawal) return remaining("Zawal", zawal, "Zawal")
         
         // Zawal → Zawal + 3 min: elapsed from Zawal
         val zawalPlus3 = if (zawal >= 0) zawal + 3 else -1
@@ -1306,6 +1321,8 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         views.setTextColor(R.id.widget_prayer_name, primaryText(isNight))
         views.setTextColor(R.id.widget_prayer_time, primaryText(isNight))
         views.setTextColor(R.id.widget_countdown,   accentColor(isNight))
+
+        setupLaunchIntent(context, views, R.id.widget_root_small)
         return views
     }
 
@@ -1401,6 +1418,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             views.setViewVisibility(R.id.dot_m_misl, View.VISIBLE)
         }
 
+        setupLaunchIntent(context, views, R.id.widget_root_medium)
         return views
     }
 
@@ -1459,6 +1477,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             views.setViewVisibility(R.id.box_l_misl, View.VISIBLE)
         }
 
+        setupLaunchIntent(context, views, R.id.widget_root_large)
         return views
     }
 
@@ -1476,6 +1495,8 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
 
         views.setTextColor(R.id.tiny_prayer_name, primaryText(isNight))
         views.setTextColor(R.id.tiny_countdown,   accentColor(isNight))
+
+        setupLaunchIntent(context, views, R.id.widget_root_tiny)
         return views
     }
 
@@ -1497,6 +1518,8 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         views.setTextColor(R.id.slim_label,       mutedText(isNight))
         views.setTextColor(R.id.slim_prayer_time, primaryText(isNight))
         views.setTextColor(R.id.slim_countdown,   accentColor(isNight))
+
+        setupLaunchIntent(context, views, R.id.widget_root_slim)
         return views
     }
 
@@ -1658,6 +1681,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
 
         bindChronometer(views, R.id.widget_circle_countdown, data.activeMins, data.isElapsed, language)
 
+        setupLaunchIntent(context, views, R.id.widget_root_circle)
         return views
     }
 
@@ -1811,15 +1835,23 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         bindChronometer(views, R.id.widget_countdown_line, data.activeMins, data.isElapsed, language)
         views.setTextColor(R.id.widget_countdown_line, textColor)
         
-        // Launch intent
-        val intent = Intent(context, Class.forName("pk.sukkur.salah.MainActivity"))
-        val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        views.setOnClickPendingIntent(R.id.widget_root_vertical, pendingIntent)
+        setupLaunchIntent(context, views, R.id.widget_root_vertical)
 
         return views
     }
 
 
+    protected fun setupLaunchIntent(context: Context, views: RemoteViews, rootId: Int) {
+        val intent = Intent(context, Class.forName("pk.sukkur.salah.MainActivity"))
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        val pendingIntent = PendingIntent.getActivity(context, 0, intent, flags)
+        views.setOnClickPendingIntent(rootId, pendingIntent)
+    }
 
     protected fun getEnglishNameForKey(key: String): String {
         return when (key) {

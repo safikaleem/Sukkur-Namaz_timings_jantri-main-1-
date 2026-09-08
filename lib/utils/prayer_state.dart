@@ -36,12 +36,12 @@ PrayerStateResult? _calculatedState(DateTime now, DayTiming today) {
     
     final last = past.last;
     
-    // Special rule for Sunrise -> Dhuhr (Wait 1 hour before counting down to Dhuhr)
+    // Special rule for Sunrise -> Dhuhr (Continue Sunrise plus time until 09:30 AM)
     if (last.key.name == 'Tulu Aftab' && next.key.name == 'Zuhar') {
-      final timeSinceSunrise = now.difference(last.value);
-      if (timeSinceSunrise <= const Duration(hours: 1)) {
+      final nineThirtyAm = DateTime(now.year, now.month, now.day, 9, 30, 0);
+      if (now.isBefore(nineThirtyAm)) {
         return PrayerStateResult(
-            prayer: last.key, isElapsed: true, duration: timeSinceSunrise);
+            prayer: last.key, isElapsed: true, duration: now.difference(last.value));
       } else {
         return PrayerStateResult(
             prayer: next.key, isElapsed: false, duration: untilNext);
@@ -98,7 +98,7 @@ PrayerStateResult? computePrayerState(DateTime now, DayTiming today) {
 
   final midnight     = DateTime(now.year, now.month, now.day, 0, 0, 0);
   final nextMidnight = midnight.add(const Duration(days: 1));
-  final elevenAm     = DateTime(now.year, now.month, now.day, 11, 0, 0);
+  final nineThirtyAm = DateTime(now.year, now.month, now.day, 9, 30, 0);
 
   final subahDt   = _dt(subah);
   final fajarDt   = fajar   != null ? _dt(fajar)   : null;
@@ -172,16 +172,15 @@ PrayerStateResult? computePrayerState(DateTime now, DayTiming today) {
     return _remaining(ishraq, ishraqDt);
   }
 
-  // ── Ishraq → Ishraq + 1 Hour: elapsed from Ishraq ─────────────────────────────
-  final ishraqPlus1Hour = ishraqDt?.add(const Duration(hours: 1));
-  if (ishraq != null && ishraqDt != null && ishraqPlus1Hour != null &&
-      !now.isBefore(ishraqDt) && now.isBefore(ishraqPlus1Hour)) {
+  // ── Ishraq → 09:30: elapsed from Ishraq ─────────────────────────────
+  if (ishraq != null && ishraqDt != null &&
+      !now.isBefore(ishraqDt) && now.isBefore(nineThirtyAm)) {
     return _elapsed(ishraq, ishraqDt);
   }
 
-  // ── Ishraq + 1 Hour → Zawal: countdown to Zawal ───────────────────────────────
-  if (zawal != null && zawalDt != null && ishraqPlus1Hour != null &&
-      !now.isBefore(ishraqPlus1Hour) && now.isBefore(zawalDt)) {
+  // ── 09:30 → Zawal: countdown to Zawal ───────────────────────────────
+  if (zawal != null && zawalDt != null &&
+      !now.isBefore(nineThirtyAm) && now.isBefore(zawalDt)) {
     return _remaining(zawal, zawalDt);
   }
 

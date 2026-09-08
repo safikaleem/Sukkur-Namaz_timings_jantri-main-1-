@@ -281,12 +281,13 @@ const Map<String, Map<String, String>> additionalTranslations = {
         'কোনো শহর নির্বাচন করা হয়নি - সুক্কুর জান্ত্রি ব্যবহার করা হচ্ছে। আপনি পরে বিশ্বের নামাজ থেকে আপনার শহর বেছে নিতে পারেন।',
     'Select Sukkur from the option above for accurate timings':
         'সঠিক সময়ের জন্য উপরের অপশন থেকে সুক্কুর নির্বাচন করুন',
-                                                    // Version 1.1.8 What's New
-    "What's New in 1.1.8": '1.1.8-এ নতুন কী আছে',
-    "New Live Prayer Widgets": 'নতুন লাইভ নামাজের উইজেট',
-    "Added new vertical widgets to the home screen. These new widgets show your daily prayers with live countdown timings that update continuously, available in both Light and Dark modes.": 'হোম স্ক্রিনে নতুন উল্লম্ব উইজেট যোগ করা হয়েছে। এই নতুন উইজেটগুলো আপনার প্রতিদিনের নামাজের লাইভ কাউন্টডাউন সময় দেখায় যা ক্রমাগত আপডেট হতে থাকে এবং এটি লাইট ও ডার্ক উভয় মোডেই উপলব্ধ।',
-    "Bug Fixes & Improvements": 'বাগ ফিক্স এবং উন্নতি',
-    "Fixed the widget image cropping issue, added the Gregorian date to widgets, and improved the 1-hour grace period logic for Ishraq and Zawal.": 'উইজেট ইমেজ ক্রপিং সমস্যা সমাধান করা হয়েছে, উইজেটে গ্রেগরিয়ান তারিখ যোগ করা হয়েছে এবং ইশরাক ও জাওয়ালের জন্য ১ ঘণ্টার গ্রেস পিরিয়ড লজিক উন্নত করা হয়েছে।',
+                                                    // Version 1.1.9 What's New
+    "Widget Tap to Open App": 'উইজেটে ট্যাপ করে অ্যাপ খুলুন',
+    "Tapping any of the 7 home screen widgets now reliably opens the app on all Android phones, including newer versions where it previously did not respond.": 'এখন ৭টি হোম স্ক্রিন উইজেটের যেকোনোটিতে ট্যাপ করলে সব অ্যান্ড্রয়েড ফোনে নির্ভরযোগ্যভাবে অ্যাপটি খুলবে, নতুন সংস্করণগুলো সহ যেখানে আগে কাজ করত না।',
+    "Faster Popup Image Loading": 'দ্রুত পপআপ ইমেজ লোডিং',
+    "The announcement popup image now loads instantly from cache after the first download, so it appears immediately every time you open the app.": 'ঘোষণার পপআপ ইমেজ এখন প্রথম ডাউনলোডের পর ক্যাশ থেকে তাৎক্ষণিকভাবে লোড হয়, তাই প্রতিবার অ্যাপ খুললেই তা সাথে সাথে দেখা যায়।',
+    "Prayer Timer Accuracy Improved": 'নামাজ টাইমারের নির্ভুলতা উন্নত',
+    "The Ishraq/Sunrise plus time now continues until 9:30 AM, then the Zawal/Zuhar countdown begins. Both the app and widgets are now perfectly synchronized.": 'ইশরাক/সূর্যোদয়ের প্লাস সময় এখন সকাল ৯:৩০ পর্যন্ত চলবে, তারপর জাওয়াল/যোহরের কাউন্টডাউন শুরু হবে। অ্যাপ এবং উইজেট উভয়ই এখন পুরোপুরি সিঙ্ক্রোনাইজড।',
   },
   'indonesian': {
     'Search Any City Instantly': 'Cari Kota Mana Pun Seketika',
@@ -552,12 +553,13 @@ const Map<String, Map<String, String>> additionalTranslations = {
         'Belum ada kota dipilih - menggunakan Jantri Sukkur. Anda dapat memilih kota Anda nanti dari Waktu Shalat Dunia.',
     'Select Sukkur from the option above for accurate timings':
         'Untuk waktu yang akurat, pilih Sukkur dari opsi di atas',
-                                                    // Version 1.1.8 What's New
-    "What's New in 1.1.8": 'Apa yang Baru di 1.1.8',
-    "New Live Prayer Widgets": 'Widget Sholat Langsung Baru',
-    "Added new vertical widgets to the home screen. These new widgets show your daily prayers with live countdown timings that update continuously, available in both Light and Dark modes.": 'Menambahkan widget vertikal baru ke layar utama. Widget baru ini menampilkan sholat harian Anda dengan penghitung waktu mundur langsung yang diperbarui terus-menerus, tersedia dalam mode Terang dan Gelap.',
-    "Bug Fixes & Improvements": 'Perbaikan Bug & Peningkatan',
-    "Fixed the widget image cropping issue, added the Gregorian date to widgets, and improved the 1-hour grace period logic for Ishraq and Zawal.": 'Memperbaiki masalah pemotongan gambar widget, menambahkan tanggal Masehi ke widget, dan meningkatkan logika masa tenggang 1 jam untuk Ishraq dan Zawal.',
+                                                    // Version 1.1.9 What's New
+    "Widget Tap to Open App": 'Ketuk Widget untuk Membuka Aplikasi',
+    "Tapping any of the 7 home screen widgets now reliably opens the app on all Android phones, including newer versions where it previously did not respond.": 'Mengetuk salah satu dari 7 widget layar utama sekarang dapat diandalkan untuk membuka aplikasi di semua ponsel Android, termasuk versi terbaru yang sebelumnya tidak merespons.',
+    "Faster Popup Image Loading": 'Pemuatan Gambar Popup Lebih Cepat',
+    "The announcement popup image now loads instantly from cache after the first download, so it appears immediately every time you open the app.": 'Gambar popup pengumuman sekarang dimuat secara instan dari cache setelah unduhan pertama, sehingga muncul segera setiap kali Anda membuka aplikasi.',
+    "Prayer Timer Accuracy Improved": 'Akurasi Timer Shalat Ditingkatkan',
+    "The Ishraq/Sunrise plus time now continues until 9:30 AM, then the Zawal/Zuhar countdown begins. Both the app and widgets are now perfectly synchronized.": 'Waktu plus Isyraq/Terbit sekarang berlanjut hingga pukul 9:30 pagi, kemudian hitung mundur Zawal/Dzuhur dimulai. Aplikasi dan widget sekarang tersinkronisasi dengan sempurna.',
   },
   'turkish': {
     'Search Any City Instantly': 'Her Şehri Anında Arayın',
@@ -823,12 +825,13 @@ const Map<String, Map<String, String>> additionalTranslations = {
         'Şehir seçilmedi - Sukkur Jantri kullanılıyor. Şehrinizi daha sonra Dünya Namaz Vakitleri\'nden seçebilirsiniz.',
     'Select Sukkur from the option above for accurate timings':
         'Doğru vakitler için yukarıdaki seçenekten Sukkur\'u seçin',
-                                                    // Version 1.1.8 What's New
-    "What's New in 1.1.8": '1.1.8\'deki Yenilikler',
-    "New Live Prayer Widgets": 'Yeni Canlı Namaz Araç Takımları',
-    "Added new vertical widgets to the home screen. These new widgets show your daily prayers with live countdown timings that update continuously, available in both Light and Dark modes.": 'Ana ekrana yeni dikey araç takımları eklendi. Bu yeni araç takımları, günlük namazlarınızı sürekli güncellenen canlı geri sayım süreleriyle gösterir ve hem Açık hem de Koyu modlarda kullanılabilir.',
-    "Bug Fixes & Improvements": 'Hata Düzeltmeleri ve İyileştirmeler',
-    "Fixed the widget image cropping issue, added the Gregorian date to widgets, and improved the 1-hour grace period logic for Ishraq and Zawal.": 'Widget resmi kırpma sorunu düzeltildi, widget\'lara Miladi tarih eklendi ve İşrak ile Zeval için 1 saatlik ek süre mantığı iyileştirildi.',
+                                                    // Version 1.1.9 What's New
+    "Widget Tap to Open App": 'Uygulamayı Açmak İçin Widget\'a Dokunun',
+    "Tapping any of the 7 home screen widgets now reliably opens the app on all Android phones, including newer versions where it previously did not respond.": '7 ana ekran widget\'ından herhangi birine dokunmak artık tüm Android telefonlarda güvenilir şekilde uygulamayı açar, daha önce yanıt vermeyen yeni sürümler dahil.',
+    "Faster Popup Image Loading": 'Daha Hızlı Popup Resim Yükleme',
+    "The announcement popup image now loads instantly from cache after the first download, so it appears immediately every time you open the app.": 'Duyuru popup resmi artık ilk indirmeden sonra önbellekten anında yüklenir, böylece uygulamayı her açtığınızda hemen görünür.',
+    "Prayer Timer Accuracy Improved": 'Namaz Zamanlayıcı Doğruluğu İyileştirildi',
+    "The Ishraq/Sunrise plus time now continues until 9:30 AM, then the Zawal/Zuhar countdown begins. Both the app and widgets are now perfectly synchronized.": 'İşrak/Güneş doğuşu artı süresi artık sabah 9:30\'a kadar devam eder, ardından Zeval/Öğle geri sayımı başlar. Uygulama ve widget\'lar artık mükemmel şekilde senkronize.',
   },
   'french': {
     'Search Any City Instantly': 'Recherchez n\'importe quelle ville instantanément',
@@ -1095,12 +1098,13 @@ const Map<String, Map<String, String>> additionalTranslations = {
         'Aucune ville sélectionnée - le Jantri de Sukkur est utilisé. Vous pourrez choisir votre ville plus tard dans les Horaires de prière mondiaux.',
     'Select Sukkur from the option above for accurate timings':
         'Pour des horaires précis, sélectionnez Sukkur dans l\'option ci-dessus',
-                                                    // Version 1.1.8 What's New
-    "What's New in 1.1.8": 'Quoi de neuf dans la 1.1.8',
-    "New Live Prayer Widgets": 'Nouveaux widgets de prière en direct',
-    "Added new vertical widgets to the home screen. These new widgets show your daily prayers with live countdown timings that update continuously, available in both Light and Dark modes.": 'De nouveaux widgets verticaux ont été ajoutés à l\'écran d\'accueil. Ces nouveaux widgets affichent vos prières quotidiennes avec des comptes à rebours en direct qui se mettent à jour en permanence. Ils sont disponibles en mode clair et sombre.',
-    "Bug Fixes & Improvements": 'Corrections de bugs et améliorations',
-    "Fixed the widget image cropping issue, added the Gregorian date to widgets, and improved the 1-hour grace period logic for Ishraq and Zawal.": 'Correction du problème de recadrage de l\'image du widget, ajout de la date grégorienne aux widgets et amélioration de la logique du délai de grâce d\'une heure pour Ishraq et Zawal.',
+                                                    // Version 1.1.9 What's New
+    "Widget Tap to Open App": 'Appuyez sur le widget pour ouvrir l\'appli',
+    "Tapping any of the 7 home screen widgets now reliably opens the app on all Android phones, including newer versions where it previously did not respond.": 'Appuyer sur l\'un des 7 widgets de l\'écran d\'accueil ouvre désormais l\'application de manière fiable sur tous les téléphones Android, y compris les versions récentes où cela ne fonctionnait pas auparavant.',
+    "Faster Popup Image Loading": 'Chargement plus rapide de l\'image popup',
+    "The announcement popup image now loads instantly from cache after the first download, so it appears immediately every time you open the app.": 'L\'image popup d\'annonce se charge désormais instantanément depuis le cache après le premier téléchargement, elle apparaît donc immédiatement à chaque ouverture de l\'application.',
+    "Prayer Timer Accuracy Improved": 'Précision du minuteur de prière améliorée',
+    "The Ishraq/Sunrise plus time now continues until 9:30 AM, then the Zawal/Zuhar countdown begins. Both the app and widgets are now perfectly synchronized.": 'Le temps positif d\'Ishraq/Lever du soleil se poursuit désormais jusqu\'à 9h30, puis le compte à rebours Zawal/Dhuhr commence. L\'application et les widgets sont désormais parfaitement synchronisés.',
   },
   'hindi': {
     'Search Any City Instantly': 'कोई भी शहर तुरंत खोजें',
@@ -1366,12 +1370,13 @@ const Map<String, Map<String, String>> additionalTranslations = {
         'कोई शहर चयनित नहीं - सुक्कुर जंत्री का उपयोग किया जा रहा है। आप बाद में विश्व नमाज़ समय से अपना शहर चुन सकते हैं।',
     'Select Sukkur from the option above for accurate timings':
         'सटीक समय के लिए ऊपर दिए विकल्प से सुक्कुर चुनें',
-                                                    // Version 1.1.8 What's New
-    "What's New in 1.1.8": '1.1.8 में नया क्या है',
-    "New Live Prayer Widgets": 'नए लाइव नमाज़ विजेट्स',
-    "Added new vertical widgets to the home screen. These new widgets show your daily prayers with live countdown timings that update continuously, available in both Light and Dark modes.": 'होम स्क्रीन पर नए वर्टिकल विजेट्स जोड़े गए हैं। ये नए विजेट्स आपकी दैनिक नमाज़ को लाइव काउंटडाउन टाइमिंग के साथ दिखाते हैं जो लगातार अपडेट होते रहते हैं, और ये लाइट और डार्क दोनों मोड्स में उपलब्ध हैं।',
-    "Bug Fixes & Improvements": 'बग फिक्स और सुधार',
-    "Fixed the widget image cropping issue, added the Gregorian date to widgets, and improved the 1-hour grace period logic for Ishraq and Zawal.": 'विजेट छवि क्रॉपिंग समस्या को ठीक किया गया, विजेट्स में ग्रेगोरियन तिथि जोड़ी गई, और इशराक और ज़वाल के लिए 1 घंटे की ग्रेस अवधि लॉजिक में सुधार किया गया।',
+                                                    // Version 1.1.9 What's New
+    "Widget Tap to Open App": 'विजेट टैप करके ऐप खोलें',
+    "Tapping any of the 7 home screen widgets now reliably opens the app on all Android phones, including newer versions where it previously did not respond.": 'अब 7 होम स्क्रीन विजेट्स में से किसी को भी टैप करने से ऐप सभी एंड्रॉइड फ़ोन पर विश्वसनीय रूप से खुलता है, नए संस्करणों सहित जहाँ पहले यह प्रतिक्रिया नहीं देता था।',
+    "Faster Popup Image Loading": 'तेज़ पॉपअप इमेज लोडिंग',
+    "The announcement popup image now loads instantly from cache after the first download, so it appears immediately every time you open the app.": 'घोषणा पॉपअप इमेज अब पहली बार डाउनलोड के बाद कैश से तुरंत लोड होती है, इसलिए हर बार ऐप खोलने पर तुरंत दिखाई देती है।',
+    "Prayer Timer Accuracy Improved": 'नमाज़ टाइमर की सटीकता सुधारी गई',
+    "The Ishraq/Sunrise plus time now continues until 9:30 AM, then the Zawal/Zuhar countdown begins. Both the app and widgets are now perfectly synchronized.": 'इशराक/सूर्योदय का प्लस समय अब सुबह 9:30 बजे तक जारी रहता है, फिर ज़वाल/ज़ुहर का काउंटडाउन शुरू होता है। ऐप और विजेट्स दोनों अब पूरी तरह सिंक्रोनाइज़ हैं।',
   },
   'persian': {
     'Search Any City Instantly': 'هر شهری را فوراً جست‌وجو کنید',
@@ -1637,12 +1642,13 @@ const Map<String, Map<String, String>> additionalTranslations = {
         'هیچ شهری انتخاب نشده است - از جنتری سکر استفاده می‌شود. می‌توانید بعداً شهر خود را از اوقات نماز جهانی انتخاب کنید.',
     'Select Sukkur from the option above for accurate timings':
         'برای اوقات دقیق، سکر را از گزینه بالا انتخاب کنید',
-                                                    // Version 1.1.8 What's New
-    "What's New in 1.1.8": 'چه خبر در 1.1.8',
-    "New Live Prayer Widgets": 'ویجت‌های عمودی جدید نماز',
-    "Added new vertical widgets to the home screen. These new widgets show your daily prayers with live countdown timings that update continuously, available in both Light and Dark modes.": 'ویجت‌های عمودی جدید به صفحه اصلی اضافه شدند. این ویجت‌های جدید نمازهای روزانه شما را با زمان‌سنج شمارش معکوس زنده که به‌طور پیوسته به‌روزرسانی می‌شود نشان می‌دهند و در هر دو حالت روشن و تاریک در دسترس هستند.',
-    "Bug Fixes & Improvements": 'رفع اشکالات و بهبودها',
-    "Fixed the widget image cropping issue, added the Gregorian date to widgets, and improved the 1-hour grace period logic for Ishraq and Zawal.": 'مشکل برش تصویر ویجت برطرف شد، تاریخ میلادی به ویجت‌ها اضافه شد، و منطق دوره ارفاق ۱ ساعته برای اشراق و زوال بهبود یافت.',
+                                                    // Version 1.1.9 What's New
+    "Widget Tap to Open App": 'برای باز کردن برنامه روی ویجت بزنید',
+    "Tapping any of the 7 home screen widgets now reliably opens the app on all Android phones, including newer versions where it previously did not respond.": 'اکنون ضربه زدن روی هر یک از ۷ ویجت صفحه اصلی، برنامه را به‌طور مطمئن در تمام گوشی‌های اندرویدی باز می‌کند، از جمله نسخه‌های جدیدتر که قبلاً پاسخ نمی‌دادند.',
+    "Faster Popup Image Loading": 'بارگذاری سریع‌تر تصویر پاپ‌آپ',
+    "The announcement popup image now loads instantly from cache after the first download, so it appears immediately every time you open the app.": 'تصویر پاپ‌آپ اعلان اکنون پس از اولین بارگیری فوراً از حافظه پنهان بارگذاری می‌شود، بنابراین هر بار که برنامه را باز کنید بلافاصله ظاهر می‌شود.',
+    "Prayer Timer Accuracy Improved": 'بهبود دقت زمان‌سنج نماز',
+    "The Ishraq/Sunrise plus time now continues until 9:30 AM, then the Zawal/Zuhar countdown begins. Both the app and widgets are now perfectly synchronized.": 'زمان مثبت اشراق/طلوع آفتاب اکنون تا ساعت ۹:۳۰ صبح ادامه می‌یابد، سپس شمارش معکوس زوال/ظهر آغاز می‌شود. برنامه و ویجت‌ها اکنون کاملاً هماهنگ هستند.',
   },
 };
 

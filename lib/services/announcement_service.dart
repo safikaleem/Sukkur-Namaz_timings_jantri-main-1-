@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
 
@@ -282,24 +283,19 @@ class AnnouncementService {
                               'assets/images/ramzan_pamphlet.jpg',
                               fit: BoxFit.contain,
                             )
-                          : Image.network(
-                              imageUrl!,
+                          : CachedNetworkImage(
+                              imageUrl: imageUrl!,
                               fit: BoxFit.contain,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(
-                                  child: CircularProgressIndicator(),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Center(
-                                  child: Icon(
-                                    Icons.image_not_supported_rounded,
-                                    size: 48,
-                                    color: AppTheme.greyText,
-                                  ),
-                                );
-                              },
+                              placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                              errorWidget: (context, url, error) => const Center(
+                                child: Icon(
+                                  Icons.image_not_supported_rounded,
+                                  size: 48,
+                                  color: AppTheme.greyText,
+                                ),
+                              ),
                             ),
                     ),
                   ),
