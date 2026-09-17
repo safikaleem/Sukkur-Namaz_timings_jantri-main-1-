@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sukkur_prayer_timings/l10n/world_translations.dart';
+import '../services/hijri_sync_service.dart';
 import '../services/notification_service.dart';
 import '../services/widget_service.dart';
 import '../utils/alert_mode.dart';
@@ -725,6 +726,7 @@ class SettingsProvider extends ChangeNotifier {
     _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
     _hasCompletedSetup = prefs.getBool('has_completed_setup') ?? false;
     _hijriAdjustment = prefs.getInt('hijri_adjustment') ?? 0;
+    await HijriSyncService.loadLocalCache();
     _selectedAzanIndex = prefs.getInt('selected_azan') ?? 0;
     _tasbeehThemeIndex = prefs.getInt('tasbeeh_theme') ?? 0;
     _circleWidgetStyle = prefs.getString('circle_widget_style') ?? 'digital';
@@ -991,6 +993,16 @@ class SettingsProvider extends ChangeNotifier {
       await prefs.setInt('hijri_adjustment', _hijriAdjustment);
       WidgetService.updateWidget();
     });
+  }
+
+  /// Syncs online Pakistan Ruet-e-Hilal calendar data.
+  Future<bool> syncHijriCalendar() async {
+    final updated = await HijriSyncService.syncFromNetwork();
+    if (updated) {
+      WidgetService.updateWidget();
+      notifyListeners();
+    }
+    return updated;
   }
 
   Future<void> setSelectedAzanIndex(int value) async {

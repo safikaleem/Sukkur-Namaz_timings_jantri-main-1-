@@ -5,7 +5,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
-import '../services/notification_service.dart';
 import '../providers/settings_provider.dart' show SettingsProvider, DarkModeOption;
 import '../utils/alert_mode.dart';
 import '../utils/app_theme.dart';
@@ -295,7 +294,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.1.7';
+    final versionStr = _version.isNotEmpty ? _version : '1.2.2';
 
     showDialog(
       context: context,
@@ -390,62 +389,44 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Version 1.1.9 ──────────────────────────────────
+                  // ── Version 1.2.2 ──────────────────────────────────
                   _buildNewFeatureItem(
                     context,
                     settings,
                     settings.translate(
-                      'Widget Tap to Open App',
-                      'ویجٹ دبائیں ایپ کھولیں',
-                      'ويجٽ دٻايو ايپ کوليو',
-                      'اضغط على الأداة لفتح التطبيق',
+                      'Hijri Date Auto-Sync',
+                      'ہجری تاریخ آٹو سنک',
+                      'هجري تاريخ آٽو سنک',
+                      'مزامنة التاريخ الهجري تلقائياً',
                     ),
                     settings.translate(
-                      'Tapping any of the 7 home screen widgets now reliably opens the app on all Android phones, including newer versions where it previously did not respond.',
-                      'اب 7 ہوم اسکرین ویجٹس میں سے کسی کو بھی دبانے سے ایپ تمام اینڈرائیڈ فونز پر کھلے گی، بشمول نئے ورژنز جہاں پہلے یہ کام نہیں کرتا تھا۔',
-                      'هاڻي 7 هوم اسڪرين ويجٽس مان ڪنهن کي به دٻائڻ سان ايپ سڀني اينڊرائيڊ فونز تي کُلندي، بشمول نون ورجنز جتي اڳ ۾ ڪم نه ڪندو هو.',
-                      'الآن يمكنك الضغط على أي من الأدوات السبع في الشاشة الرئيسية لفتح التطبيق بشكل موثوق على جميع هواتف أندرويد، بما في ذلك الإصدارات الأحدث التي لم تكن تستجيب سابقاً.',
+                      'Hijri dates now follow official Pakistan Ruet-e-Hilal moon sighting announcements. The app syncs automatically on every launch and also supports manual adjustment of ±2 days.',
+                      'ہجری تاریخ اب پاکستان رویت ہلال کمیٹی کے سرکاری اعلان کے مطابق خودکار طور پر اپ ڈیٹ ہوتی ہے۔ ایپ ہر بار کھلنے پر خود سنک ہوتی ہے اور ±2 دن کی دستی ایڈجسٹمنٹ بھی ممکن ہے۔',
+                      'هجري تاريخ هاڻي پاڪستان رويت هلال ڪميٽي جي سرڪاري اعلان مطابق پاڻمرادو اپ ڊيٽ ٿئي ٿي. ايپ هر دفعي کولڻ تي پاڻ سنک ٿئي ٿي ۽ ±2 ڏينهن جي هٿ سان ايڊجسٽمينٽ به ممڪن آهي.',
+                      'يتم الآن تحديث التاريخ الهجري تلقائياً وفق إعلانات لجنة رؤية الهلال الباكستانية الرسمية. يتزامن التطبيق تلقائياً عند كل فتح ويدعم أيضاً التعديل اليدوي بمقدار ±2 يوم.',
                     ),
-                    icon: Icons.touch_app_rounded,
-                    iconColor: const Color(0xFF1565C0),
+                    icon: Icons.sync_rounded,
+                    iconColor: const Color(0xFF1B5E20),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                  // ── Version 1.2.1 ──────────────────────────────────
                   _buildNewFeatureItem(
                     context,
                     settings,
                     settings.translate(
-                      'Faster Popup Image Loading',
-                      'پاپ اپ تصویر تیز لوڈنگ',
-                      'پاپ اپ تصوير تيز لوڊنگ',
-                      'تحميل أسرع لصورة الإعلان',
+                      'Responsive Announcement Popup',
+                      'ریسپانسو اعلان پاپ اپ',
+                      'ريسپانسو اعلان پاپ اپ',
+                      'نافذة إعلانات متجاوبة',
                     ),
                     settings.translate(
-                      'The announcement popup image now loads instantly from cache after the first download, so it appears immediately every time you open the app.',
-                      'اعلان کی تصویر اب پہلی بار ڈاؤن لوڈ ہونے کے بعد کیش سے فوری طور پر لوڈ ہوتی ہے، تاکہ جب بھی آپ ایپ کھولیں تو فوراً نظر آئے۔',
-                      'اعلان جي تصوير هاڻي پهرين ڊائون لوڊ کان پوءِ ڪيش مان فوري طور تي لوڊ ٿيندي آهي، تنهن ڪري جڏهن به توهان ايپ کوليو ته فوري نظر ايندي.',
-                      'صورة الإعلان المنبثق تُحمّل الآن فورياً من الذاكرة المؤقتة بعد التنزيل الأول، لتظهر مباشرة في كل مرة تفتح التطبيق.',
+                      'The announcement popup is now fully responsive across all phones, tablets, and orientations, with image retry support in all 10 languages.',
+                      'اعلان کا پاپ اپ اب تمام موبائل، ٹیبلٹ اور اورینٹیشن پر مکمل ریسپانسو ہے، اور تمام 10 زبانوں میں تصویر دوبارہ لوڈ کرنے کی سہولت موجود ہے۔',
+                      'اعلان جو پاپ اپ هاڻي سڀني فونن، ٽيبليٽس ۽ اورينٽيشنز تي مڪمل ريسپانسو آهي، ۽ سڀني 10 ٻولين ۾ تصوير ٻيهر لوڊ ڪرڻ جي سهولت موجود آهي.',
+                      'نافذة الإعلانات المنبثقة متجاوبة الآن بالكامل عبر جميع الهواتف والأجهزة اللوحية، مع دعم إعادة محاولة تحميل الصور بجميع اللغات العشر.',
                     ),
-                    icon: Icons.image_rounded,
-                    iconColor: const Color(0xFF00897B),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildNewFeatureItem(
-                    context,
-                    settings,
-                    settings.translate(
-                      'Prayer Timer Accuracy Improved',
-                      'نماز ٹائمر کی درستگی بہتر',
-                      'نماز ٽائمر جي درستگي بهتر',
-                      'تحسين دقة مؤقت الصلاة',
-                    ),
-                    settings.translate(
-                      'The Ishraq/Sunrise plus time now continues until 9:30 AM, then the Zawal/Zuhar countdown begins. Both the app and widgets are now perfectly synchronized.',
-                      'اشراق/طلوع آفتاب کا پلس وقت اب صبح 9:30 تک جاری رہے گا، پھر زوال/ظہر کا کاؤنٹ ڈاؤن شروع ہوگا۔ اب ایپ اور ویجٹس دونوں بالکل ہم آہنگ ہیں۔',
-                      'اشراق/طلوع آفتاب جو پلس وقت هاڻي صبح 9:30 تائين جاري رهندو، پوءِ زوال/ظهر جو ڪائونٽ ڊائون شروع ٿيندو. هاڻي ايپ ۽ ويجٽس ٻئي بلڪل هم آهنگ آهن.',
-                      'وقت الإشراق/الشروق الإيجابي يستمر الآن حتى الساعة 9:30 صباحاً، ثم يبدأ العد التنازلي للزوال/الظهر. التطبيق والأدوات متزامنان الآن بشكل مثالي.',
-                    ),
-                    icon: Icons.timer_rounded,
-                    iconColor: const Color(0xFFEF6C00),
+                    icon: Icons.aspect_ratio_rounded,
+                    iconColor: const Color(0xFFE65100),
                   ),
                 ],
               ),

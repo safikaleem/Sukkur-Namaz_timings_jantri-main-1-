@@ -56,6 +56,10 @@ void main() {
   runZonedGuarded<Future<void>>(() async {
     WidgetsFlutterBinding.ensureInitialized();
 
+    // Clear saved upgrader settings on launch so the prompt appears once per session
+    // instead of repeatedly on every button press.
+    await Upgrader.clearSavedSettings();
+
     FlutterError.onError = (FlutterErrorDetails details) {
       FlutterError.presentError(details);
       _reportError(details.exception, details.stack);
@@ -64,9 +68,12 @@ void main() {
     if (!kIsWeb) {
       await SystemChrome.setPreferredOrientations(
           [DeviceOrientation.portraitUp]);
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.light,
       ));
     }
 
@@ -75,6 +82,7 @@ void main() {
     } catch (e, s) {
       _reportError(e, s);
     }
+
     try {
       await NotificationService.instance.init();
     } catch (e, s) {
@@ -86,45 +94,6 @@ void main() {
       await settings.loadFromPrefs();
     } catch (e, s) {
       _reportError(e, s);
-    }
-    WidgetService.updateWidget(); // fire-and-forget
-
-    if (!kIsWeb && settings.notificationsEnabled) {
-      try {
-        await NotificationService.instance.scheduleWeeklyNotifications();
-      } catch (e, s) {
-        _reportError(e, s);
-      }
-    }
-
-    if (!kIsWeb) {
-      try {
-        Workmanager().initialize(
-          callbackDispatcher,
-          isInDebugMode: false,
-        );
-        Workmanager().registerPeriodicTask(
-          'prayer_notification_reschedule',
-          'reschedule_weekly_notifications',
-          frequency: const Duration(hours: 6),
-          constraints: Constraints(
-            networkType: NetworkType.notRequired,
-            requiresBatteryNotLow: false,
-            requiresCharging: false,
-            requiresDeviceIdle: false,
-            requiresStorageNotLow: false,
-          ),
-        );
-      } catch (e, s) {
-        _reportError(e, s);
-      }
-    }
-
-    // Drop the old per-surah blobs from SharedPreferences. Not awaited: it is
-    // housekeeping and must not hold up first paint.
-    if (!kIsWeb) {
-      purgeLegacySurahCache()
-          .catchError((Object e, StackTrace s) => _reportError(e, s));
     }
 
     runApp(
@@ -211,10 +180,7 @@ class MainShell extends StatefulWidget {
 /// Built once, not per rebuild: the upgrader holds the fetched store version
 /// and the timestamp of the last prompt, and a fresh instance on every frame
 /// would throw both away.
-///
-/// [Duration.zero] replaces the three-day default, so the prompt is offered
-/// again on the very next launch rather than being hidden for three days.
-final _upgrader = Upgrader(durationUntilAlertAgain: Duration.zero);
+final _upgrader = Upgrader();
 
 class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   int _currentIndex = 0;
@@ -227,9 +193,45 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _refreshNotificationHealth();
+      _initStartupServices();
       AnnouncementService.checkForAnnouncement(context);
     });
+  }
+
+  Future<void> _initStartupServices() async {
+    if (kIsWeb) return;
+    try {
+      final settings = Provider.of<SettingsProvider>(context, listen: false);
+      settings.syncHijriCalendar();
+      if (settings.notificationsEnabled) {
+        await NotificationService.instance.scheduleWeeklyNotifications();
+      }
+      WidgetService.updateWidget();
+      Workmanager().initialize(
+        callbackDispatcher,
+        isInDebugMode: false,
+      );
+      Workmanager().registerPeriodicTask(
+        'prayer_notification_reschedule',
+        'reschedule_weekly_notifications',
+        frequency: const Duration(hours: 6),
+        constraints: Constraints(
+          networkType: NetworkType.notRequired,
+          requiresBatteryNotLow: false,
+          requiresCharging: false,
+          requiresDeviceIdle: false,
+          requiresStorageNotLow: false,
+        ),
+      );
+      purgeLegacySurahCache()
+          .catchError((Object e, StackTrace s) => _reportError(e, s));
+    } catch (e, s) {
+      _reportError(e, s);
+    } finally {
+      if (mounted) {
+        _refreshNotificationHealth();
+      }
+    }
   }
 
   /// Re-reads whether the OS will actually deliver prayer alerts on time.

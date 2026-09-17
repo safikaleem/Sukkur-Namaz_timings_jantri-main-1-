@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
 import '../widgets/azan_preview_sheet.dart';
+import '../utils/hijri_converter.dart';
 import 'clock_style_screen.dart';
 import 'date_time_settings_screen.dart';
 import 'auto_silent_settings_screen.dart';
@@ -189,6 +190,7 @@ class _HijriExpandable extends StatefulWidget {
 
 class _HijriExpandableState extends State<_HijriExpandable> {
   bool _expanded = false;
+  bool _syncing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -380,6 +382,110 @@ class _HijriExpandableState extends State<_HijriExpandable> {
                               ),
                             );
                           }),
+                        ),
+                        const SizedBox(height: 14),
+                        // Live Preview of selected date
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accent.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: AppTheme.accent.withValues(alpha: 0.25),
+                            ),
+                          ),
+                          child: Text(
+                            HijriConverter.todayHijri(
+                              adjustment: adj,
+                              language: settings.language,
+                            ),
+                            style: TextStyle(
+                              fontSize: isRtl ? 15 : 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.accent,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Pakistan Ruet-e-Hilal sync banner
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : Colors.black.withValues(alpha: 0.03),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.cloud_sync_rounded,
+                                  size: 18, color: AppTheme.accent),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  settings.translate(
+                                    'Pakistan Ruet-e-Hilal (Auto-Sync)',
+                                    'رویت ہلال پاکستان (خودکار)',
+                                    'رويت هلال پاڪستان (خودڪار)',
+                                    'رؤية الهلال لباكستان (تلقائي)',
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: isRtl ? 13 : 11,
+                                    color:
+                                        isDark ? Colors.white60 : Colors.black54,
+                                  ),
+                                ),
+                              ),
+                              InkWell(
+                                onTap: _syncing
+                                    ? null
+                                    : () async {
+                                        final messenger =
+                                            ScaffoldMessenger.of(context);
+                                        setState(() => _syncing = true);
+                                        final updated =
+                                            await settings.syncHijriCalendar();
+                                        if (!mounted) return;
+                                        setState(() => _syncing = false);
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              updated
+                                                  ? settings.translate(
+                                                      'Updated with latest Ruet-e-Hilal data',
+                                                      'رویت ہلال کا ڈیٹا اپ ڈیٹ ہو گیا',
+                                                      'رويت هلال ڊيٽا اپڊيٽ ٿي وئي',
+                                                      'تم تحديث بيانات رؤية الهلال')
+                                                  : settings.translate(
+                                                      'Calendar is up to date',
+                                                      'کیلنڈر پہلے سے اپ ٹو ڈیٹ ہے',
+                                                      'ڪئلينڊر اڳ ۾ ئي اپ ٽو ڊيٽ آهي',
+                                                      'التقويم محدث بالفعل'),
+                                            ),
+                                            duration:
+                                                const Duration(seconds: 2),
+                                          ),
+                                        );
+                                      },
+                                borderRadius: BorderRadius.circular(16),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: _syncing
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2),
+                                        )
+                                      : Icon(Icons.refresh_rounded,
+                                          size: 18, color: AppTheme.accent),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),

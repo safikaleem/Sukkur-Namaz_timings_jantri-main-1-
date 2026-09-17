@@ -191,27 +191,35 @@ class NotificationService {
     if (android == null) return;
     const desc = 'سکھر کے نماز کے اوقات کی اطلاع';
 
-    // Delete channels first so updated audioAttributesUsage / bypassDnd
-    // settings take effect on existing installs (Android caches channel config).
-    final oldChannels = [
-      'namaz_silent', 'namaz_silent_v2', 'namaz_silent_v3', 'namaz_silent_v4', 'namaz_silent_v5',
-      // v6 bumped to v7 to force Importance.defaultImportance on existing installs
-      // (Android permanently caches channel importance — only a new ID triggers a fresh channel)
-      'namaz_silent_v6',
-      'namaz_vibrate', 'namaz_vibrate_v2', 'namaz_vibrate_v3', 'namaz_vibrate_v4', 'namaz_vibrate_v5',
-      'namaz_loud', 'namaz_loud_bell_v1', 'namaz_loud_bell_v2', 'namaz_loud_bell_v3', 'namaz_loud_bell_v4', 'namaz_loud_bell_v5',
-      'namaz_reminder', 'namaz_reminder_v1', 'namaz_reminder_v2', 'namaz_reminder_v3', 'namaz_reminder_v4', 'namaz_reminder_v5'
-    ];
-    for (final id in oldChannels) {
-      await android.deleteNotificationChannel(id);
-    }
-    // Delete any old unversioned or v2/v3/v4/v5 azan channels
-    for (int i = 0; i < azanTracks.length; i++) {
-      await android.deleteNotificationChannel('namaz_azan_$i');
-      await android.deleteNotificationChannel('namaz_azan_v2_$i');
-      await android.deleteNotificationChannel('namaz_azan_v3_$i');
-      await android.deleteNotificationChannel('namaz_azan_v4_$i');
-      await android.deleteNotificationChannel('namaz_azan_v5_$i');
+    // Delete legacy channels ONCE using a migration key in SharedPreferences.
+    // Executing 55+ deleteNotificationChannel IPC calls repeatedly on every launch/schedule
+    // causes "Slow Binder call" ANR on Android.
+    final prefs = await SharedPreferences.getInstance();
+    final bool alreadyCleaned = prefs.getBool('legacy_channels_deleted_v7') ?? false;
+
+    if (!alreadyCleaned) {
+      final oldChannels = [
+        'namaz_silent', 'namaz_silent_v2', 'namaz_silent_v3', 'namaz_silent_v4', 'namaz_silent_v5',
+        'namaz_silent_v6',
+        'namaz_vibrate', 'namaz_vibrate_v2', 'namaz_vibrate_v3', 'namaz_vibrate_v4', 'namaz_vibrate_v5',
+        'namaz_loud', 'namaz_loud_bell_v1', 'namaz_loud_bell_v2', 'namaz_loud_bell_v3', 'namaz_loud_bell_v4', 'namaz_loud_bell_v5',
+        'namaz_reminder', 'namaz_reminder_v1', 'namaz_reminder_v2', 'namaz_reminder_v3', 'namaz_reminder_v4', 'namaz_reminder_v5'
+      ];
+      for (final id in oldChannels) {
+        try {
+          await android.deleteNotificationChannel(id);
+        } catch (_) {}
+      }
+      for (int i = 0; i < azanTracks.length; i++) {
+        try {
+          await android.deleteNotificationChannel('namaz_azan_$i');
+          await android.deleteNotificationChannel('namaz_azan_v2_$i');
+          await android.deleteNotificationChannel('namaz_azan_v3_$i');
+          await android.deleteNotificationChannel('namaz_azan_v4_$i');
+          await android.deleteNotificationChannel('namaz_azan_v5_$i');
+        } catch (_) {}
+      }
+      await prefs.setBool('legacy_channels_deleted_v7', true);
     }
 
     await android.createNotificationChannel(const AndroidNotificationChannel(
@@ -349,10 +357,6 @@ class NotificationService {
   Future<void> scheduleWeeklyNotifications() async {
     if (kIsWeb || _plugin == null) return;
 
-    // Recreate channels to ensure sound settings are current (e.g. after
-    // azan selection change or if user modified channel in system settings).
-    await recreationChannels();
-
     final prefs = await SharedPreferences.getInstance();
     if (!(prefs.getBool('notifications_enabled') ?? true)) {
       // Switched off outright - here the clean sweep is the intent.
@@ -392,6 +396,8 @@ class NotificationService {
     // Everything this run writes, so the stale ids from the last run - and only
     // those - can be cleared at the end.
     final writtenIds = <int>{};
+    int batchCounter = 0;
+
     for (int dayOffset = 0; dayOffset < scheduleHorizonDays; dayOffset++) {
       final date = now.add(Duration(days: dayOffset));
       final timing = TimingsData.instance.timingFor(date);
@@ -448,6 +454,12 @@ class NotificationService {
                 UILocalNotificationDateInterpretation.absoluteTime,
           );
           writtenIds.add(notifId);
+          batchCounter++;
+          // Yield to event looper every 5 notifications to process pending touch
+          // and window dispatching events, preventing ANR (Input dispatching timed out).
+          if (batchCounter % 5 == 0) {
+            await Future.delayed(Duration.zero);
+          }
         } catch (e) {
           debugPrint('Failed to schedule notification $notifId: $e');
         }

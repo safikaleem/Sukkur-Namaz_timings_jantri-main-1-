@@ -288,6 +288,15 @@ const Map<String, Map<String, String>> additionalTranslations = {
     "The announcement popup image now loads instantly from cache after the first download, so it appears immediately every time you open the app.": 'ঘোষণার পপআপ ইমেজ এখন প্রথম ডাউনলোডের পর ক্যাশ থেকে তাৎক্ষণিকভাবে লোড হয়, তাই প্রতিবার অ্যাপ খুললেই তা সাথে সাথে দেখা যায়।',
     "Prayer Timer Accuracy Improved": 'নামাজ টাইমারের নির্ভুলতা উন্নত',
     "The Ishraq/Sunrise plus time now continues until 9:30 AM, then the Zawal/Zuhar countdown begins. Both the app and widgets are now perfectly synchronized.": 'ইশরাক/সূর্যোদয়ের প্লাস সময় এখন সকাল ৯:৩০ পর্যন্ত চলবে, তারপর জাওয়াল/যোহরের কাউন্টডাউন শুরু হবে। অ্যাপ এবং উইজেট উভয়ই এখন পুরোপুরি সিঙ্ক্রোনাইজড।',
+    // Version 1.2.0
+    'Failed to load image': 'ছবি লোড করা যায়নি',
+    'Retry': 'পুনরায় চেষ্টা করুন',
+    'Responsive Announcement Popup': 'রেসপনসিভ ঘোষণা পপআপ',
+    'The announcement popup is now fully responsive across all phones, tablets, and orientations, with image retry support in all 10 languages.': 'ঘোষণার পপআপটি এখন সব ফোন, ট্যাবলেট এবং অরিয়েন্টেশনে পুরোপুরি রেসপনসিভ, এবং ১০টি ভাষাতেই ছবি পুনরায় লোড করার সুবিধা রয়েছে।',
+    // Version 1.2.2
+    'Hijri Date Auto-Sync': 'হিজরি তারিখ অটো-সিঙ্ক',
+    'Hijri dates now follow official Pakistan Ruet-e-Hilal moon sighting announcements. The app syncs automatically on every launch and also supports manual adjustment of ±2 days.':
+        'হিজরি তারিখ এখন পাকিস্তান রুয়েত-ই-হিলাল কমিটির সরকারি চাঁদ দেখার ঘোষণা অনুসরণ করে। অ্যাপটি প্রতিবার খোলার সময় স্বয়ংক্রিয়ভাবে সিঙ্ক হয় এবং ±২ দিনের ম্যানুয়াল সমন্বয়ও সমর্থন করে।',
   },
   'indonesian': {
     'Search Any City Instantly': 'Cari Kota Mana Pun Seketika',
@@ -560,6 +569,15 @@ const Map<String, Map<String, String>> additionalTranslations = {
     "The announcement popup image now loads instantly from cache after the first download, so it appears immediately every time you open the app.": 'Gambar popup pengumuman sekarang dimuat secara instan dari cache setelah unduhan pertama, sehingga muncul segera setiap kali Anda membuka aplikasi.',
     "Prayer Timer Accuracy Improved": 'Akurasi Timer Shalat Ditingkatkan',
     "The Ishraq/Sunrise plus time now continues until 9:30 AM, then the Zawal/Zuhar countdown begins. Both the app and widgets are now perfectly synchronized.": 'Waktu plus Isyraq/Terbit sekarang berlanjut hingga pukul 9:30 pagi, kemudian hitung mundur Zawal/Dzuhur dimulai. Aplikasi dan widget sekarang tersinkronisasi dengan sempurna.',
+    // Version 1.2.0
+    'Failed to load image': 'Gagal memuat gambar',
+    'Retry': 'Coba Lagi',
+    'Responsive Announcement Popup': 'Popup Pengumuman Responsif',
+    'The announcement popup is now fully responsive across all phones, tablets, and orientations, with image retry support in all 10 languages.': 'Popup pengumuman kini sepenuhnya responsif di semua ponsel, tablet, dan orientasi, dengan dukungan coba lagi muat gambar dalam 10 bahasa.',
+    // Version 1.2.2
+    'Hijri Date Auto-Sync': 'Sinkronisasi Otomatis Tanggal Hijriah',
+    'Hijri dates now follow official Pakistan Ruet-e-Hilal moon sighting announcements. The app syncs automatically on every launch and also supports manual adjustment of ±2 days.':
+        'Tanggal Hijriah kini mengikuti pengumuman resmi rukyatul hilal Pakistan. Aplikasi me-reka otomatis setiap kali dibuka dan juga mendukung penyesuaian manual hingga ±2 hari.',
   },
   'turkish': {
     'Search Any City Instantly': 'Her Şehri Anında Arayın',
@@ -832,6 +850,15 @@ const Map<String, Map<String, String>> additionalTranslations = {
     "The announcement popup image now loads instantly from cache after the first download, so it appears immediately every time you open the app.": 'Duyuru popup resmi artık ilk indirmeden sonra önbellekten anında yüklenir, böylece uygulamayı her açtığınızda hemen görünür.',
     "Prayer Timer Accuracy Improved": 'Namaz Zamanlayıcı Doğruluğu İyileştirildi',
     "The Ishraq/Sunrise plus time now continues until 9:30 AM, then the Zawal/Zuhar countdown begins. Both the app and widgets are now perfectly synchronized.": 'İşrak/Güneş doğuşu artı süresi artık sabah 9:30\'a kadar devam eder, ardından Zeval/Öğle geri sayımı başlar. Uygulama ve widget\'lar artık mükemmel şekilde senkronize.',
+    // Version 1.2.0
+    'Failed to load image': 'Resim yüklenemedi',
+    'Retry': 'Tekrar Dene',
+    'Responsive Announcement Popup': 'Duyarlı Duyuru Açılır Penceresi',
+    'The announcement popup is now fully responsive across all phones, tablets, and orientations, with image retry support in all 10 languages.': 'Duyuru açılır penceresi artık tüm telefonlarda, tabletlerde ve yönlerde tamamen duyarlıdır ve 10 dilde resmi yeniden yüklemeyi deneme desteği sunar.',
+    // Version 1.2.2
+    'Hijri Date Auto-Sync': 'Hicri Tarih Otomatik Senkronizasyonu',
+    'Hijri dates now follow official Pakistan Ruet-e-Hilal moon sighting announcements. The app syncs automatically on every launch and also supports manual adjustment of ±2 days.':
+        'Hicri tarihler artık resmi Pakistan Hilal Gözlem Komitesi duyurularını takip etmektedir. Uygulama her açılışta otomatik olarak senkronize olur ve ±2 günlük manuel ayarlamayı destekler.',
   },
   'french': {
     'Search Any City Instantly': 'Recherchez n\'importe quelle ville instantanément',
@@ -1105,6 +1132,15 @@ const Map<String, Map<String, String>> additionalTranslations = {
     "The announcement popup image now loads instantly from cache after the first download, so it appears immediately every time you open the app.": 'L\'image popup d\'annonce se charge désormais instantanément depuis le cache après le premier téléchargement, elle apparaît donc immédiatement à chaque ouverture de l\'application.',
     "Prayer Timer Accuracy Improved": 'Précision du minuteur de prière améliorée',
     "The Ishraq/Sunrise plus time now continues until 9:30 AM, then the Zawal/Zuhar countdown begins. Both the app and widgets are now perfectly synchronized.": 'Le temps positif d\'Ishraq/Lever du soleil se poursuit désormais jusqu\'à 9h30, puis le compte à rebours Zawal/Dhuhr commence. L\'application et les widgets sont désormais parfaitement synchronisés.',
+    // Version 1.2.0
+    'Failed to load image': 'Échec du chargement de l\'image',
+    'Retry': 'Réessayer',
+    'Responsive Announcement Popup': 'Fenêtre d\'annonce réactive',
+    'The announcement popup is now fully responsive across all phones, tablets, and orientations, with image retry support in all 10 languages.': 'La fenêtre contextuelle d\'annonce est désormais entièrement réactive sur tous les téléphones et tablettes, avec prise en charge du rechargement de l\'image en 10 langues.',
+    // Version 1.2.2
+    'Hijri Date Auto-Sync': 'Synchronisation Automatique de la Date Hijri',
+    'Hijri dates now follow official Pakistan Ruet-e-Hilal moon sighting announcements. The app syncs automatically on every launch and also supports manual adjustment of ±2 days.':
+        'Les dates hijri suivent désormais les annonces officielles de vision du croissant de l\'équipe Ruet-e-Hilal du Pakistan. L\'application se synchronise automatiquement à chaque lancement et prend en charge un ajustement manuel de ±2 jours.',
   },
   'hindi': {
     'Search Any City Instantly': 'कोई भी शहर तुरंत खोजें',
@@ -1377,6 +1413,15 @@ const Map<String, Map<String, String>> additionalTranslations = {
     "The announcement popup image now loads instantly from cache after the first download, so it appears immediately every time you open the app.": 'घोषणा पॉपअप इमेज अब पहली बार डाउनलोड के बाद कैश से तुरंत लोड होती है, इसलिए हर बार ऐप खोलने पर तुरंत दिखाई देती है।',
     "Prayer Timer Accuracy Improved": 'नमाज़ टाइमर की सटीकता सुधारी गई',
     "The Ishraq/Sunrise plus time now continues until 9:30 AM, then the Zawal/Zuhar countdown begins. Both the app and widgets are now perfectly synchronized.": 'इशराक/सूर्योदय का प्लस समय अब सुबह 9:30 बजे तक जारी रहता है, फिर ज़वाल/ज़ुहर का काउंटडाउन शुरू होता है। ऐप और विजेट्स दोनों अब पूरी तरह सिंक्रोनाइज़ हैं।',
+    // Version 1.2.0
+    'Failed to load image': 'तस्वीर लोड नहीं हो सकी',
+    'Retry': 'पुनः प्रयास करें',
+    'Responsive Announcement Popup': 'रिस्पॉन्सिव घोषणा पॉपअप',
+    'The announcement popup is now fully responsive across all phones, tablets, and orientations, with image retry support in all 10 languages.': 'घोषणा पॉपअप अब सभी फोन, टैबलेट और ओरिएंटेशन पर पूरी तरह उत्तरदायी है, और सभी 10 भाषाओं में तस्वीर को पुनः लोड करने की सुविधा उपलब्ध है।',
+    // Version 1.2.2
+    'Hijri Date Auto-Sync': 'हिजरी तिथि ऑटो-सिंक',
+    'Hijri dates now follow official Pakistan Ruet-e-Hilal moon sighting announcements. The app syncs automatically on every launch and also supports manual adjustment of ±2 days.':
+        'हिजरी तिथियां अब आधिकारिक पाकिस्तान रुएत-ए-हिलाल चांद दिखने की घोषणाओं का पालन करती हैं। ऐप हर बार खुलने पर स्वचालित रूप से सिंक होता है और ±2 दिनों के मैनुअल समायोजन का भी समर्थन करता है।',
   },
   'persian': {
     'Search Any City Instantly': 'هر شهری را فوراً جست‌وجو کنید',
@@ -1649,6 +1694,15 @@ const Map<String, Map<String, String>> additionalTranslations = {
     "The announcement popup image now loads instantly from cache after the first download, so it appears immediately every time you open the app.": 'تصویر پاپ‌آپ اعلان اکنون پس از اولین بارگیری فوراً از حافظه پنهان بارگذاری می‌شود، بنابراین هر بار که برنامه را باز کنید بلافاصله ظاهر می‌شود.',
     "Prayer Timer Accuracy Improved": 'بهبود دقت زمان‌سنج نماز',
     "The Ishraq/Sunrise plus time now continues until 9:30 AM, then the Zawal/Zuhar countdown begins. Both the app and widgets are now perfectly synchronized.": 'زمان مثبت اشراق/طلوع آفتاب اکنون تا ساعت ۹:۳۰ صبح ادامه می‌یابد، سپس شمارش معکوس زوال/ظهر آغاز می‌شود. برنامه و ویجت‌ها اکنون کاملاً هماهنگ هستند.',
+    // Version 1.2.0
+    'Failed to load image': 'بارگیری تصویر ناموفق بود',
+    'Retry': 'تلاش مجدد',
+    'Responsive Announcement Popup': 'پنجره بازشوی اعلان واکنش‌گرا',
+    'The announcement popup is now fully responsive across all phones, tablets, and orientations, with image retry support in all 10 languages.': 'پنجره بازشوی اعلان اکنون در همه گوشی‌ها، تبلت‌ها و جهت‌ها کاملاً واکنش‌گرا است و از بارگیری مجدد تصویر در هر ۱۰ زبان پشتیبانی می‌کند.',
+    // Version 1.2.2
+    'Hijri Date Auto-Sync': 'همگام‌سازی خودکار تاریخ هجری',
+    'Hijri dates now follow official Pakistan Ruet-e-Hilal moon sighting announcements. The app syncs automatically on every launch and also supports manual adjustment of ±2 days.':
+        'تاریخ‌های هجری اکنون از اطلاعیه‌های رسمی رؤیت هلال پاکستان پیروی می‌کنند. برنامه با هر بار اجرا به طور خودکار همگام‌سازی می‌شود و از تنظیم دستی ±۲ روز نیز پشتیبانی می‌کند.',
   },
 };
 
