@@ -6,6 +6,7 @@ import '../data/timings_data.dart';
 
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
+import '../widgets/tasbeeh_icon.dart';
 
 class ClockStyleScreen extends StatefulWidget {
   const ClockStyleScreen({super.key});
@@ -539,9 +540,10 @@ class _LivePreviewCard extends StatelessWidget {
       (Icons.today_rounded,                settings.translate('Today', 'آج', 'اڄ', 'اليوم'),          false),
       (Icons.view_list_rounded,            settings.translate('Monthly', 'ماہانہ', 'مهاني', 'شهري'), false),
       (Icons.notifications_active_rounded, settings.translate('Reminders', 'اطلاعات', 'ياددهاني', 'التذكيرات'), false),
+      (Icons.menu_book,                    settings.translate('Quran', 'قرآن', 'قرآن', 'القرآن'),      false),
+      (Icons.fingerprint_rounded,          settings.translate('Tasbeeh', 'تسبیح', 'تسبیح', 'تسبيح'),  false),
       (Icons.explore_rounded,              settings.translate('Qibla', 'قبلہ', 'قبلو', 'القبلة'),      false),
       (Icons.menu_book_rounded,            settings.translate('Instructions', 'ہدایت', 'هدايت', 'التعليمات'),  false),
-      (Icons.fingerprint_rounded,          settings.translate('Tasbeeh', 'تسبیح', 'تسبیح', 'تسبيح'),  false),
     ];
 
     return AnimatedContainer(
@@ -686,13 +688,16 @@ class _LivePreviewCard extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            item.$1,
-                            size: 20,
-                            color: isSelected
-                                ? accent
-                                : navTextColor,
-                          ),
+                          item.$1 == Icons.fingerprint_rounded
+                              ? TasbeehBeadIcon(
+                                  size: 18,
+                                  color: isSelected ? accent : navTextColor,
+                                )
+                              : Icon(
+                                  item.$1,
+                                  size: 20,
+                                  color: isSelected ? accent : navTextColor,
+                                ),
                           const SizedBox(height: 2),
                           Text(
                             item.$2,

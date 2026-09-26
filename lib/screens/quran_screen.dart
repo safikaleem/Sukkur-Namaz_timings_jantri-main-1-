@@ -6,6 +6,9 @@ import 'quran_reader_screen.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
 import '../data/quran_data.dart';
+import '../data/quran_data_15_line.dart';
+import '../services/quran_download_service.dart';
+import '../widgets/pdf_mushaf_reader.dart';
 
 class QuranScreen extends StatefulWidget {
   const QuranScreen({super.key});
@@ -81,6 +84,10 @@ class _QuranScreenState extends State<QuranScreen> {
   void initState() {
     super.initState();
     _loadFavorites();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final quranType = context.read<SettingsProvider>().quranType;
+      QuranDownloadService.instance.startAutoDownloadAll(quranType);
+    });
   }
 
   Future<void> _loadFavorites() async {
@@ -93,16 +100,6 @@ class _QuranScreenState extends State<QuranScreen> {
     });
   }
 
-  List<dynamic> get _favoriteItems {
-    final List<dynamic> favs = [];
-    for (int pNum in _favoriteParahs) {
-      favs.add(QuranData.parahs.firstWhere((p) => p.number == pNum, orElse: () => QuranData.parahs.first));
-    }
-    for (int sNum in _favoriteSurahs) {
-      favs.add(QuranData.surahs.firstWhere((s) => s.number == sNum, orElse: () => QuranData.surahs.first));
-    }
-    return favs;
-  }
 
   Future<void> _toggleSurahFavorite(int surahNumber) async {
     final prefs = await SharedPreferences.getInstance();
@@ -162,10 +159,25 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   // ── Navigation ────────────────────────────────────────────────────────────────
-  void _openSurah(int number, String enName, String arabicName, String localName) {
+  Future<void> _openSurah(int number, String enName, String arabicName, String localName) async {
     final settings = context.read<SettingsProvider>();
+    final int targetParah = settings.quranType == '15_line'
+        ? Quran15LineData.getParahForPage(Quran15LineData.surahStartPages[number] ?? 1)
+        : QuranData.getParahForPage(QuranData.surahStartPages[number] ?? 1);
+
+    final ready = await QuranDownloadService.instance.ensureQuranReady(
+      context,
+      quranType: settings.quranType,
+      parahNumber: targetParah,
+    );
+    if (!ready || !mounted) return;
+
     int savedAyah = settings.surahProgress[number] ?? 1;
     if (savedAyah < 1) savedAyah = 1;
+
+    final int startPage = settings.quranType == '15_line'
+        ? (Quran15LineData.surahStartPages[number] ?? 2)
+        : (QuranData.surahStartPages[number] ?? 1);
 
     Navigator.push(
       context,
@@ -175,7 +187,7 @@ class _QuranScreenState extends State<QuranScreen> {
           surahNameEn: enName,
           surahNameArabic: arabicName,
           surahNameLocal: localName,
-          initialPage: QuranData.surahStartPages[number] ?? 1,
+          initialPage: startPage,
           initialAyah: savedAyah,
         ),
       ),
@@ -184,10 +196,21 @@ class _QuranScreenState extends State<QuranScreen> {
     });
   }
 
-  void _openParah(Parah parah, [int? specificPage, int? specificSurahId, int? specificAyahId]) {
+  Future<void> _openParah(Parah parah, [int? specificPage, int? specificSurahId, int? specificAyahId]) async {
     final settings = context.read<SettingsProvider>();
-    int savedPage = specificPage ?? (settings.parahProgress[parah.number] ?? parah.startPage);
-    if (savedPage < parah.startPage) savedPage = parah.startPage;
+    final ready = await QuranDownloadService.instance.ensureQuranReady(
+      context,
+      quranType: settings.quranType,
+      parahNumber: parah.number,
+    );
+    if (!ready || !mounted) return;
+
+    final int parahStart = settings.quranType == '15_line'
+        ? Quran15LineData.parahFirstPage(parah.number)
+        : (parah.number == 1 ? 1 : parah.startPage);
+
+    int savedPage = specificPage ?? (settings.parahProgress[parah.number] ?? parahStart);
+    if (savedPage < parahStart) savedPage = parahStart;
 
     Navigator.push(
       context,
@@ -224,6 +247,8 @@ class _QuranScreenState extends State<QuranScreen> {
         body: Column(
           children: [
             const SizedBox(height: 52), // Space for the floating hamburger menu
+            _buildScriptSelector(context, settings, isDark),
+            _buildDownloadBanner(context, settings, isDark),
             _buildContinueReading(context, settings, isDark),
             TabBar(
               indicatorColor: AppTheme.accent,
@@ -256,6 +281,215 @@ class _QuranScreenState extends State<QuranScreen> {
     );
   }
 
+  Widget _buildDownloadBanner(BuildContext context, SettingsProvider settings, bool isDark) {
+    return ValueListenableBuilder<AutoDownloadStatus>(
+      valueListenable: QuranDownloadService.instance.downloadStatus,
+      builder: (context, status, _) {
+        if (!status.isDownloading && status.error == null) {
+          return const SizedBox.shrink();
+        }
+
+        final isError = status.error != null;
+        final bgColor = isError
+            ? (isDark ? Colors.red.shade900.withValues(alpha: 0.4) : Colors.red.shade50)
+            : (isDark ? const Color(0xFF2C2C3E) : const Color(0xFFFFF8E7));
+
+        final borderColor = isError ? Colors.redAccent : const Color(0xFFD4A574);
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor.withValues(alpha: 0.4)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    isError ? Icons.error_outline_rounded : Icons.cloud_download_rounded,
+                    size: 22,
+                    color: isError ? Colors.redAccent : const Color(0xFFD4A574),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      isError
+                          ? 'Download paused. Tap to retry.'
+                          : status.statusText,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ),
+                  if (isError)
+                    InkWell(
+                      onTap: () {
+                        QuranDownloadService.instance.startAutoDownloadAll(settings.quranType);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(Icons.refresh_rounded, size: 20, color: borderColor),
+                      ),
+                    )
+                  else
+                    Text(
+                      '${(status.progress * 100).toInt()}%',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: borderColor,
+                      ),
+                    ),
+                ],
+              ),
+              if (status.isDownloading) ...[
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: status.progress > 0 ? status.progress : null,
+                    minHeight: 6,
+                    backgroundColor: isDark ? Colors.white10 : Colors.black12,
+                    color: const Color(0xFFD4A574),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildScriptSelector(BuildContext context, SettingsProvider settings, bool isDark) {
+    final is16Line = settings.quranType == '16_line';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E2E) : Colors.black.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  settings.setQuranType('16_line');
+                  QuranDownloadService.instance.startAutoDownloadAll('16_line');
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: is16Line
+                        ? const LinearGradient(
+                            colors: [Color(0xFF3F7A63), Color(0xFF2E5E4C)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: is16Line
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xFF2E5E4C).withValues(alpha: 0.35),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            )
+                          ]
+                        : null,
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.menu_book,
+                          size: 16,
+                          color: is16Line ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          settings.translate('16 Line Quran', '16 سطر قرآن', '16 سٽر قرآن', 'القرآن 16 سطر'),
+                          style: TextStyle(
+                            fontWeight: is16Line ? FontWeight.bold : FontWeight.w500,
+                            fontSize: 12.5,
+                            color: is16Line ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  settings.setQuranType('15_line');
+                  QuranDownloadService.instance.startAutoDownloadAll('15_line');
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: !is16Line
+                        ? const LinearGradient(
+                            colors: [Color(0xFF4C6A75), Color(0xFF2E434D)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: !is16Line
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xFF2E434D).withValues(alpha: 0.35),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            )
+                          ]
+                        : null,
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.auto_stories,
+                          size: 16,
+                          color: !is16Line ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          settings.translate('15 Line Quran', '15 سطر قرآن', '15 سٽر قرآن', 'القرآن 15 سطر'),
+                          style: TextStyle(
+                            fontWeight: !is16Line ? FontWeight.bold : FontWeight.w500,
+                            fontSize: 12.5,
+                            color: !is16Line ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildContinueReading(BuildContext context, SettingsProvider settings, bool isDark) {
     if (settings.lastReadType == null || settings.lastReadId == null) {
       return const SizedBox.shrink();
@@ -265,6 +499,7 @@ class _QuranScreenState extends State<QuranScreen> {
     final id = settings.lastReadId!;
 
     String titleEn = '';
+    String titleArabic = '';
     String titleLocal = '';
     String subtitle = '';
     int progressPercent = 0;
@@ -273,6 +508,7 @@ class _QuranScreenState extends State<QuranScreen> {
     if (type == 'surah') {
       final surah = QuranData.surahs.firstWhere((s) => s.number == id, orElse: () => QuranData.surahs.first);
       titleEn = surah.english;
+      titleArabic = surah.arabic;
       titleLocal = settings.isUrdu ? surah.urdu : (settings.isSindhi ? surah.sindhi : surah.arabic);
       int ayahsRead = settings.surahProgress[id] ?? 0;
       int totalAyahs = surah.totalAyahs;
@@ -284,20 +520,23 @@ class _QuranScreenState extends State<QuranScreen> {
     } else {
       final parah = QuranData.parahs.firstWhere((p) => p.number == id, orElse: () => QuranData.parahs.first);
       titleEn = parah.english;
-      titleLocal = parah.arabic;
-      int pagesRead = settings.parahProgress[id] ?? parah.startPage;
-      
-      int totalPages = 0;
-      if (parah.number == 30) {
-        totalPages = 604 - parah.startPage + 1;
-      } else {
-        totalPages = QuranData.parahs[parah.number].startPage - parah.startPage; 
-      }
-      int pagesDone = pagesRead - parah.startPage + 1;
+      titleArabic = parah.arabic;
+      titleLocal = settings.isUrdu ? parah.urdu : (settings.isSindhi ? parah.sindhi : parah.arabic);
+      final is15Line = settings.quranType == '15_line';
+      final int parahStart = is15Line
+          ? Quran15LineData.parahFirstPage(id)
+          : (id == 1 ? 1 : parah.startPage);
+      final int parahEnd = is15Line
+          ? Quran15LineData.parahLastPage(id)
+          : (id == 30 ? kQuranPageCount : QuranData.parahs[id].startPage - 1);
+      final int totalPages = parahEnd - parahStart + 1;
+
+      int savedPage = settings.parahProgress[id] ?? parahStart;
+      int pagesDone = savedPage - parahStart + 1;
       if (pagesDone < 0) pagesDone = 0;
       if (pagesDone > totalPages) pagesDone = totalPages;
       
-      subtitle = '${settings.translate("Page", "صفحہ", "صفحو", "صفحة")} $pagesRead';
+      subtitle = '${settings.translate("Page", "صفحہ", "صفحو", "صفحة")} $savedPage';
       progressPercent = totalPages > 0 ? ((pagesDone / totalPages) * 100).toInt() : 0;
       onTap = () {
         _openParah(parah);
@@ -305,42 +544,47 @@ class _QuranScreenState extends State<QuranScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF00897B), Color(0xFF00695C)],
+              gradient: LinearGradient(
+                colors: settings.quranType == '15_line'
+                    ? const [Color(0xFF4C6A75), Color(0xFF2E434D)]
+                    : const [Color(0xFF3F7A63), Color(0xFF2E5E4C)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00695C).withValues(alpha: 0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
+                  color: (settings.quranType == '15_line'
+                          ? const Color(0xFF2E434D)
+                          : const Color(0xFF2E5E4C))
+                      .withValues(alpha: 0.25),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: Row(
               children: [
                 Container(
-                  width: 52,
-                  height: 52,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1),
                   ),
-                  child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 26),
+                  child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 20),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,15 +628,16 @@ class _QuranScreenState extends State<QuranScreen> {
                               ],
                             ),
                           ),
-                          if (settings.language == 'english')
-                            Text(
-                              titleLocal,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          const SizedBox(width: 8),
+                          Text(
+                            settings.language == 'english' ? titleArabic : titleEn,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: settings.language == 'english' ? 24 : 18,
+                              fontFamily: settings.language == 'english' ? AppTheme.urduFont : null,
+                              fontWeight: FontWeight.bold,
                             ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -511,11 +756,12 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   Widget _buildHeaderRow(SettingsProvider settings) {
+    final is15Line = settings.quranType == '15_line';
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       decoration: BoxDecoration(
-        color: const Color(0xFF00897B),
+        color: is15Line ? const Color(0xFF4C6A75) : const Color(0xFF3F7A63),
         borderRadius: BorderRadius.circular(24.0),
       ),
       // Every label is scaled down to fit rather than allowed to wrap: these
@@ -572,13 +818,16 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   Widget _buildParahTile(Parah parah, bool isFav, bool isDark, SettingsProvider settings) {
-    int totalPages = 0;
-    if (parah.number == 30) {
-      totalPages = 604 - parah.startPage + 1;
-    } else {
-      totalPages = QuranData.parahs[parah.number].startPage - parah.startPage; 
-    }
-    int pagesRead = (settings.parahProgress[parah.number] ?? 0) - parah.startPage + 1;
+    final is15Line = settings.quranType == '15_line';
+    final int startPage = is15Line
+        ? Quran15LineData.parahFirstPage(parah.number)
+        : (parah.number == 1 ? 1 : parah.startPage);
+    final int endPage = is15Line
+        ? Quran15LineData.parahLastPage(parah.number)
+        : (parah.number == 30 ? kQuranPageCount : QuranData.parahs[parah.number].startPage - 1);
+    final int totalPages = endPage - startPage + 1;
+
+    int pagesRead = (settings.parahProgress[parah.number] ?? 0) - startPage + 1;
     if (pagesRead < 0) pagesRead = 0;
     if (pagesRead > totalPages) pagesRead = totalPages;
     final int parahPercent = totalPages > 0 ? ((pagesRead / totalPages) * 100).toInt() : 0;
@@ -689,7 +938,8 @@ class _QuranScreenState extends State<QuranScreen> {
                         _TilePills(
                           percentLabel: '${_translateNumber(parahPercent, settings)}%',
                           pageLabel:
-                              '${settings.translate("Page", "صفحہ", "صفحو", "صفحة")} ${_translateNumber(parah.startPage, settings)}',
+                              '${settings.translate("Page", "صفحہ", "صفحو", "صفحة")} ${_translateNumber(startPage, settings)}',
+                          is15Line: is15Line,
                         ),
                         const SizedBox(width: 12),
                         // Favorite Icon
@@ -722,17 +972,25 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   void _showQuarterSelectionSheet(BuildContext context, Parah parah, SettingsProvider settings, bool isDark) {
-    int totalPages = 0;
-    if (parah.number == 30) {
-      totalPages = 604 - parah.startPage + 1;
-    } else {
-      totalPages = QuranData.parahs[parah.number].startPage - parah.startPage;
-    }
+    final is15Line = settings.quranType == '15_line';
+    final int startPage = is15Line
+        ? Quran15LineData.parahFirstPage(parah.number)
+        : (parah.number == 1 ? 1 : parah.startPage);
+    final int endPage = is15Line
+        ? Quran15LineData.parahLastPage(parah.number)
+        : (parah.number == 30 ? kQuranPageCount : QuranData.parahs[parah.number].startPage - 1);
+    final int totalPages = endPage - startPage + 1;
 
-    int startPage = parah.startPage;
-    int arbaPage = parah.arba.page > 0 ? parah.arba.page : startPage + (totalPages * 0.25).toInt();
-    int nisfPage = parah.nisf.page > 0 ? parah.nisf.page : startPage + (totalPages * 0.50).toInt();
-    int slasaPage = parah.salasa.page > 0 ? parah.salasa.page : startPage + (totalPages * 0.75).toInt();
+    final quarters15 = Quran15LineData.getQuartersForParah(parah.number);
+    int arbaPage = is15Line
+        ? (quarters15['Ruba'] ?? startPage)
+        : (parah.arba.page > 0 ? parah.arba.page : startPage + (totalPages * 0.25).toInt());
+    int nisfPage = is15Line
+        ? (quarters15['Nisf'] ?? startPage)
+        : (parah.nisf.page > 0 ? parah.nisf.page : startPage + (totalPages * 0.50).toInt());
+    int slasaPage = is15Line
+        ? (quarters15['Salasa'] ?? startPage)
+        : (parah.salasa.page > 0 ? parah.salasa.page : startPage + (totalPages * 0.75).toInt());
 
     showModalBottomSheet(
       context: context,
@@ -750,9 +1008,9 @@ class _QuranScreenState extends State<QuranScreen> {
               // Header
               Container(
                 padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF00897B),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                decoration: BoxDecoration(
+                  color: is15Line ? const Color(0xFF4C6A75) : const Color(0xFF3F7A63),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: Row(
                   children: [
@@ -804,7 +1062,8 @@ class _QuranScreenState extends State<QuranScreen> {
                 subtitle: settings.translate('Beginning of the Para', 'پارے کی شروعات', 'پاري جي شروعات', 'بداية الجزء'),
                 page: startPage,
                 icon: Icons.play_arrow_rounded,
-                iconColor: const Color(0xFF00897B),
+                iconColor: is15Line ? const Color(0xFF4C6A75) : const Color(0xFF3F7A63),
+                is15Line: is15Line,
                 onTap: () {
                   Navigator.pop(context);
                   _openParah(parah, startPage);
@@ -817,7 +1076,8 @@ class _QuranScreenState extends State<QuranScreen> {
                 subtitle: settings.translate('First quarter', 'پہلا کوارٹر', 'پهريون ڪوارٽر', 'الربع الأول'),
                 page: arbaPage,
                 icon: Icons.looks_one_rounded,
-                iconColor: const Color(0xFF00897B),
+                iconColor: is15Line ? const Color(0xFF4C6A75) : const Color(0xFF3F7A63),
+                is15Line: is15Line,
                 onTap: () {
                   Navigator.pop(context);
                   _openParah(parah, arbaPage, parah.arba.surahId, parah.arba.ayahId);
@@ -830,7 +1090,8 @@ class _QuranScreenState extends State<QuranScreen> {
                 subtitle: settings.translate('Half', 'آدھا', 'اڌ', 'النصف'),
                 page: nisfPage,
                 icon: Icons.looks_two_rounded,
-                iconColor: const Color(0xFF00897B),
+                iconColor: is15Line ? const Color(0xFF4C6A75) : const Color(0xFF3F7A63),
+                is15Line: is15Line,
                 onTap: () {
                   Navigator.pop(context);
                   _openParah(parah, nisfPage, parah.nisf.surahId, parah.nisf.ayahId);
@@ -843,7 +1104,8 @@ class _QuranScreenState extends State<QuranScreen> {
                 subtitle: settings.translate('Third quarter', 'تیسرا کوارٹر', 'ٽيون ڪوارٽر', 'الربع الثالث'),
                 page: slasaPage,
                 icon: Icons.looks_3_rounded,
-                iconColor: const Color(0xFF00897B),
+                iconColor: is15Line ? const Color(0xFF4C6A75) : const Color(0xFF3F7A63),
+                is15Line: is15Line,
                 onTap: () {
                   Navigator.pop(context);
                   _openParah(parah, slasaPage, parah.salasa.surahId, parah.salasa.ayahId);
@@ -858,17 +1120,17 @@ class _QuranScreenState extends State<QuranScreen> {
                   height: 52,
                   child: TextButton.icon(
                     onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.close_rounded, color: isDark ? Colors.white : const Color(0xFF00897B)),
+                    icon: Icon(Icons.close_rounded, color: isDark ? Colors.white : (is15Line ? const Color(0xFF4C6A75) : const Color(0xFF3F7A63))),
                     label: Text(
                       settings.translate('Cancel', 'منسوخ کریں', 'منسوخ ڪريو', 'إلغاء'),
                       style: TextStyle(
-                        color: isDark ? Colors.white : const Color(0xFF00897B),
+                        color: isDark ? Colors.white : (is15Line ? const Color(0xFF4C6A75) : const Color(0xFF3F7A63)),
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     style: TextButton.styleFrom(
-                      backgroundColor: isDark ? Colors.white10 : const Color(0xFFE8F5E9),
+                      backgroundColor: isDark ? Colors.white10 : (is15Line ? const Color(0xFFECEFF1) : const Color(0xFFE1EEE8)),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -891,6 +1153,7 @@ class _QuranScreenState extends State<QuranScreen> {
     required IconData icon,
     required Color iconColor,
     required VoidCallback onTap,
+    bool is15Line = false,
   }) {
     return InkWell(
       onTap: onTap,
@@ -902,7 +1165,7 @@ class _QuranScreenState extends State<QuranScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: isDark ? Colors.white10 : const Color(0xFFE8F5E9),
+                color: isDark ? Colors.white10 : (is15Line ? const Color(0xFFECEFF1) : const Color(0xFFE8F5E9)),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: iconColor, size: 20),
@@ -934,13 +1197,13 @@ class _QuranScreenState extends State<QuranScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: isDark ? Colors.white10 : const Color(0xFFF1F8E9),
+                color: isDark ? Colors.white10 : (is15Line ? const Color(0xFFE2E7EA) : const Color(0xFFE1EEE8)),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '$page',
-                style: const TextStyle(
-                  color: Color(0xFF00897B),
+                style: TextStyle(
+                  color: is15Line ? const Color(0xFF4C6A75) : const Color(0xFF3F7A63),
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
@@ -1120,7 +1383,8 @@ class _QuranScreenState extends State<QuranScreen> {
                         _TilePills(
                           percentLabel: '${_translateNumber(surahPercent, settings)}%',
                           pageLabel:
-                              '${settings.translate("Page", "صفحہ", "صفحو", "صفحة")} ${_translateNumber(QuranData.surahStartPages[surah.number] ?? 1, settings)}',
+                              '${settings.translate("Page", "صفحہ", "صفحو", "صفحة")} ${_translateNumber((settings.quranType == '15_line' ? Quran15LineData.surahStartPages[surah.number] : QuranData.surahStartPages[surah.number]) ?? 1, settings)}',
+                          is15Line: settings.quranType == '15_line',
                         ),
                         const SizedBox(width: 12),
                         // Favorite Icon
@@ -1272,8 +1536,13 @@ const int _kPillsFlex = 4;
 class _TilePills extends StatelessWidget {
   final String percentLabel;
   final String pageLabel;
+  final bool is15Line;
 
-  const _TilePills({required this.percentLabel, required this.pageLabel});
+  const _TilePills({
+    required this.percentLabel,
+    required this.pageLabel,
+    this.is15Line = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1289,14 +1558,14 @@ class _TilePills extends StatelessWidget {
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFD8F3EC),
+                color: is15Line ? const Color(0xFFE2E7EA) : const Color(0xFFDBEBE4),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 percentLabel,
                 maxLines: 1,
-                style: const TextStyle(
-                  color: Color(0xFF006D5B),
+                style: TextStyle(
+                  color: is15Line ? const Color(0xFF39545F) : const Color(0xFF254D3F),
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1305,8 +1574,10 @@ class _TilePills extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF00897B), Color(0xFF00695C)],
+                gradient: LinearGradient(
+                  colors: is15Line
+                      ? const [Color(0xFF4C6A75), Color(0xFF2E434D)]
+                      : const [Color(0xFF3F7A63), Color(0xFF2E5E4C)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -1336,32 +1607,4 @@ class _TilePills extends StatelessWidget {
   }
 }
 
-// ── Data classes ──────────────────────────────────────────────────────────────
 
-class _Parah {
-  final int number;
-  final String english;
-  final String arabic;
-  final String urdu;
-  final String sindhi;
-  final int startPage;
-  final int startSurah;
-  final int startAyah;
-
-  const _Parah(this.number, this.english, this.arabic, this.urdu, this.sindhi, this.startPage, this.startSurah, this.startAyah);
-}
-
-class _Surah {
-  final int index;
-  final String english;
-  final String arabic;
-  final String urdu;
-  final String sindhi;
-  final String roman;
-  final int ayahCount;
-  final String revelationType;
-
-  int get number => index;
-
-  const _Surah(this.index, this.english, this.arabic, this.urdu, this.sindhi, this.roman, this.ayahCount, this.revelationType);
-}

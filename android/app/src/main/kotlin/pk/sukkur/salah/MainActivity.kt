@@ -11,6 +11,10 @@ import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "pk.sukkur.salah/native_helper"
@@ -22,22 +26,31 @@ class MainActivity : FlutterActivity() {
                 "scheduleAutoSilent" -> {
                     val alarms = call.argument<List<Map<String, Any>>>("alarms")
                     if (alarms != null) {
-                        cancelAllAutoSilentAlarms(this)
-                        for (alarm in alarms) {
-                            val id = (alarm["id"] as? Number)?.toInt() ?: continue
-                            val triggerTimeMillis = (alarm["triggerTimeMillis"] as? Number)?.toLong() ?: continue
-                            val type = alarm["type"] as? String ?: continue
-                            val mode = alarm["mode"] as? String ?: "vibrate"
-                            scheduleAutoSilentAlarm(this, id, triggerTimeMillis, type, mode)
+                        // Run heavy AlarmManager IPC off the main thread to avoid ANR.
+                        CoroutineScope(Dispatchers.IO).launch {
+                            cancelAllAutoSilentAlarms(this@MainActivity)
+                            for (alarm in alarms) {
+                                val id = (alarm["id"] as? Number)?.toInt() ?: continue
+                                val triggerTimeMillis = (alarm["triggerTimeMillis"] as? Number)?.toLong() ?: continue
+                                val type = alarm["type"] as? String ?: continue
+                                val mode = alarm["mode"] as? String ?: "vibrate"
+                                scheduleAutoSilentAlarm(this@MainActivity, id, triggerTimeMillis, type, mode)
+                            }
+                            withContext(Dispatchers.Main) {
+                                result.success(true)
+                            }
                         }
-                        result.success(true)
                     } else {
                         result.error("INVALID_ARGUMENTS", "Alarms list is null", null)
                     }
                 }
                 "cancelAllAutoSilent" -> {
-                    cancelAllAutoSilentAlarms(this)
-                    result.success(true)
+                    CoroutineScope(Dispatchers.IO).launch {
+                        cancelAllAutoSilentAlarms(this@MainActivity)
+                        withContext(Dispatchers.Main) {
+                            result.success(true)
+                        }
+                    }
                 }
                 "checkDndPermission" -> {
                     val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager

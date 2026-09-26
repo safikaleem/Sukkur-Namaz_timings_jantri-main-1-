@@ -1,4 +1,5 @@
 import '../l10n/world_translations.dart';
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint, visibleForTesting;
@@ -20,6 +21,13 @@ import '../utils/azan_data.dart';
 class NotificationService {
   static final NotificationService instance = NotificationService._();
   NotificationService._();
+
+  /// Debounce timer so rapid settings changes coalesce into one batch.
+  Timer? _scheduleDebounce;
+
+  /// Guard flag: prevents a second batch from starting while one is still
+  /// writing alarms to the platform, which would double the IPC load.
+  bool _scheduleInProgress = false;
 
   FlutterLocalNotificationsPlugin? _plugin;
 
@@ -342,10 +350,16 @@ class NotificationService {
     final previous = (prefs.getStringList(_scheduledIdsKey) ?? const [])
         .map(int.tryParse)
         .whereType<int>();
+    int cancelCount = 0;
     for (final id in previous) {
       if (writtenIds.contains(id)) continue;
       try {
         await _plugin!.cancel(id);
+        cancelCount++;
+        // Yield periodically to keep the event loop responsive.
+        if (cancelCount % 3 == 0) {
+          await Future.delayed(const Duration(milliseconds: 1));
+        }
       } catch (e) {
         debugPrint('Failed to cancel stale notification $id: $e');
       }
@@ -354,7 +368,38 @@ class NotificationService {
         _scheduledIdsKey, writtenIds.map((id) => '$id').toList());
   }
 
+  /// Public entry-point: debounces by 500 ms so multiple calls within a short
+  /// window (toggling several settings) are coalesced into a single batch.
   Future<void> scheduleWeeklyNotifications() async {
+    if (kIsWeb || _plugin == null) return;
+    _scheduleDebounce?.cancel();
+    final completer = Completer<void>();
+    _scheduleDebounce = Timer(const Duration(milliseconds: 500), () async {
+      try {
+        await _doScheduleWeeklyNotifications();
+      } finally {
+        completer.complete();
+      }
+    });
+    return completer.future;
+  }
+
+  /// The real scheduling work — runs at most once per debounce window.
+  Future<void> _doScheduleWeeklyNotifications() async {
+    if (kIsWeb || _plugin == null) return;
+    // If a batch is already in flight, skip — the in-flight one will
+    // pick up the latest prefs anyway.
+    if (_scheduleInProgress) return;
+    _scheduleInProgress = true;
+    try {
+      await _scheduleWeeklyNotificationsCore();
+    } finally {
+      _scheduleInProgress = false;
+    }
+  }
+
+  /// Core implementation (no debounce / guard — called by the wrapper above).
+  Future<void> _scheduleWeeklyNotificationsCore() async {
     if (kIsWeb || _plugin == null) return;
 
     final prefs = await SharedPreferences.getInstance();
@@ -384,7 +429,7 @@ class NotificationService {
         : AndroidScheduleMode.inexactAllowWhileIdle;
     debugPrint('Schedule Mode: ${canExact ? "EXACT" : "INEXACT (Fallback)"}');
 
-    final selectedAzanIndex = prefs.getInt('selected_azan_index') ?? 3;
+    final selectedAzanIndex = prefs.getInt('selected_azan_index') ?? prefs.getInt('selected_azan') ?? 0;
     final timingsLocation = _timingsLocation(prefs);
 
     // Ensure TimingsData is loaded (crucial for background task)
@@ -455,10 +500,10 @@ class NotificationService {
           );
           writtenIds.add(notifId);
           batchCounter++;
-          // Yield to event looper every 5 notifications to process pending touch
+          // Yield to event loop every 3 notifications to process pending touch
           // and window dispatching events, preventing ANR (Input dispatching timed out).
-          if (batchCounter % 5 == 0) {
-            await Future.delayed(Duration.zero);
+          if (batchCounter % 3 == 0) {
+            await Future.delayed(const Duration(milliseconds: 1));
           }
         } catch (e) {
           debugPrint('Failed to schedule notification $notifId: $e');
@@ -858,6 +903,10 @@ class NotificationService {
               UILocalNotificationDateInterpretation.absoluteTime,
         );
         written.add(id);
+        // Yield periodically to keep the event loop responsive.
+        if (written.length % 3 == 0) {
+          await Future.delayed(const Duration(milliseconds: 1));
+        }
         } catch (e) {
           debugPrint('Failed to schedule reminder $id: $e');
         }
@@ -1143,7 +1192,7 @@ class NotificationService {
     await recreationChannels();
     
     final prefs = await SharedPreferences.getInstance();
-    final selectedAzanIndex = prefs.getInt('selected_azan_index') ?? 3;
+    final selectedAzanIndex = prefs.getInt('selected_azan_index') ?? prefs.getInt('selected_azan') ?? 0;
     
     final modeStr = prefs.getString('alert_mode_zuhar') ?? 'loud';
     var mode = AlertMode.values.firstWhere(

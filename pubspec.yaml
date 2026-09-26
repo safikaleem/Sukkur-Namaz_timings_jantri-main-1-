@@ -1,7 +1,7 @@
 name: sukkur_prayer_timings
 description: Sukkur Prayer Timings - Offline Islamic Namaz Timing App for Sukkur, Sindh
 publish_to: 'none'
-version: 1.2.3+33
+version: 1.2.7+37
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -62,11 +62,11 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/quran_pdfs/
     - assets/quran_translations/
     - assets/data/timings.json
     - assets/data/cities.txt
     - assets/images/
+    - assets/fonts/
     - 'assets/azan_1.mp3'
     - 'assets/makkah_azan.mp3'
     - 'assets/azan_2.mp3'
@@ -74,9 +74,6 @@ flutter:
     - 'assets/Jameel Noori Nastaleeq Kasheeda/'
 
   fonts:
-    - family: SurahNames
-      fonts:
-        - asset: assets/fonts/surah_names.ttf
     - family: JameelNooriNastaleeqKasheeda
       fonts:
         - asset: 'assets/Jameel Noori Nastaleeq Kasheeda/Jameel Noori Nastaleeq Kasheeda.ttf'

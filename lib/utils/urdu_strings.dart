@@ -84,9 +84,57 @@ class S {
     'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
   ];
 
+  static const monthsEnglish = [
+    '', 'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+
+  static const monthsHindi = [
+    '', 'जनवरी', 'फरवरी', 'मार्च', 'अप्रैल', 'मई', 'जून',
+    'जुलाई', 'अगस्त', 'सितंबर', 'अक्टूबर', 'नवंबर', 'दिसंबर',
+  ];
+
+  static const monthsBengali = [
+    '', 'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
+    'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর',
+  ];
+
+  static const monthsTurkish = [
+    '', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+    'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+  ];
+
+  static const monthsIndonesian = [
+    '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+  ];
+
+  static const monthsFrench = [
+    '', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+  ];
+
+  static const monthsRussian = [
+    '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+  ];
+
+  static const monthsPersian = [
+    '', 'ژانویه', 'فوریه', 'مارس', 'آوریل', 'مه', 'ژوئن',
+    'ژوئیه', 'اوت', 'سپتامبر', 'اکتبر', 'نوامبر', 'دسامبر',
+  ];
+
   static List<String> getMonths(String language) {
     if (language == 'sindhi') return monthsSindhi;
     if (language == 'arabic') return monthsArabic;
+    if (language == 'english') return monthsEnglish;
+    if (language == 'hindi') return monthsHindi;
+    if (language == 'bengali') return monthsBengali;
+    if (language == 'turkish') return monthsTurkish;
+    if (language == 'indonesian') return monthsIndonesian;
+    if (language == 'french') return monthsFrench;
+    if (language == 'russian') return monthsRussian;
+    if (language == 'persian') return monthsPersian;
     return monthsUrdu;
   }
 
@@ -97,6 +145,10 @@ class S {
 
   static const weekdaysUrdu = weekdays;
 
+  static const weekdaysEnglish = [
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+  ];
+
   static const weekdaysSindhi = [
     'سومر', 'اڱارو', 'اربع', 'خميس', 'جمعو', 'ڇنڇر', 'آچر',
   ];
@@ -105,9 +157,45 @@ class S {
     'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد',
   ];
 
+  static const weekdaysHindi = [
+    'सोमवार', 'मंगलवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार', 'रविवार',
+  ];
+
+  static const weekdaysBengali = [
+    'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার', 'রবিবার',
+  ];
+
+  static const weekdaysTurkish = [
+    'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar',
+  ];
+
+  static const weekdaysIndonesian = [
+    'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu',
+  ];
+
+  static const weekdaysFrench = [
+    'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche',
+  ];
+
+  static const weekdaysRussian = [
+    'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье',
+  ];
+
+  static const weekdaysPersian = [
+    'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه', 'یکشنبه',
+  ];
+
   static List<String> getWeekdays(String language) {
     if (language == 'sindhi') return weekdaysSindhi;
     if (language == 'arabic') return weekdaysArabic;
+    if (language == 'english') return weekdaysEnglish;
+    if (language == 'hindi') return weekdaysHindi;
+    if (language == 'bengali') return weekdaysBengali;
+    if (language == 'turkish') return weekdaysTurkish;
+    if (language == 'indonesian') return weekdaysIndonesian;
+    if (language == 'french') return weekdaysFrench;
+    if (language == 'russian') return weekdaysRussian;
+    if (language == 'persian') return weekdaysPersian;
     return weekdaysUrdu;
   }
 
@@ -154,7 +242,9 @@ class S {
     const w = ['0','1','2','3','4','5','6','7','8','9'];
     const a = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
     var s = n.toString();
-    for (int i = 0; i < 10; i++) s = s.replaceAll(w[i], a[i]);
+    for (int i = 0; i < 10; i++) {
+      s = s.replaceAll(w[i], a[i]);
+    }
     return s;
   }
 

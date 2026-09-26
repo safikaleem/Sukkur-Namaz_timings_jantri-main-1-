@@ -386,7 +386,7 @@ class _TranslationReaderState extends State<TranslationReader> {
 
                 // Arabic Text
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Text(
                     _arabic[index],
                     textAlign: TextAlign.justify,
@@ -395,8 +395,8 @@ class _TranslationReaderState extends State<TranslationReader> {
                     overflow: TextOverflow.visible,
                     style: TextStyle(
                       fontSize: 24,
+                      height: 2.0,
                       letterSpacing: 0,
-                      fontFamily: 'SurahNames', // Use the provided Arabic font
                       color: widget.isDark ? Colors.white : Colors.black87,
                     ),
                   ),

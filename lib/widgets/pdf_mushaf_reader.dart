@@ -7,8 +7,11 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
+import 'package:http/http.dart' as http;
 import '../providers/settings_provider.dart';
 import '../data/quran_data.dart';
+import '../data/quran_data_15_line.dart';
+import '../services/quran_download_service.dart';
 
 /// Pages in the mushaf, numbered the way the reader's own page-search box does.
 const int kQuranPageCount = 549;
@@ -51,11 +54,14 @@ class QuranPageLocation {
 }
 
 /// Resolves a mushaf page to the juz file that holds it.
-///
-/// This is the whole reason the reader can run continuously: the pager thinks
-/// in one unbroken run of pages and this decides, per page, which of the thirty
-/// files to pull it from. Crossing a parah is then just the next page.
-QuranPageLocation locationForPage(int page) {
+QuranPageLocation locationForPage(int page, [String quranType = '16_line']) {
+  if (quranType == '15_line') {
+    final clamped = page.clamp(1, kQuran15LinePageCount);
+    final parah = Quran15LineData.getParahForPage(clamped);
+    // PDF has 3 index pages, so printed page + 3 = PDF page
+    // (bookmark pg_001 = PDF page 4, pg_002 = PDF page 5, etc.)
+    return QuranPageLocation(parah, clamped + 3);
+  }
   final clamped = page.clamp(1, kQuranPageCount);
   final parah = QuranData.getParahForPage(clamped);
   return QuranPageLocation(parah, clamped - parahFirstPage(parah) + 1);
@@ -65,7 +71,7 @@ class PdfMushafReader extends StatefulWidget {
   final SettingsProvider settings;
   final bool isDark;
 
-  /// Mushaf page to open at, 1-[kQuranPageCount].
+  /// Mushaf page to open at
   final int initialPage;
 
   /// Fired when reading moves into another parah, so the screen around this
@@ -134,16 +140,21 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
   /// figure rather than a guess.
   double _renderWidthPx = _minRenderWidth;
 
-  String _assetName(int parah) =>
-      'Colour_Coded_Quran_Juz_${parah.toString().padLeft(2, '0')}.pdf';
+  String _assetName(int parah) {
+    if (widget.settings.quranType == '15_line') {
+      return 'AlQuran15Lines-SaudiColor.pdf';
+    }
+    return 'Colour_Coded_Quran_Juz_${parah.toString().padLeft(2, '0')}.pdf';
+  }
 
   String _assetPath(int parah) => 'assets/quran_pdfs/${_assetName(parah)}';
 
   @override
   void initState() {
     super.initState();
-    _currentPage = widget.initialPage.clamp(1, kQuranPageCount);
-    _currentParah = locationForPage(_currentPage).parah;
+    final maxPages = widget.settings.quranType == '15_line' ? kQuran15LinePageCount : kQuranPageCount;
+    _currentPage = widget.initialPage.clamp(1, maxPages);
+    _currentParah = locationForPage(_currentPage, widget.settings.quranType).parah;
     _pageController = PageController(initialPage: _currentPage - 1);
     // Save straight away: opening at a page is already progress, and the pager
     // will not report a change until the reader actually moves.
@@ -174,20 +185,51 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
   // ── Juz files ───────────────────────────────────────────────────────────────
 
   /// Opens the juz, unpacking it to a stable file on first use.
-  ///
-  /// pdfx's openAsset/openData both re-copy the whole 5 MB file on every open -
-  /// its cache filename is a fresh UUID each call, so its own "already
-  /// extracted?" check can never hit. Extracting once ourselves and then
-  /// opening by path makes every subsequent open effectively instant.
   Future<PdfDocument> _openJuzFile(int parah) async {
-    if (kIsWeb) return PdfDocument.openAsset(_assetPath(parah)); // no file system
-    final file = await _cachedPdf(parah);
-    return PdfDocument.openFile(file.path);
+    final is15Line = widget.settings.quranType == '15_line';
+    final fileName = is15Line
+        ? QuranDownloadService.quran15LineFileName
+        : QuranDownloadService.quran16LineFileName(parah);
+
+    if (kIsWeb) {
+      try {
+        final assetPath = 'assets/quran_pdfs/$fileName';
+        final bd = await rootBundle.load(assetPath);
+        return PdfDocument.openData(bd.buffer.asUint8List());
+      } catch (e) {
+        final url = '${QuranDownloadService.baseUrl}$fileName';
+        final res = await http.get(Uri.parse(url));
+        if (res.statusCode == 200) {
+          return PdfDocument.openData(res.bodyBytes);
+        }
+        rethrow;
+      }
+    }
+
+    // Try local storage / downloaded file first (Android / iOS / Desktop)
+    final downloadedFile = await QuranDownloadService.instance.getLocalPdfFile(fileName);
+    if (await downloadedFile.exists()) {
+      return PdfDocument.openFile(downloadedFile.path);
+    }
+
+    // Try alternate name for 16 Line
+    if (!is15Line) {
+      final dotFile = await QuranDownloadService.instance.getLocalPdfFile('Colour_Coded_Quran_Juz_${parah.toString().padLeft(2, '0')}.pdf');
+      if (await dotFile.exists()) {
+        return PdfDocument.openFile(dotFile.path);
+      }
+    }
+
+    try {
+      final file = await _cachedPdf(parah);
+      return PdfDocument.openFile(file.path);
+    } catch (e) {
+      throw Exception('Quran PDF not found. Please download it.');
+    }
   }
 
   Future<File> _cachedPdf(int parah) async {
     final support = await getApplicationSupportDirectory();
-    // Keyed by build number so an app update never serves stale pages.
     final info = await PackageInfo.fromPlatform();
     final dir = Directory('${support.path}/quran_pdfs/v${info.buildNumber}');
     final file = File('${dir.path}/${_assetName(parah)}');
@@ -196,12 +238,21 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
     await dir.create(recursive: true);
     await _dropStaleVersions(dir);
 
-    // Write to a sibling then rename: an interrupted copy can never be
-    // mistaken for a complete one on the next launch.
-    final bytes = await rootBundle.load(_assetPath(parah));
-    final partial = File('${file.path}.part');
-    await partial.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
-    return partial.rename(file.path);
+    try {
+      final bytes = await rootBundle.load(_assetPath(parah));
+      final partial = File('${file.path}.part');
+      await partial.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
+      return partial.rename(file.path);
+    } catch (_) {
+      if (widget.settings.quranType == '15_line') {
+        final fallbackAsset = 'assets/quran_pdfs/Colour_Coded_Quran_Juz_${parah.toString().padLeft(2, '0')}.pdf';
+        final bytes = await rootBundle.load(fallbackAsset);
+        final partial = File('${file.path}.part');
+        await partial.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
+        return partial.rename(file.path);
+      }
+      rethrow;
+    }
   }
 
   Future<void> _dropStaleVersions(Directory current) async {
@@ -255,7 +306,7 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
       final document = _open.remove(oldest);
       // Drop its rendered pages too, or they would outlive the document they
       // came from and never be reachable again.
-      _pages.removeWhere((page, _) => locationForPage(page).parah == oldest);
+      _pages.removeWhere((page, _) => locationForPage(page, widget.settings.quranType).parah == oldest);
       document?.close();
     }
   }
@@ -276,7 +327,7 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
   Future<PdfPageImage> _renderPage(int page) {
     // Chained onto the queue so renders never overlap.
     final result = _renderQueue.then((_) async {
-      final location = locationForPage(page);
+      final location = locationForPage(page, widget.settings.quranType);
       final document = await _juz(location.parah);
       final pdfPage = await document.getPage(location.localPage);
       try {
@@ -317,7 +368,7 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
 
   void _onPageChanged(int index) {
     final page = index + 1;
-    final parah = locationForPage(page).parah;
+    final parah = locationForPage(page, widget.settings.quranType).parah;
     _currentPage = page;
     widget.settings.updateParahProgress(parah, page);
 
@@ -331,8 +382,9 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
   }
 
   void _onPageSubmitted(String value) {
+    final maxPages = widget.settings.quranType == '15_line' ? kQuran15LinePageCount : kQuranPageCount;
     final page = int.tryParse(value);
-    if (page == null || page < 1 || page > kQuranPageCount) return;
+    if (page == null || page < 1 || page > maxPages) return;
     FocusScope.of(context).unfocus();
     _pageSearchController.clear();
     // Every page lives in the same pager now, so any page is one jump away -
@@ -344,7 +396,7 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
 
   PhotoViewGalleryPageOptions _buildPage(BuildContext context, int index) {
     final page = index + 1;
-    final location = locationForPage(page);
+    final location = locationForPage(page, widget.settings.quranType);
     return PhotoViewGalleryPageOptions(
       imageProvider: PdfPageImageProvider(
         _pageImage(page),
@@ -424,9 +476,14 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
                 style: TextStyle(color: widget.isDark ? Colors.white : Colors.black87),
                 decoration: InputDecoration(
                   isDense: true,
-                  hintText: widget.settings.translate('Search Page No (1-549)...', 'صفحہ نمبر تلاش کریں...', 'صفحو نمبر ڳوليو...', 'ابحث برقم الصفحة...'),
+                  hintText: widget.settings.translate(
+                    'Search Page No (1-${widget.settings.quranType == '15_line' ? kQuran15LinePageCount : 549})...',
+                    'صفحہ نمبر تلاش کریں...',
+                    'صفحو نمبر ڳوليو...',
+                    'ابحث برقم الصفحة...',
+                  ),
                   hintStyle: TextStyle(color: widget.isDark ? Colors.white54 : Colors.black54),
-                  prefixIcon: const Icon(Icons.search, color: Color(0xFF00897B)),
+                  prefixIcon: Icon(Icons.search, color: widget.settings.quranType == '15_line' ? const Color(0xFF4C6A75) : const Color(0xFF3F7A63)),
                   filled: true,
                   fillColor: widget.isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
@@ -449,7 +506,7 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
             child: Directionality(
               textDirection: TextDirection.ltr,
               child: PhotoViewGallery.builder(
-                itemCount: kQuranPageCount,
+                itemCount: widget.settings.quranType == '15_line' ? kQuran15LinePageCount : kQuranPageCount,
                 builder: _buildPage,
                 pageController: _pageController,
                 onPageChanged: _onPageChanged,

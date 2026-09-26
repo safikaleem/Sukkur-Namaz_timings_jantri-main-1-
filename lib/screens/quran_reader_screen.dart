@@ -5,6 +5,7 @@ import '../utils/app_theme.dart';
 import '../widgets/pdf_mushaf_reader.dart';
 import '../widgets/translation_reader.dart';
 import '../data/quran_data.dart';
+import '../data/quran_data_15_line.dart';
 
 class QuranReaderScreen extends StatefulWidget {
   final int surahNumber;
@@ -45,7 +46,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     _titleEn = widget.surahNameEn;
     _titleArabic = widget.surahNameArabic;
     _titleLocal = widget.surahNameLocal;
-    _startPage = widget.initialPage.clamp(1, kQuranPageCount);
+    final quranType = context.read<SettingsProvider>().quranType;
+    final maxPages = quranType == '15_line' ? kQuran15LinePageCount : kQuranPageCount;
+    _startPage = widget.initialPage.clamp(1, maxPages);
   }
 
   /// Retitles the screen when reading crosses into another parah - but only
@@ -67,6 +70,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     final settings = context.watch<SettingsProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isRtl = settings.isRtl;
+    final is15Line = settings.quranType == '15_line';
+    final quranAccentColor = is15Line ? const Color(0xFF4C6A75) : AppTheme.accentGreen;
 
     return DefaultTabController(
       length: 2,
@@ -114,12 +119,12 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                   _titleArabic,
                   textDirection: TextDirection.rtl,
                   style: TextStyle(
-                    color: AppTheme.accentGreen,
+                    color: quranAccentColor,
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
                     shadows: [
                       Shadow(
-                        color: AppTheme.accentGreen.withValues(alpha: 0.15),
+                        color: quranAccentColor.withValues(alpha: 0.15),
                         offset: const Offset(0, 2),
                         blurRadius: 8,
                       ),
@@ -155,10 +160,10 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                 dividerColor: Colors.transparent,
                 indicator: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  color: AppTheme.accentGreen,
+                  color: quranAccentColor,
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.accentGreen.withValues(alpha: 0.25),
+                      color: quranAccentColor.withValues(alpha: 0.25),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -173,7 +178,11 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                   Tab(
                     child: Align(
                       alignment: Alignment.center,
-                      child: Text(settings.translate('16 Lines Tajweed Quran', '16 لائن تجوید قرآن', '16 لائين تجويد قرآن', '16 سطر تجويد القرآن')),
+                      child: Text(
+                        settings.quranType == '15_line'
+                            ? settings.translate('15 Line Quran', '15 سطر قرآن', '15 سٽر قرآن', 'القرآن 15 سطر')
+                            : settings.translate('16 Line Quran', '16 سطر قرآن', '16 سٽر قرآن', 'القرآن 16 سطر'),
+                      ),
                     ),
                   ),
                   Tab(

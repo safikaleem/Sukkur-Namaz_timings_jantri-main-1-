@@ -218,13 +218,7 @@ class _TodayScreenState extends State<TodayScreen> {
                                 ),
                               ),
                               TextSpan(
-                                text: settings.isSindhi
-                                    ? ' (هجري تاريخ مغرب کان پوءِ بدلجندي)'
-                                    : settings.language == 'urdu'
-                                    ? ' (ہجری تاریخ مغرب کے بعد تبدیل ہوگی)'
-                                    : settings.isArabic
-                                        ? ' (يتغير التاریخ الهجري بعد المغرب)'
-                                        : ' (Hijri date updates after Maghrib)',
+                                text: ' (${settings.translate('Hijri date updates after Maghrib', 'ہجری تاریخ مغرب کے بعد تبدیل ہوگی', 'هجري تاريخ مغرب کان پوءِ بدلجندي', 'يتغير التاریخ الهجري بعد المغرب')})',
                                 style: TextStyle(
                                   fontSize: settings.isRtl ? 11 : 10,
                                   fontWeight: FontWeight.w400,
@@ -270,6 +264,12 @@ class _TodayScreenState extends State<TodayScreen> {
 
             SizedBox(height: isSmall ? 4 : 8),
 
+            // ── Live Prayer Countdown Banner ──────────────────────────────
+            if (isTodaySelected && _state != null && _today != null) ...[
+              _buildLiveCountdownBanner(context, settings, isDark),
+              SizedBox(height: isSmall ? 4 : 8),
+            ],
+
             Divider(
               height: 1,
               thickness: 0.5,
@@ -287,6 +287,135 @@ class _TodayScreenState extends State<TodayScreen> {
       ),
     );
   }
+
+  Widget _buildLiveCountdownBanner(BuildContext context, SettingsProvider settings, bool isDark) {
+    if (_state == null || _today == null) return const SizedBox.shrink();
+
+    final state = _state!;
+    final prayer = state.prayer;
+    final isElapsed = state.isElapsed;
+    final duration = state.duration;
+
+    // Calculate progress between previous and next prayer
+    final allTimings = _today!.allTimings;
+    final currentIndex = allTimings.indexWhere((p) => p.name == prayer.name);
+
+    double progress = 0.0;
+    if (currentIndex != -1) {
+      final currentDt = prayer.toDateTime(date: _now);
+      if (!isElapsed) {
+        // Countdown to next prayer
+        DateTime prevDt;
+        if (currentIndex > 0) {
+          prevDt = allTimings[currentIndex - 1].toDateTime(date: _now);
+        } else {
+          prevDt = DateTime(_now.year, _now.month, _now.day, 0, 0, 0);
+        }
+        final totalMs = currentDt.difference(prevDt).inMilliseconds;
+        final elapsedMs = _now.difference(prevDt).inMilliseconds;
+        if (totalMs > 0) {
+          progress = (elapsedMs / totalMs).clamp(0.0, 1.0);
+        }
+      } else {
+        // Counting up elapsed time since prayer started
+        DateTime nextDt;
+        if (currentIndex < allTimings.length - 1) {
+          nextDt = allTimings[currentIndex + 1].toDateTime(date: _now);
+        } else {
+          nextDt = DateTime(_now.year, _now.month, _now.day, 23, 59, 59);
+        }
+        final totalMs = nextDt.difference(currentDt).inMilliseconds;
+        final elapsedMs = _now.difference(currentDt).inMilliseconds;
+        if (totalMs > 0) {
+          progress = (elapsedMs / totalMs).clamp(0.0, 1.0);
+        }
+      }
+    }
+
+    final accent = AppTheme.accent;
+
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+
+    final String timeStr;
+    if (hours > 0) {
+      timeStr = '${hours}h ${minutes.toString().padLeft(2, '0')}m ${seconds.toString().padLeft(2, '0')}s';
+    } else {
+      timeStr = '${minutes.toString().padLeft(2, '0')}m ${seconds.toString().padLeft(2, '0')}s';
+    }
+
+    final prayerDisplayName = prayer.localizedName(settings.language);
+
+    final String statusPrefix = isElapsed
+        ? settings.translate('Current', 'جاری', 'جاري', 'الحالي')
+        : settings.translate('Next', 'اگلی', 'اگلي', 'القادم');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? accent.withValues(alpha: 0.15) : accent.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: accent.withValues(alpha: isDark ? 0.35 : 0.25),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isElapsed ? Icons.access_time_filled_rounded : Icons.timer_rounded,
+                    size: 16,
+                    color: accent,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '$statusPrefix: $prayerDisplayName',
+                  style: TextStyle(
+                    fontSize: settings.isRtl ? 15 : 13,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${isElapsed ? "+" : "−"}$timeStr',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: accent,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 5,
+                backgroundColor: accent.withValues(alpha: 0.15),
+                valueColor: AlwaysStoppedAnimation<Color>(accent),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildPrayerList(BuildContext context, String language, bool isDark) {
     if (_today == null) {

@@ -22,6 +22,7 @@ GoogleService-Info.plist
 *.ipa
 *.app
 *.dSYM.zip
+assets/quran_pdfs/
 /build/
 build/
 releases/

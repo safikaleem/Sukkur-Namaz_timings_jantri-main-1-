@@ -586,9 +586,10 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
   }
 
   Gradient _getColumnGradient(int index, bool isDark) {
-    final baseColor = AppTheme.accent;
+    final topColor = isDark ? const Color(0xFF2C4358) : const Color(0xFF46729B);
+    final bottomColor = isDark ? const Color(0xFF233647) : const Color(0xFF3B5E82);
     return LinearGradient(
-      colors: [baseColor, baseColor.withValues(alpha: 0.85)],
+      colors: [topColor, bottomColor],
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
     );

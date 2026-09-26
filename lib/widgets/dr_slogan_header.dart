@@ -35,7 +35,7 @@ class DrSloganHeader extends StatelessWidget {
         ? AppTheme.getSindhiFont(context) 
         : (settings.language == 'arabic' ? null : AppTheme.urduFont);
 
-    final String title = settings.translate('جنتری', 'جنتری', 'جنتري', 'التقويم');
+    final String title = settings.translate('Jantri', 'جنتری', 'جنتري', 'التقويم');
     final String name = settings.translate('حضرت ڈاکٹر حفیظ اللہ صاحب', 'حضرت ڈاکٹر حفیظ اللہ صاحب', 'حضرت ڊاڪٽر حفيظ الله صاحب', 'الشيخ الدكتور حفيظ الله');
     final String sub = settings.translate('قَدَّسَ اللہ سِرَّہُ', 'قَدَّسَ اللہ سِرَّہُ', 'قَدَّسَ اللهُ سِرَّهُ', 'قَدَّسَ اللهُ سِرَّهُ');
 

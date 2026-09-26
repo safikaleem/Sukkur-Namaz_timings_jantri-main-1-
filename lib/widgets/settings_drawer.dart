@@ -291,10 +291,14 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       }
     }
   }
+  String _getLocalizedText(SettingsProvider settings, Map<String, String> map) {
+    return map[settings.language] ?? map['english'] ?? '';
+  }
+
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.2.2';
+    final versionStr = _version.isNotEmpty ? _version : '1.2.7';
 
     showDialog(
       context: context,
@@ -389,44 +393,72 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Version 1.2.2 ──────────────────────────────────
+                  // ── Item 1: 15-Line Quran Pak ──────────────────────────────────
                   _buildNewFeatureItem(
                     context,
                     settings,
-                    settings.translate(
-                      'Hijri Date Auto-Sync',
-                      'ہجری تاریخ آٹو سنک',
-                      'هجري تاريخ آٽو سنک',
-                      'مزامنة التاريخ الهجري تلقائياً',
-                    ),
-                    settings.translate(
-                      'Hijri dates now follow official Pakistan Ruet-e-Hilal moon sighting announcements. The app syncs automatically on every launch and also supports manual adjustment of ±2 days.',
-                      'ہجری تاریخ اب پاکستان رویت ہلال کمیٹی کے سرکاری اعلان کے مطابق خودکار طور پر اپ ڈیٹ ہوتی ہے۔ ایپ ہر بار کھلنے پر خود سنک ہوتی ہے اور ±2 دن کی دستی ایڈجسٹمنٹ بھی ممکن ہے۔',
-                      'هجري تاريخ هاڻي پاڪستان رويت هلال ڪميٽي جي سرڪاري اعلان مطابق پاڻمرادو اپ ڊيٽ ٿئي ٿي. ايپ هر دفعي کولڻ تي پاڻ سنک ٿئي ٿي ۽ ±2 ڏينهن جي هٿ سان ايڊجسٽمينٽ به ممڪن آهي.',
-                      'يتم الآن تحديث التاريخ الهجري تلقائياً وفق إعلانات لجنة رؤية الهلال الباكستانية الرسمية. يتزامن التطبيق تلقائياً عند كل فتح ويدعم أيضاً التعديل اليدوي بمقدار ±2 يوم.',
-                    ),
-                    icon: Icons.sync_rounded,
-                    iconColor: const Color(0xFF1B5E20),
+                    _getLocalizedText(settings, {
+                      'english': '📖 15-Line Quran Pak Has Been Added!',
+                      'urdu': '📖 15 سطر قرآن پاک کا اضافہ!',
+                      'sindhi': '📖 15 سٽر قرآن پاڪ جو اضافو!',
+                      'arabic': '📖 تمت إضافة المصحف الشريف 15 سطراً!',
+                      'bengali': '📖 ১৫ লাইনের কুরআন পাক যুক্ত করা হয়েছে!',
+                      'hindi': '📖 15-लाइन कुरआन पाक जोड़ा गया है!',
+                      'turkish': '📖 15 Satırlık Kur\'an-ı Kerim Eklendi!',
+                      'indonesian': '📖 Mushaf Al-Qur\'an 15 Baris Telah Ditambahkan!',
+                      'french': '📖 Le Coran 15 Lignes a été ajouté !',
+                      'russian': '📖 Добавлен Коран 15 строк!',
+                      'persian': '📖 قرآن ۱۵ خطی اضافه شد!',
+                    }),
+                    _getLocalizedText(settings, {
+                      'english': 'You can now read the Quran Pak in both 15-line and 16-line formats, according to your preference.',
+                      'urdu': 'اب آپ اپنی پسند کے مطابق 15 سطر اور 16 سطر دونوں فارمیٹس میں قرآن پاک پڑھ سکتے ہیں۔',
+                      'sindhi': 'هاڻي توهان پنهنجي پسند مطابق 15 سٽر ۽ 16 سٽر ٻنهي فارميٽس ۾ قرآن پاڪ پڙهي سگهو ٿا.',
+                      'arabic': 'يمكنك الآن قراءة القرآن الكريم بكلا التنسيقين 15 سطراً و 16 سطراً وفقاً لتفضيلك.',
+                      'bengali': 'এখন আপনি আপনার পছন্দ অনুযায়ী ১৫ লাইন এবং ১৬ লাইন উভয় ফরম্যাটেই কুরআন পাক তেলাওয়াত করতে পারবেন।',
+                      'hindi': 'अब आप अपनी पसंद के अनुसार 15-लाइन और 16-लाइन दोनों प्रारूपों में कुरआन पाक पढ़ सकते हैं।',
+                      'turkish': 'Artık Kur\'an-ı Kerim\'i tercihinize göre hem 15 satırlık hem de 16 satırlık formatlarda okuyabilirsiniz.',
+                      'indonesian': 'Sekarang Anda dapat membaca Al-Qur\'an dalam format 15 baris maupun 16 baris sesuai pilihan Anda.',
+                      'french': 'Vous pouvez désormais lire le Saint Coran dans les formats 15 lignes et 16 lignes, selon votre préférence.',
+                      'russian': 'Теперь вы можете читать Священный Коран как в 15-строчном, так и в 16-строчном формате по вашему выбору.',
+                      'persian': 'اکنون می‌توانید قرآن کریم را طبق سلیقه خود در هر دو قالب ۱۵ خطی و ۱۶ خطی بخوانید.',
+                    }),
+                    icon: Icons.menu_book_rounded,
+                    iconColor: const Color(0xFFD4A574),
                   ),
-                  const SizedBox(height: 12),
-                  // ── Version 1.2.1 ──────────────────────────────────
+                  const SizedBox(height: 16),
+                  // ── Item 2: Munajat-e-Maqbool ──────────────────────────────────
                   _buildNewFeatureItem(
                     context,
                     settings,
-                    settings.translate(
-                      'Responsive Announcement Popup',
-                      'ریسپانسو اعلان پاپ اپ',
-                      'ريسپانسو اعلان پاپ اپ',
-                      'نافذة إعلانات متجاوبة',
-                    ),
-                    settings.translate(
-                      'The announcement popup is now fully responsive across all phones, tablets, and orientations, with image retry support in all 10 languages.',
-                      'اعلان کا پاپ اپ اب تمام موبائل، ٹیبلٹ اور اورینٹیشن پر مکمل ریسپانسو ہے، اور تمام 10 زبانوں میں تصویر دوبارہ لوڈ کرنے کی سہولت موجود ہے۔',
-                      'اعلان جو پاپ اپ هاڻي سڀني فونن، ٽيبليٽس ۽ اورينٽيشنز تي مڪمل ريسپانسو آهي، ۽ سڀني 10 ٻولين ۾ تصوير ٻيهر لوڊ ڪرڻ جي سهولت موجود آهي.',
-                      'نافذة الإعلانات المنبثقة متجاوبة الآن بالكامل عبر جميع الهواتف والأجهزة اللوحية، مع دعم إعادة محاولة تحميل الصور بجميع اللغات العشر.',
-                    ),
-                    icon: Icons.aspect_ratio_rounded,
-                    iconColor: const Color(0xFFE65100),
+                    _getLocalizedText(settings, {
+                      'english': '🤲 Munajat-e-Maqbool Has Been Added!',
+                      'urdu': '🤲 مناجاتِ مقبول کا اضافہ!',
+                      'sindhi': '🤲 مناجاتِ مقبول جو اضافو!',
+                      'arabic': '🤲 تمت إضافة مناجاة مقبول!',
+                      'bengali': '🤲 মুনাজاتے মাকবুল যুক্ত করা হয়েছে!',
+                      'hindi': '🤲 मुनाजाते मकबूल जोड़ा गया है!',
+                      'turkish': '🤲 Münacat-ı Makbul Eklendi!',
+                      'indonesian': '🤲 Munajat-e-Maqbul Telah Ditambahkan!',
+                      'french': '🤲 Munajat-e-Maqbool a été ajouté !',
+                      'russian': '🤲 Добавлен Мунаджат Макбуль!',
+                      'persian': '🤲 مناجات مقبول اضافه شد!',
+                    }),
+                    _getLocalizedText(settings, {
+                      'english': 'You can now easily read Munajat-e-Maqbool within the Sukkur Salah app, making it convenient to access this collection of beautiful and meaningful supplications anytime.',
+                      'urdu': 'اب آپ سکھر صلاح ایپ کے اندر مناجاتِ مقبول آسانی سے پڑھ سکتے ہیں، جس سے آپ کسی بھی وقت اس خوبصورت اور بااثر دعاؤں کے مجموعے تک آسانی سے رسائی حاصل کر سکتے ہیں۔',
+                      'sindhi': 'هاڻي توهان سکر صلاح ايپ ۾ مناجاتِ مقبول آساني سان پڙهي سگهو ٿا، جنهن سان توهان ڪنهن به وقت هن خوبصورت ۽ بااثر دعائن جي مجموعي تائين پهچ حاصل ڪري سگهو ٿا.',
+                      'arabic': 'يمكنك الآن قراءة مناجاة مقبول بسهولة داخل تطبيق سكور صلاح، مما يجعل الوصول إلى هذه المجموعة من الدعوات الجليلة سهلاً في أي وقت.',
+                      'bengali': 'এখন আপনি সুক্কুর সালাহ অ্যাপের মধ্যেই সহজে মুনাজاتے মاکবুল পড়তে পারবেন, যার ফলে যেকোনো সময় এই সুন্দর ও অর্থপূর্ণ দোয়ার সংগ্রহ তেলাওয়াত করা সুবিধা হবে।',
+                      'hindi': 'अब आप सुक्कुर सालाह ऐप के भीतर आसानी से मुनाजाते मकबूल पढ़ सकते हैं, जिससे आप किसी भी समय इन सुंदर और अर्थपूर्ण दुआओं के संग्रह तक आसानी से पहुँच सकते हैं।',
+                      'turkish': 'Artık Sukkur Salah uygulaması içinden Münacat-ı Makbul\'ü kolayca okuyabilir, bu güzel ve anlamlı dualar koleksiyonuna dilediğiniz zaman erişebilirsiniz.',
+                      'indonesian': 'Sekarang Anda dapat dengan mudah membaca Munajat-e-Maqbul di dalam aplikasi Sukkur Salah, sehingga memudahkan untuk mengakses kumpulan doa yang indah dan bermakna ini kapan saja.',
+                      'french': 'Vous pouvez désormais lire facilement Munajat-e-Maqbool dans l\'application Sukkur Salah, ce qui facilite l\'accès à ce magnifique recueil de supplications à tout moment.',
+                      'russian': 'Теперь вы можете легко читать Мунаджат Макбуль прямо в приложении Sukkur Salah, что позволяет удобно обращаться к этой коллекции прекрасных молитв в любое время.',
+                      'persian': 'اکنون می‌توانید مناجات مقبول را به راحتی در برنامه سکھر صلاح بخوانید و در هر زمان به این مجموعه از دعاهای زیبا و ارزشمند دسترسی داشته باشید.',
+                    }),
+                    icon: Icons.auto_stories_rounded,
+                    iconColor: const Color(0xFF3F7A63),
                   ),
                 ],
               ),

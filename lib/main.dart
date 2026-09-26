@@ -10,6 +10,8 @@ import 'providers/settings_provider.dart' show SettingsProvider, DarkModeOption;
 import 'services/notification_health.dart';
 import 'services/notification_service.dart';
 import 'services/widget_service.dart';
+import 'services/munajat_download_service.dart';
+import 'services/quran_download_service.dart';
 import 'screens/notification_health_screen.dart';
 import 'screens/today_screen.dart';
 import 'screens/clock_screen.dart';
@@ -19,8 +21,10 @@ import 'screens/qibla_screen.dart';
 import 'screens/tasbeeh_screen.dart';
 import 'screens/hidayat_screen.dart';
 import 'screens/quran_screen.dart';
+import 'screens/munajat_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'widgets/translation_reader.dart' show purgeLegacySurahCache;
+import 'widgets/tasbeeh_icon.dart';
 import 'utils/app_theme.dart';
 import 'widgets/settings_drawer.dart';
 import 'package:workmanager/workmanager.dart';
@@ -204,7 +208,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       final settings = Provider.of<SettingsProvider>(context, listen: false);
       settings.syncHijriCalendar();
       if (settings.notificationsEnabled) {
-        await NotificationService.instance.scheduleWeeklyNotifications();
+        // Fire-and-forget: scheduling ~140 alarms is heavy, don't block startup.
+        NotificationService.instance.scheduleWeeklyNotifications();
       }
       WidgetService.updateWidget();
       Workmanager().initialize(
@@ -225,6 +230,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       );
       purgeLegacySurahCache()
           .catchError((Object e, StackTrace s) => _reportError(e, s));
+      MunajatDownloadService.instance.autoDownload();
+      QuranDownloadService.instance.startAutoDownloadAll('15_line');
+      QuranDownloadService.instance.startAutoDownloadAll('16_line');
     } catch (e, s) {
       _reportError(e, s);
     } finally {
@@ -290,19 +298,20 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     final settings = context.watch<SettingsProvider>();
     final isRtl = settings.isRtl;
     final screens = [
-      const ClockScreen(),      // 0 - Clock
-      const TodayScreen(),      // 1 - Today
-      const MonthlyScreen(),    // 2 - Monthly
-      const RemindersScreen(),  // 3 - Reminders
+      const ClockScreen(),      // 0 - Clock (1)
+      const TodayScreen(),      // 1 - Today (2)
+      const MonthlyScreen(),    // 2 - Monthly (3)
+      const RemindersScreen(),  // 3 - Reminders (4)
+      const QuranScreen(),      // 4 - Quran (5)
+      const MunajatScreen(),    // 5 - Munajat (6)
+      const TasbeehScreen(),    // 6 - Tasbeeh (7)
       // Qibla requests location + runs the compass only while it's the active
       // tab, so a fresh install doesn't prompt for location at launch.
-      QiblaScreen(isActive: _currentIndex == 4), // 4 - Qibla
+      QiblaScreen(isActive: _currentIndex == 7), // 7 - Qibla (8)
       // Hidayat belongs to the Jantri, so it follows the timings actually in
       // use rather than the radio button.
       if (!settings.usesCalculatedTimings)
-        const HidayatScreen(),    // 5 - Hidayat (conditionally shown)
-      const QuranScreen(),      // 6 or 5 - Quran
-      const TasbeehScreen(),    // 7 or 6 - Tasbeeh
+        const HidayatScreen(),    // 8 - Instructions (9)
     ];
 
     int safeIndex = _currentIndex;
@@ -351,7 +360,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
               ),
 
               // Persistent hamburger overlay on screens that don't have one
-              if (screens[safeIndex] is! TasbeehScreen)
+              if (screens[safeIndex] is! TasbeehScreen && screens[safeIndex] is! MunajatScreen)
                 Positioned(
                   top: 12,
                   left: isRtl ? null : 16,
@@ -493,11 +502,15 @@ class _SukkurNavBar extends StatelessWidget {
       _NavItem(icon: Icons.today_rounded,                 label: settings.translate('Today', 'آج', 'اڄ', 'اليوم')),           // 1
       _NavItem(icon: Icons.view_list_rounded,             label: settings.translate('Monthly', 'ماہانہ', 'مهينو', 'شهري')),    // 2
       _NavItem(icon: Icons.notifications_active_rounded,  label: settings.translate('Reminders', 'اطلاعات', 'اطلاعون', 'تنبيهات')), // 3
-      _NavItem(icon: Icons.explore_rounded,               label: settings.translate('Qibla', 'قبلہ', 'قبلو', 'القبلة')),        // 4
+      _NavItem(icon: Icons.menu_book,                     label: settings.translate('Quran', 'قرآن', 'قرآن', 'القرآن')),         // 4
+      _NavItem(icon: Icons.auto_stories_outlined,         label: settings.translate('Munajat', 'مناجات', 'مناجات', 'مناجاة')),   // 5
+      _NavItem(
+        customIconBuilder: (color) => TasbeehBeadIcon(color: color, size: 23),
+        label: settings.translate('Tasbeeh', 'تسبیح', 'تسبیح', 'التسبيح'),
+      ), // 6
+      _NavItem(icon: Icons.explore_rounded,               label: settings.translate('Qibla', 'قبلہ', 'قبلو', 'القبلة')),        // 7
       if (!settings.usesCalculatedTimings)
-        _NavItem(icon: Icons.menu_book_rounded,             label: settings.translate('Instructions', 'ہدایت', 'هدايتون', 'إرشادات')),     // 5
-      _NavItem(icon: Icons.menu_book,                     label: settings.translate('Quran', 'قرآن', 'قرآن', 'القرآن')),         // 6
-      _NavItem(icon: Icons.fingerprint_rounded,           label: settings.translate('Tasbeeh', 'تسبیح', 'تسبیح', 'التسبيح')),      // 7
+        _NavItem(icon: Icons.menu_book_rounded,             label: settings.translate('Instructions', 'ہدایت', 'هدايتون', 'إرشادات')),     // 8
     ];
 
     return Container(
@@ -519,6 +532,12 @@ class _SukkurNavBar extends StatelessWidget {
               final i = entry.key;
               final item = entry.value;
               final isSelected = i == currentIndex;
+              final isBookIcon = item.icon == Icons.menu_book || item.icon == Icons.menu_book_rounded;
+              final itemColor = isSelected
+                  ? (isBookIcon
+                      ? const Color(0xFFD4A574)
+                      : settings.displayThemeAccent())
+                  : (isDark ? Colors.white38 : Colors.black45);
 
               return Expanded(
                 child: InkWell(
@@ -527,15 +546,13 @@ class _SukkurNavBar extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        item.icon,
-                        size: i == 5 ? 22 : 24,
-                        color: isSelected
-                            ? (i == 5 || i == 6
-                                ? const Color(0xFFD4A574)
-                                : settings.displayThemeAccent())
-                            : (isDark ? Colors.white38 : Colors.black45),
-                      ),
+                      item.customIconBuilder != null
+                          ? item.customIconBuilder!(itemColor)
+                          : Icon(
+                              item.icon,
+                              size: isBookIcon ? 22 : 24,
+                              color: itemColor,
+                            ),
                       const SizedBox(height: 2),
                       FittedBox(
                         fit: BoxFit.scaleDown,
@@ -546,7 +563,7 @@ class _SukkurNavBar extends StatelessWidget {
                             style: TextStyle(
                               fontSize: isRtl ? 12 : 10,
                               color: isSelected
-                                  ? (i == 5 || i == 6
+                                  ? (isBookIcon
                                       ? const Color(0xFFD4A574)
                                       : settings.displayThemeAccent())
                                   : (isDark ? Colors.white : Colors.black),
@@ -568,7 +585,8 @@ class _SukkurNavBar extends StatelessWidget {
 }
 
 class _NavItem {
-  final IconData icon;
+  final IconData? icon;
+  final Widget Function(Color color)? customIconBuilder;
   final String label;
-  const _NavItem({required this.icon, required this.label});
+  const _NavItem({this.icon, this.customIconBuilder, required this.label});
 }

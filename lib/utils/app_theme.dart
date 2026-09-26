@@ -28,7 +28,7 @@ class AppTheme {
   // Accent colours (const — used inside const Icon / const Border widgets)
   static const Color accentBlue = Color(0xFF1E88E5);
   static const Color accentGold = Color(0xFFD4A574);
-  static const Color accentGreen = Color(0xFF00897B);
+  static const Color accentGreen = Color(0xFF3F7A63);
 
   /// Live app accent — mirrors the user's selected DisplayTheme accent.
   /// Updated by [SettingsProvider] on load and whenever the theme changes,

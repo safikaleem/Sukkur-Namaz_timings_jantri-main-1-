@@ -118,6 +118,7 @@ class SettingsProvider extends ChangeNotifier {
   UnifiedTheme _unifiedTheme = UnifiedTheme.defaultLight;
   int _tasbeehThemeIndex = 0; // default is 0 (gray)
   String _circleWidgetStyle = 'digital';
+  String _quranType = '16_line';
 
   LocationMode _locationMode = LocationMode.sukkur;
   double? _latitude;
@@ -246,6 +247,7 @@ class SettingsProvider extends ChangeNotifier {
   UnifiedTheme get unifiedTheme => _unifiedTheme;
   int get tasbeehThemeIndex => _tasbeehThemeIndex;
   String get circleWidgetStyle => _circleWidgetStyle;
+  String get quranType => _quranType;
 
   /// The mode the app is *actually* running in, which is not the same as the
   /// stored one. World mode with no city behind it resolves to Sukkur, because
@@ -727,7 +729,7 @@ class SettingsProvider extends ChangeNotifier {
     _hasCompletedSetup = prefs.getBool('has_completed_setup') ?? false;
     _hijriAdjustment = prefs.getInt('hijri_adjustment') ?? 0;
     await HijriSyncService.loadLocalCache();
-    _selectedAzanIndex = prefs.getInt('selected_azan') ?? 0;
+    _selectedAzanIndex = prefs.getInt('selected_azan_index') ?? prefs.getInt('selected_azan') ?? 0;
     _tasbeehThemeIndex = prefs.getInt('tasbeeh_theme') ?? 0;
     _circleWidgetStyle = prefs.getString('circle_widget_style') ?? 'digital';
     final tf = prefs.getInt('time_format') ?? 0;
@@ -738,6 +740,7 @@ class SettingsProvider extends ChangeNotifier {
     _tasbeehThemeIndex = prefs.getInt('tasbeeh_theme_index') ?? 0;
     _autoSilentEnabled = prefs.getBool('auto_silent_enabled') ?? false;
     _autoSilentMode = prefs.getString('auto_silent_mode') ?? 'vibrate';
+    _quranType = prefs.getString('quran_type') ?? '16_line';
 
     final locRaw = prefs.getString('location_mode');
     if (locRaw != null) {
@@ -1012,10 +1015,19 @@ class SettingsProvider extends ChangeNotifier {
     Future.delayed(const Duration(milliseconds: 150), () async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('selected_azan_index', value);
+      await prefs.setInt('selected_azan', value);
       if (_notificationsEnabled) {
         await NotificationService.instance.scheduleWeeklyNotifications();
       }
     });
+  }
+
+  Future<void> setQuranType(String value) async {
+    if (_quranType == value) return;
+    _quranType = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('quran_type', value);
   }
 
   Future<void> setPrayerEnabled(String prayer, bool value) async {
@@ -1190,6 +1202,7 @@ class SettingsProvider extends ChangeNotifier {
       await prefs.setInt('unified_theme', UnifiedTheme.defaultLight.index);
       await prefs.setInt('tasbeeh_theme_index', 0);
       await prefs.setInt('hijri_adjustment', _hijriAdjustment);
+      await prefs.setInt('selected_azan_index', _selectedAzanIndex);
       await prefs.setInt('selected_azan', _selectedAzanIndex);
       await prefs.setInt('tasbeeh_theme', _tasbeehThemeIndex);
       await prefs.setString('circle_widget_style', _circleWidgetStyle);
