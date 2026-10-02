@@ -830,6 +830,8 @@ class SettingsProvider extends ChangeNotifier {
     // Load Quran Progress
     _lastReadType = prefs.getString('last_read_type');
     _lastReadId = prefs.getInt('last_read_id');
+    _lastReadPage15 = prefs.getInt('last_read_page_15');
+    _lastReadPage16 = prefs.getInt('last_read_page_16');
 
     for (final key in prefs.getKeys()) {
       if (key.startsWith('surah_progress_')) {
@@ -849,11 +851,46 @@ class SettingsProvider extends ChangeNotifier {
   final Map<int, int> _parahProgress = {};
   String? _lastReadType; // 'surah' or 'parah'
   int? _lastReadId;
+  int? _lastReadPage15;
+  int? _lastReadPage16;
 
   Map<int, int> get surahProgress => _surahProgress;
   Map<int, int> get parahProgress => _parahProgress;
   String? get lastReadType => _lastReadType;
   int? get lastReadId => _lastReadId;
+  int? get lastReadPage15 => _lastReadPage15;
+  int? get lastReadPage16 => _lastReadPage16;
+
+  Future<void> updateReadingPosition({
+    required int pageNumber,
+    required String quranType,
+    int? parahNumber,
+    int? surahNumber,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (quranType == '15_line') {
+      _lastReadPage15 = pageNumber;
+      await prefs.setInt('last_read_page_15', pageNumber);
+    } else {
+      _lastReadPage16 = pageNumber;
+      await prefs.setInt('last_read_page_16', pageNumber);
+    }
+
+    if (parahNumber != null) {
+      _lastReadType = 'parah';
+      _lastReadId = parahNumber;
+      _parahProgress[parahNumber] = pageNumber;
+      await prefs.setString('last_read_type', 'parah');
+      await prefs.setInt('last_read_id', parahNumber);
+      await prefs.setInt('parah_progress_$parahNumber', pageNumber);
+    } else if (surahNumber != null) {
+      _lastReadType = 'surah';
+      _lastReadId = surahNumber;
+      await prefs.setString('last_read_type', 'surah');
+      await prefs.setInt('last_read_id', surahNumber);
+    }
+  }
 
   Future<void> updateSurahProgress(int surahNumber, int ayahNumber) async {
     _lastReadType = 'surah';
@@ -872,17 +909,11 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> updateParahProgress(int parahNumber, int pageNumber) async {
-    _lastReadType = 'parah';
-    _lastReadId = parahNumber;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('last_read_type', 'parah');
-    await prefs.setInt('last_read_id', parahNumber);
-
-    final current = _parahProgress[parahNumber] ?? 0;
-    if (pageNumber > current) {
-      _parahProgress[parahNumber] = pageNumber;
-      await prefs.setInt('parah_progress_$parahNumber', pageNumber);
-    }
+    await updateReadingPosition(
+      pageNumber: pageNumber,
+      quranType: _quranType,
+      parahNumber: parahNumber,
+    );
   }
 
   Future<void> setDarkModeOption(DarkModeOption option) async {

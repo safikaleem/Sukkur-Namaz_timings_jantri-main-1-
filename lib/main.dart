@@ -26,6 +26,7 @@ import 'screens/onboarding_screen.dart';
 import 'widgets/translation_reader.dart' show purgeLegacySurahCache;
 import 'widgets/tasbeeh_icon.dart';
 import 'utils/app_theme.dart';
+import 'utils/custom_upgrader_messages.dart';
 import 'widgets/settings_drawer.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:upgrader/upgrader.dart';
@@ -342,12 +343,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       // any tab. upgrader reads the published Play Store listing itself, so
       // nothing has to be hosted or bumped by hand after a release.
       body: UpgradeAlert(
-        upgrader: _upgrader,
-        // "Ignore" writes the version to preferences and suppresses the prompt
-        // for good, which is the one outcome that can leave someone on an old
-        // build permanently. "Later" stays: it clears the prompt for now and,
-        // with the wait below set to nothing, it returns on the next launch and
-        // keeps returning until the update is actually installed.
+        upgrader: Upgrader(
+          messages: CustomUpgraderMessages(settings),
+        ),
         showIgnore: false,
         child: SafeArea(
           bottom: false,

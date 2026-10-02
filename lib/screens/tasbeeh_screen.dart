@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
 import '../widgets/dr_slogan_header.dart';
@@ -25,6 +26,7 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
   int _completedCycles = 0;
   bool? _localIsDark;
   DarkModeOption? _lastDarkModeOption;
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
   void initState() {
@@ -32,12 +34,19 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
     _loadVibrateSetting();
   }
 
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadVibrateSetting() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _vibrateOn = prefs.getBool('tasbeeh_vibrate') ?? false;
-      _soundOn = prefs.getBool('tasbeeh_sound') ?? false;
+      // Sound and vibration start OFF by default every time the app/screen opens
+      _vibrateOn = false;
+      _soundOn = false;
       _count = prefs.getInt('tasbeeh_count') ?? 0;
       _completedCycles = prefs.getInt('tasbeeh_cycles') ?? 0;
       final savedTarget = prefs.getInt('tasbeeh_target') ?? -1;
@@ -64,24 +73,22 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
     if (!_soundOn) return;
     try {
       SystemSound.play(SystemSoundType.click);
+      _audioPlayer.stop();
+      _audioPlayer.play(AssetSource('mixkit-bell-notification-933.wav'), volume: 0.3);
     } catch (_) {}
   }
 
-  Future<void> _toggleVibrate() async {
+  void _toggleVibrate() {
     setState(() {
       _vibrateOn = !_vibrateOn;
     });
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('tasbeeh_vibrate', _vibrateOn);
     _triggerVibrate();
   }
 
-  Future<void> _toggleSound() async {
+  void _toggleSound() {
     setState(() {
       _soundOn = !_soundOn;
     });
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('tasbeeh_sound', _soundOn);
     _playSound();
   }
 
@@ -300,22 +307,25 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
                               ),
                             ),
 
-                            // Center 7-Segment Digital Number Display
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: digitsStr.split('').map((char) {
-                                final digitVal = int.tryParse(char) ?? 0;
-                                return Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 2.5 * scale),
-                                  child: SevenSegmentDigit(
-                                    digit: digitVal,
-                                    activeColor: style.digitActive,
-                                    inactiveColor: style.digitInactive,
-                                    size: 68 * scale,
-                                  ),
-                                );
-                              }).toList(),
+                            // Center 7-Segment Digital Number Display (Always LTR English style)
+                            Directionality(
+                              textDirection: TextDirection.ltr,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: digitsStr.split('').map((char) {
+                                  final digitVal = int.tryParse(char) ?? 0;
+                                  return Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 2.5 * scale),
+                                    child: SevenSegmentDigit(
+                                      digit: digitVal,
+                                      activeColor: style.digitActive,
+                                      inactiveColor: style.digitInactive,
+                                      size: 68 * scale,
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
                             ),
                           ],
                         ),
@@ -349,31 +359,40 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
 
                   // Stats Row: Rounds (Left) & Count (Right) below target row
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32 * scale),
+                    padding: EdgeInsets.symmetric(horizontal: 24 * scale),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         // Rounds Stat
-                        Text(
-                          '${settings.translate("Rounds", "تسبیح", "تسبيح", "الدورات")}: ${_translateNum(_completedCycles, settings)}',
-                          style: TextStyle(
-                            fontSize: 15 * scale,
-                            fontWeight: FontWeight.w600,
-                            color: style.textColor,
-                            fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                        Expanded(
+                          child: Text(
+                            '${settings.translate("Rounds", "تسبیح", "تسبيح", "الدورات")}: ${_translateNum(_completedCycles, settings)}',
+                            textAlign: isRtl ? TextAlign.right : TextAlign.left,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14.5 * scale,
+                              fontWeight: FontWeight.w600,
+                              color: style.textColor,
+                              fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                            ),
                           ),
                         ),
-
+                        SizedBox(width: 8 * scale),
                         // Count Stat
-                        Text(
-                          _target != null
-                              ? '${settings.translate("Count", "شمار", "شمار", "العدد")}: ${_translateNum(_count, settings)} / ${_translateNum(_target!, settings)}'
-                              : '${settings.translate("Count", "شمار", "شمار", "العدد")}: ${_translateNum(_count, settings)}',
-                          style: TextStyle(
-                            fontSize: 15 * scale,
-                            fontWeight: FontWeight.bold,
-                            color: style.ringFill,
-                            fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                        Expanded(
+                          child: Text(
+                            _target != null
+                                ? '${settings.translate("Count", "شمار", "شمار", "العدد")}: ${_translateNum(_count, settings)} / ${_translateNum(_target!, settings)}'
+                                : '${settings.translate("Count", "شمار", "شمار", "العدد")}: ${_translateNum(_count, settings)}',
+                            textAlign: isRtl ? TextAlign.left : TextAlign.right,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14.5 * scale,
+                              fontWeight: FontWeight.bold,
+                              color: style.ringFill,
+                              fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                            ),
                           ),
                         ),
                       ],
@@ -445,12 +464,12 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
             // ── Bottom Control Pill Bar ───────────────────────────────
             Positioned(
               bottom: 20 * scale,
-              left: 28 * scale,
-              right: 28 * scale,
+              left: 12 * scale,
+              right: 12 * scale,
               child: Center(
                 child: Container(
-                  height: 54 * scale,
-                  padding: EdgeInsets.symmetric(horizontal: 12 * scale),
+                  height: 52 * scale,
+                  padding: EdgeInsets.symmetric(horizontal: 8 * scale),
                   decoration: BoxDecoration(
                     color: style.pillBg,
                     borderRadius: BorderRadius.circular(30 * scale),
@@ -463,80 +482,271 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
                       ),
                     ],
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Reset Button
-                      _buildPillActionIcon(
-                        icon: Icons.refresh_rounded,
-                        onTap: _reset,
-                        style: style,
-                        scale: scale,
-                        tooltip: settings.translate('Reset', 'ری سیٹ', 'ريسيٽ', 'إعادة تعيين'),
-                      ),
+                  child: Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // Decrement Button (Position #1)
+                        _buildPillActionIcon(
+                          icon: Icons.remove_rounded,
+                          onTap: _decrement,
+                          style: style,
+                          scale: scale,
+                          tooltip: settings.translate('Minus', 'منہا', 'گهٽايو', 'طرح'),
+                        ),
 
-                      // Decrement Button
-                      _buildPillActionIcon(
-                        icon: Icons.remove_rounded,
-                        onTap: _decrement,
-                        style: style,
-                        scale: scale,
-                        tooltip: settings.translate('Minus', 'منہا', 'گهٽايو', 'طرح'),
-                      ),
+                        // Reset Button (Position #2)
+                        _buildPillActionIcon(
+                          icon: Icons.refresh_rounded,
+                          onTap: _reset,
+                          style: style,
+                          scale: scale,
+                          tooltip: settings.translate('Reset', 'ری سیٹ', 'ريسيٽ', 'إعادة تعيين'),
+                        ),
 
-                      // Vibration Button (Highlights when selected/active!)
-                      _buildPillActionIcon(
-                        icon: _vibrateOn ? Icons.vibration_rounded : Icons.vibration_outlined,
-                        onTap: _toggleVibrate,
-                        style: style,
-                        scale: scale,
-                        isActive: _vibrateOn,
-                        tooltip: settings.translate('Vibrate', 'وائبریشن', 'وائبريشن', 'اهتزاز'),
-                      ),
+                        // Theme Palette Button (Between Minus and Sound!)
+                        _buildPillActionIcon(
+                          icon: Icons.palette_outlined,
+                          onTap: () {
+                            setState(() {
+                              _showColorSelector = !_showColorSelector;
+                            });
+                          },
+                          style: style,
+                          scale: scale,
+                          isActive: _showColorSelector,
+                          tooltip: settings.translate('Theme', 'تھیم', 'ٿيم', 'المظهر'),
+                        ),
 
-                      // Sound Button (Highlights when selected/active!)
-                      _buildPillActionIcon(
-                        icon: _soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-                        onTap: _toggleSound,
-                        style: style,
-                        scale: scale,
-                        isActive: _soundOn,
-                        tooltip: settings.translate('Sound', 'صدا', 'صدا', 'الصوت'),
-                      ),
+                        // Sound Animated Sliding Switch
+                        _buildSlidingSwitch(
+                          isActive: _soundOn,
+                          activeIcon: Icons.volume_up_rounded,
+                          inactiveIcon: Icons.volume_off_rounded,
+                          onTap: _toggleSound,
+                          style: style,
+                          scale: scale,
+                          isDarkTheme: isDark,
+                          tooltip: settings.translate('Sound', 'صدا', 'صدا', 'الصوت'),
+                        ),
 
-                      // Theme Palette Button (Highlights when active!)
-                      _buildPillActionIcon(
-                        icon: Icons.palette_outlined,
-                        onTap: () {
-                          setState(() {
-                            _showColorSelector = !_showColorSelector;
-                          });
-                        },
-                        style: style,
-                        scale: scale,
-                        isActive: _showColorSelector,
-                        tooltip: settings.translate('Theme', 'تھیم', 'ٿيم', 'المظهر'),
-                      ),
+                        // Vibration Animated Sliding Switch
+                        _buildSlidingSwitch(
+                          isActive: _vibrateOn,
+                          activeIcon: Icons.vibration_rounded,
+                          inactiveIcon: Icons.vibration_outlined,
+                          onTap: _toggleVibrate,
+                          style: style,
+                          scale: scale,
+                          isDarkTheme: isDark,
+                          tooltip: settings.translate('Vibrate', 'وائبریشن', 'وائبريشن', 'اهتزاز'),
+                        ),
 
-                      // Dark/Light Mode Toggle Button (Beside Theme Palette!)
-                      _buildPillActionIcon(
-                        icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                        onTap: () {
-                          setState(() {
-                            _localIsDark = !isDark;
-                          });
-                        },
-                        style: style,
-                        scale: scale,
-                        isActive: _localIsDark != null,
-                        tooltip: settings.translate('Dark/Light Mode', 'ڈارک/لائٹ موڈ', 'ڊارڪ/لائيٽ موڊ', 'الوضع الداكن/الفاتح'),
-                      ),
-                    ],
+                        // Dark/Light Mode Animated Sliding Switch (At the end)
+                        _buildThemeSlidingToggle(
+                          isDark: isDark,
+                          onTap: () {
+                            setState(() {
+                              _localIsDark = !isDark;
+                            });
+                          },
+                          style: style,
+                          scale: scale,
+                          tooltip: settings.translate('Dark/Light Mode', 'ڈارک/لائٹ موڈ', 'ڊارڪ/لائيٽ موڊ', 'الوضع الداكن/الفاتح'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSlidingSwitch({
+    required bool isActive,
+    required IconData activeIcon,
+    required IconData inactiveIcon,
+    required VoidCallback onTap,
+    required _TasbeehStyle style,
+    required double scale,
+    required String tooltip,
+    required bool isDarkTheme,
+  }) {
+    final width = 42.0 * scale;
+    final height = 30.0 * scale;
+    final thumbSize = 22.0 * scale;
+
+    final trackBg = isDarkTheme
+        ? const Color(0xFF14151F)
+        : const Color(0xFFE2E8F0);
+
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Tooltip(
+        message: tooltip,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: width,
+            height: height,
+            padding: EdgeInsets.all(3.0 * scale),
+            decoration: BoxDecoration(
+              color: trackBg,
+              borderRadius: BorderRadius.circular(18 * scale),
+              border: Border.all(
+                color: isActive ? style.ringFill.withValues(alpha: 0.6) : style.ringTrack,
+                width: 1.2,
+              ),
+            ),
+            child: Stack(
+              children: [
+                // Background track icons (always fixed LTR order)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(left: 2.0 * scale),
+                      child: Icon(
+                        inactiveIcon,
+                        size: 11 * scale,
+                        color: !isActive ? Colors.transparent : style.textColor.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(right: 2.0 * scale),
+                      child: Icon(
+                        activeIcon,
+                        size: 11 * scale,
+                        color: isActive ? Colors.transparent : style.textColor.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Sliding Thumb Circle (OFF = Left / Inactive, ON = Right / Active)
+                AnimatedAlign(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                  alignment: isActive ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    width: thumbSize,
+                    height: thumbSize,
+                    decoration: BoxDecoration(
+                      color: isActive ? style.ringFill : (isDarkTheme ? const Color(0xFF323444) : Colors.white),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isActive ? style.ringFill : Colors.black).withValues(alpha: 0.25),
+                          blurRadius: 3 * scale,
+                          spreadRadius: 1 * scale,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      isActive ? activeIcon : inactiveIcon,
+                      size: 12 * scale,
+                      color: isActive ? style.badgeText : style.textColor.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeSlidingToggle({
+    required bool isDark,
+    required VoidCallback onTap,
+    required _TasbeehStyle style,
+    required double scale,
+    required String tooltip,
+  }) {
+    final width = 42.0 * scale;
+    final height = 30.0 * scale;
+    final thumbSize = 22.0 * scale;
+
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Tooltip(
+        message: tooltip,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: width,
+            height: height,
+            padding: EdgeInsets.all(3.0 * scale),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF14151F)
+                  : const Color(0xFFE2E8F0),
+              borderRadius: BorderRadius.circular(18 * scale),
+              border: Border.all(
+                color: style.ringTrack,
+                width: 1.2,
+              ),
+            ),
+            child: Stack(
+              children: [
+                // Icons track (Sun on left, Moon on right)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(left: 2.0 * scale),
+                      child: Icon(
+                        Icons.wb_sunny_rounded,
+                        size: 11 * scale,
+                        color: isDark ? Colors.amber.withValues(alpha: 0.5) : Colors.transparent,
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(right: 2.0 * scale),
+                      child: Icon(
+                        Icons.nights_stay_rounded,
+                        size: 11 * scale,
+                        color: isDark ? Colors.transparent : Colors.indigo.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Sliding Thumb Circle
+                AnimatedAlign(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                  alignment: isDark ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    width: thumbSize,
+                    height: thumbSize,
+                    decoration: BoxDecoration(
+                      color: isDark ? style.ringFill : Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isDark ? style.ringFill : Colors.black).withValues(alpha: 0.25),
+                          blurRadius: 3 * scale,
+                          spreadRadius: 1 * scale,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      isDark ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded,
+                      size: 12 * scale,
+                      color: isDark ? style.badgeText : const Color(0xFFE5A100),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

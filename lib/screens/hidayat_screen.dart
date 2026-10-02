@@ -8,25 +8,61 @@ import '../providers/settings_provider.dart';
 import '../widgets/dr_slogan_footer.dart';
 import '../widgets/dr_slogan_header.dart';
 
+import 'package:flutter/foundation.dart';
+
 class HidayatScreen extends StatelessWidget {
   const HidayatScreen({super.key});
 
   Future<void> _shareImage(BuildContext context) async {
+    final settings = context.read<SettingsProvider>();
     try {
+      if (kIsWeb) {
+        final shareText = settings.translate(
+          'Sukkur Salah – Namaz timings for Sukkur and all cities worldwide. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+          'سکھر صلاۃ – سکھر اور دنیا بھر کے تمام شہروں کے لیے نماز کے اوقات۔ ابھی ڈاؤن لوڈ کریں:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+          'سکر صلاۃ – سکر ۽ سڄي دنيا جي سڀني شهرن لاءِ نماز جا وقت. هاڻي ڊائون لوڊ ڪريو:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+          'سكر صلاة - مواقيت الصلاة لسكر وجميع مدن العالم. حمّل الآن:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+        );
+        await Share.share(shareText);
+        return;
+      }
       final bytes = await rootBundle.load('assets/images/hidayat.jpeg');
       final tmp = await getTemporaryDirectory();
       final file = File('${tmp.path}/hidayat.jpeg');
-      await file.writeAsBytes(bytes.buffer.asUint8List());
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path)],
+      await file.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: settings.translate(
+          'Sukkur Salah Instructions',
+          'سکھر صلاۃ ہدایات',
+          'سکر صلاۃ هدايتون',
+          'إرشادات سكر صلاة',
         ),
       );
     } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not share image')),
+      try {
+        final shareText = settings.translate(
+          'Sukkur Salah – Namaz timings for Sukkur and all cities worldwide. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+          'سکھر صلاۃ – سکھر اور دنیا بھر کے تمام شہروں کے لیے نماز کے اوقات۔ ابھی ڈاؤن لوڈ کریں:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+          'سکر صلاۃ – سکر ۽ سڄي دنيا جي سڀني شهرن لاءِ نماز جا وقت. هاڻي ڊائون لوڊ ڪريو:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+          'سكر صلاة - مواقيت الصلاة لسكر وجميع مدن العالم. حمّل الآن:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
         );
+        await Share.share(shareText);
+      } catch (_) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                settings.translate(
+                  'Could not share image',
+                  'تصویر شیئر نہیں ہو سکی',
+                  'تصوير شيئر نه ٿي سگهي',
+                  'تعذر مشاركة الصورة',
+                ),
+              ),
+            ),
+          );
+        }
       }
     }
   }

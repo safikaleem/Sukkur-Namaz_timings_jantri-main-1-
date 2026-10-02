@@ -74,7 +74,7 @@ class CitySearch {
     return out;
   }
 
-  /// Places whose name starts with [query], best match first.
+  /// Places whose name or country starts with or contains [query], best matches first.
   ///
   /// Sukkur and its neighbours are dropped here rather than refused after the
   /// tap: the Jantri is the only correct source for them, so they must not be
@@ -85,16 +85,39 @@ class CitySearch {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return const [];
 
-    final results = <CityResult>[];
+    final prefixMatches = <CityResult>[];
+    final substringMatches = <CityResult>[];
+    final seen = <String>{};
+
     for (final city in cities) {
-      if (!city.name.toLowerCase().startsWith(q)) continue;
       if (SukkurLocation.covers(city.latitude, city.longitude, city.name)) {
         continue;
       }
-      results.add(city);
-      if (results.length >= limit) break;
+      final nameLower = city.name.toLowerCase();
+      final countryLower = city.countryName.toLowerCase();
+      final key = '${city.name}_${city.countryCode}_${city.latitude}_${city.longitude}';
+
+      if (seen.contains(key)) continue;
+
+      if (nameLower.startsWith(q)) {
+        seen.add(key);
+        prefixMatches.add(city);
+        if (prefixMatches.length >= limit) break;
+      } else if (nameLower.contains(q) || countryLower.startsWith(q) || countryLower.contains(q)) {
+        seen.add(key);
+        substringMatches.add(city);
+      }
     }
-    return results;
+
+    final combined = [...prefixMatches];
+    if (combined.length < limit) {
+      for (final city in substringMatches) {
+        combined.add(city);
+        if (combined.length >= limit) break;
+      }
+    }
+
+    return combined;
   }
 
   @visibleForTesting

@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/settings_provider.dart';
 import '../services/city_search.dart';
 import '../utils/app_theme.dart';
+import '../utils/world_location.dart';
 
 /// Full-screen city picker: type a letter, get a list, tap to choose.
 ///
@@ -24,6 +26,7 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
 
   List<CityResult> _results = const [];
   bool _loading = true;
+  bool _isOnlineSearching = false;
   String _query = '';
 
   @override
@@ -62,6 +65,61 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
     });
   }
 
+  Future<void> _searchOnline(SettingsProvider settings) async {
+    final queryText = _query.trim();
+    if (queryText.isEmpty) return;
+
+    setState(() => _isOnlineSearching = true);
+
+    try {
+      final locations = await locationFromAddress(queryText);
+      if (!mounted) return;
+
+      if (locations.isNotEmpty) {
+        final loc = locations.first;
+        String placeName = queryText;
+        String countryCode = '';
+
+        try {
+          final placemarks = await placemarkFromCoordinates(loc.latitude, loc.longitude);
+          if (placemarks.isNotEmpty) {
+            final p = placemarks.first;
+            final resolvedName = cityNameFrom(p);
+            if (resolvedName != null && resolvedName.isNotEmpty) {
+              placeName = resolvedName;
+            }
+            countryCode = p.isoCountryCode ?? '';
+          }
+        } catch (_) {}
+
+        final cityResult = CityResult(
+          name: placeName,
+          countryCode: countryCode,
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+        );
+
+        if (mounted) {
+          Navigator.of(context).pop(cityResult);
+        }
+        return;
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+    setState(() => _isOnlineSearching = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(settings.translate(
+          'Could not find location online. Check spelling or internet connection.',
+          'آن لائن مقام نہیں ملا۔ ہجے یا انٹرنیٹ کنکشن چیک کریں۔',
+          'آن لائن جڳهه نه ملي. اسپيلنگ يا انٽرنيٽ ڪنيڪشن چيڪ ڪريو.',
+          'تعذر العثور على الموقع عبر الإنترنت. تحقق من التهجئة أو الاتصال بالإنترنت.',
+        )),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
@@ -89,8 +147,6 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
                 controller: _controller,
                 focusNode: _focus,
                 autocorrect: false,
-                // City names are Latin here, so the app's own RTL layout would
-                // only put the caret on the wrong side.
                 textDirection: TextDirection.ltr,
                 style: TextStyle(fontSize: 24, color: textColor),
                 decoration: InputDecoration(
@@ -110,8 +166,6 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
     );
   }
 
-  /// The same sentence the GPS path shows, worded identically so the two routes
-  /// to Sukkur never explain themselves differently.
   Widget _jantriNote(SettingsProvider settings) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
@@ -149,8 +203,27 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
   }
 
   Widget _body(SettingsProvider settings, Color textColor, Color muted) {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+    if (_loading || _isOnlineSearching) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(),
+            if (_isOnlineSearching) ...[
+              const SizedBox(height: 16),
+              Text(
+                settings.translate(
+                  'Searching online...',
+                  'آن لائن تلاش جاری ہے...',
+                  'آن لائن ڳولا جاري آهي...',
+                  'جاري البحث عبر الإنترنت...',
+                ),
+                style: TextStyle(color: muted, fontSize: 14),
+              ),
+            ],
+          ],
+        ),
+      );
     }
     if (_query.trim().isEmpty) {
       return Center(
@@ -169,41 +242,85 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
         ),
       );
     }
-    // Sukkur is withheld from the list on purpose, which left anyone searching
-    // for it staring at a result that was never going to arrive. Say why, in
-    // the same words the GPS path uses - but only ever as a note. There is
-    // nothing here to tap, and nothing is stored.
-    final wantsSukkur = SukkurLocation.looksLikeSearchFor(_query);
 
-    if (_results.isEmpty && !wantsSukkur) {
+    final wantsSukkur = SukkurLocation.looksLikeSearchFor(_query);
+    final hasResults = _results.isNotEmpty;
+    final showOnlineSearchBtn = _query.trim().length >= 2 && !wantsSukkur;
+
+    if (!hasResults && !wantsSukkur) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
-          child: Text(
-            settings.translate(
-              'No city found. Check the spelling, or try a nearby larger city.',
-              'کوئی شہر نہیں ملا۔ ہجے دیکھ لیں، یا قریب کا کوئی بڑا شہر آزمائیں۔',
-              'ڪو به شهر نه مليو. اسپيلنگ ڏسو، يا ويجهو ڪو وڏو شهر آزمايو.',
-              'لم يتم العثور على مدينة. تحقق من التهجئة أو جرّب مدينة أكبر قريبة.',
-            ),
-            style: TextStyle(color: muted, fontSize: 14),
-            textAlign: TextAlign.center,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                settings.translate(
+                  'No offline city match found.',
+                  'کوئی آف لائن شہر نہیں ملا۔',
+                  'ڪو به آف لائن شهر نه مليو.',
+                  'لم يتم العثور على مدينة مطابقة آفلاين.',
+                ),
+                style: TextStyle(color: muted, fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: () => _searchOnline(settings),
+                icon: const Icon(Icons.travel_explore_rounded),
+                label: Text(settings.translate(
+                  'Search online for "${_query.trim()}"',
+                  '"${_query.trim()}" کو آن لائن تلاش کریں',
+                  '"${_query.trim()}" کي آن لائن ڳوليو',
+                  'البحث عبر الإنترنت عن "${_query.trim()}"',
+                )),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
           ),
         ),
       );
     }
 
+    final totalCount = _results.length + (wantsSukkur ? 1 : 0) + (showOnlineSearchBtn ? 1 : 0);
+
     return ListView.builder(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      // The note takes the first slot, so genuine matches like Sukabumi still
-      // appear beneath it rather than being replaced by it.
-      itemCount: _results.length + (wantsSukkur ? 1 : 0),
+      itemCount: totalCount,
       itemBuilder: (context, index) {
         if (wantsSukkur && index == 0) {
           return _jantriNote(settings);
         }
-        final i = wantsSukkur ? index - 1 : index;
-        final city = _results[i];
+        final listIndex = wantsSukkur ? index - 1 : index;
+
+        if (showOnlineSearchBtn && listIndex == _results.length) {
+          return Container(
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            child: OutlinedButton.icon(
+              onPressed: () => _searchOnline(settings),
+              icon: const Icon(Icons.travel_explore_rounded, size: 20),
+              label: Text(settings.translate(
+                'Search online for "${_query.trim()}"',
+                '"${_query.trim()}" کو آن لائن تلاش کریں',
+                '"${_query.trim()}" کي آن لائن ڳوليو',
+                'البحث عبر الإنترنت عن "${_query.trim()}"',
+              )),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.accent,
+                side: BorderSide(color: AppTheme.accent.withValues(alpha: 0.5)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          );
+        }
+
+        final city = _results[listIndex];
         return InkWell(
           onTap: () => Navigator.of(context).pop(city),
           child: Padding(

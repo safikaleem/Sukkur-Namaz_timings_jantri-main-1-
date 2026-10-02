@@ -214,6 +214,71 @@ class HijriConverter {
     return '${h.hDay} $translatedMonth ${h.hYear}';
   }
 
+  /// Converts a Hijri date (year, month 1..12, day 1..30) to Gregorian DateTime.
+  static DateTime gregorianForHijri(int year, int month, int day) {
+    final key = '$year-${month.toString().padLeft(2, '0')}';
+    final start = _activeMonthStarts[key];
+    if (start != null) {
+      return start.add(Duration(days: day - 1));
+    }
+    // Fallback using HijriCalendar package
+    try {
+      final h = HijriCalendar();
+      return h.hijriToGregorian(year, month, day);
+    } catch (_) {
+      final offsetDays = ((year - 1448) * 354.367 + (month - 1) * 29.53 + (day - 1)).round();
+      return DateTime(2026, 6, 17).add(Duration(days: offsetDays));
+    }
+  }
+
+  /// Formats a Hijri date line for event cards according to language.
+  static String formatHijriEventDate(int day, int monthIndex1Based, int year, String language, String monthName) {
+    if (language == 'urdu' || language == 'sindhi' || language == 'arabic' || language == 'persian') {
+      final dStr = S.toArabicNumerals(day);
+      final yStr = S.toArabicNumerals(year);
+      return '$dStr $monthName $yStr هـ';
+    }
+    if (language == 'bengali') {
+      return '${_toBengaliNum(day)} $monthName ${_toBengaliNum(year)} হিজরী';
+    }
+    if (language == 'hindi') {
+      return '${_toHindiNum(day)} $monthName ${_toHindiNum(year)} हिजरी';
+    }
+    return '$day $monthName $year AH';
+  }
+
+  /// Formats a Gregorian date nicely according to language (e.g. "17 Jun 2026").
+  static String formatGregorianDate(DateTime date, String language) {
+    const monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthsUr = ['جنوری', 'فروری', 'مارچ', 'اپریل', 'مئی', 'جون', 'جولائی', 'اگست', 'ستمبر', 'اکتوبر', 'نومبر', 'دسمبر'];
+    const monthsSd = ['جنوري', 'فيبروري', 'مارچ', 'اپريل', 'مئي', 'جون', 'جولاءِ', 'آگسٽ', 'سيپٽمبر', 'آڪٽوبر', 'نومبر', 'ديسمبر'];
+    const monthsAr = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    const monthsBn = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+    const monthsHi = ['जनवरी', 'फरवरी', 'मार्च', 'अप्रैल', 'मई', 'जून', 'जुलाई', 'अगस्त', 'सितंबर', 'अक्टूबर', 'नवंबर', 'दिसंबर'];
+
+    final d = date.day;
+    final mIdx = date.month - 1;
+    final y = date.year;
+
+    if (language == 'urdu') {
+      return '${S.toArabicNumerals(d)} ${monthsUr[mIdx]} ${S.toArabicNumerals(y)}';
+    }
+    if (language == 'sindhi') {
+      return '${S.toArabicNumerals(d)} ${monthsSd[mIdx]} ${S.toArabicNumerals(y)}';
+    }
+    if (language == 'arabic' || language == 'persian') {
+      return '${S.toArabicNumerals(d)} ${monthsAr[mIdx]} ${S.toArabicNumerals(y)}';
+    }
+    if (language == 'bengali') {
+      return '${_toBengaliNum(d)} ${monthsBn[mIdx]} ${_toBengaliNum(y)}';
+    }
+    if (language == 'hindi') {
+      return '${_toHindiNum(d)} ${monthsHi[mIdx]} ${_toHindiNum(y)}';
+    }
+
+    return '$d ${monthsEn[mIdx]} $y';
+  }
+
   static String _toBengaliNum(int n) {
     const w = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
     const b = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];

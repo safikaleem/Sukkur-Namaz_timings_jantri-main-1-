@@ -159,11 +159,17 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   // ── Navigation ────────────────────────────────────────────────────────────────
-  Future<void> _openSurah(int number, String enName, String arabicName, String localName) async {
+  Future<void> _openSurah(int number, String enName, String arabicName, String localName, [int? specificPage]) async {
     final settings = context.read<SettingsProvider>();
-    final int targetParah = settings.quranType == '15_line'
-        ? Quran15LineData.getParahForPage(Quran15LineData.surahStartPages[number] ?? 1)
-        : QuranData.getParahForPage(QuranData.surahStartPages[number] ?? 1);
+    final is15Line = settings.quranType == '15_line';
+    final int defaultStartPage = is15Line
+        ? (Quran15LineData.surahStartPages[number] ?? 2)
+        : (QuranData.surahStartPages[number] ?? 1);
+
+    final int targetPage = specificPage ?? defaultStartPage;
+    final int targetParah = is15Line
+        ? Quran15LineData.getParahForPage(targetPage)
+        : QuranData.getParahForPage(targetPage);
 
     final ready = await QuranDownloadService.instance.ensureQuranReady(
       context,
@@ -175,10 +181,6 @@ class _QuranScreenState extends State<QuranScreen> {
     int savedAyah = settings.surahProgress[number] ?? 1;
     if (savedAyah < 1) savedAyah = 1;
 
-    final int startPage = settings.quranType == '15_line'
-        ? (Quran15LineData.surahStartPages[number] ?? 2)
-        : (QuranData.surahStartPages[number] ?? 1);
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -187,7 +189,7 @@ class _QuranScreenState extends State<QuranScreen> {
           surahNameEn: enName,
           surahNameArabic: arabicName,
           surahNameLocal: localName,
-          initialPage: startPage,
+          initialPage: targetPage,
           initialAyah: savedAyah,
         ),
       ),
@@ -198,19 +200,25 @@ class _QuranScreenState extends State<QuranScreen> {
 
   Future<void> _openParah(Parah parah, [int? specificPage, int? specificSurahId, int? specificAyahId]) async {
     final settings = context.read<SettingsProvider>();
-    final ready = await QuranDownloadService.instance.ensureQuranReady(
-      context,
-      quranType: settings.quranType,
-      parahNumber: parah.number,
-    );
-    if (!ready || !mounted) return;
-
-    final int parahStart = settings.quranType == '15_line'
+    final is15Line = settings.quranType == '15_line';
+    final int parahStart = is15Line
         ? Quran15LineData.parahFirstPage(parah.number)
         : (parah.number == 1 ? 1 : parah.startPage);
 
-    int savedPage = specificPage ?? (settings.parahProgress[parah.number] ?? parahStart);
+    final int? lastReadForType = is15Line ? settings.lastReadPage15 : settings.lastReadPage16;
+    int savedPage = specificPage ?? lastReadForType ?? (settings.parahProgress[parah.number] ?? parahStart);
     if (savedPage < parahStart) savedPage = parahStart;
+
+    final targetParah = is15Line
+        ? Quran15LineData.getParahForPage(savedPage)
+        : QuranData.getParahForPage(savedPage);
+
+    final ready = await QuranDownloadService.instance.ensureQuranReady(
+      context,
+      quranType: settings.quranType,
+      parahNumber: targetParah,
+    );
+    if (!ready || !mounted) return;
 
     Navigator.push(
       context,
@@ -505,24 +513,29 @@ class _QuranScreenState extends State<QuranScreen> {
     int progressPercent = 0;
     VoidCallback onTap = () {};
 
+    final is15Line = settings.quranType == '15_line';
+    final int? lastPage = is15Line ? settings.lastReadPage15 : settings.lastReadPage16;
+
     if (type == 'surah') {
       final surah = QuranData.surahs.firstWhere((s) => s.number == id, orElse: () => QuranData.surahs.first);
       titleEn = surah.english;
       titleArabic = surah.arabic;
       titleLocal = settings.isUrdu ? surah.urdu : (settings.isSindhi ? surah.sindhi : surah.arabic);
-      int ayahsRead = settings.surahProgress[id] ?? 0;
-      int totalAyahs = surah.totalAyahs;
-      subtitle = '${settings.translate("Verse", "آیت", "آيت", "آية")} $ayahsRead ${settings.translate("of", "میں سے", "مان", "من")} $totalAyahs';
-      progressPercent = totalAyahs > 0 ? ((ayahsRead / totalAyahs) * 100).toInt() : 0;
+      final int defaultStartPage = is15Line
+          ? (Quran15LineData.surahStartPages[id] ?? 2)
+          : (QuranData.surahStartPages[id] ?? 1);
+      final int savedPage = lastPage ?? defaultStartPage;
+
+      subtitle = '${settings.translate("Page", "صفحہ", "صفحو", "صفحة")} $savedPage';
+      progressPercent = 50;
       onTap = () {
-        _openSurah(surah.number, surah.english, surah.arabic, titleLocal);
+        _openSurah(surah.number, surah.english, surah.arabic, titleLocal, savedPage);
       };
     } else {
       final parah = QuranData.parahs.firstWhere((p) => p.number == id, orElse: () => QuranData.parahs.first);
       titleEn = parah.english;
       titleArabic = parah.arabic;
       titleLocal = settings.isUrdu ? parah.urdu : (settings.isSindhi ? parah.sindhi : parah.arabic);
-      final is15Line = settings.quranType == '15_line';
       final int parahStart = is15Line
           ? Quran15LineData.parahFirstPage(id)
           : (id == 1 ? 1 : parah.startPage);
@@ -531,7 +544,10 @@ class _QuranScreenState extends State<QuranScreen> {
           : (id == 30 ? kQuranPageCount : QuranData.parahs[id].startPage - 1);
       final int totalPages = parahEnd - parahStart + 1;
 
-      int savedPage = settings.parahProgress[id] ?? parahStart;
+      int savedPage = lastPage ?? settings.parahProgress[id] ?? parahStart;
+      if (savedPage < parahStart || savedPage > parahEnd) {
+        savedPage = settings.parahProgress[id] ?? parahStart;
+      }
       int pagesDone = savedPage - parahStart + 1;
       if (pagesDone < 0) pagesDone = 0;
       if (pagesDone > totalPages) pagesDone = totalPages;
@@ -539,7 +555,7 @@ class _QuranScreenState extends State<QuranScreen> {
       subtitle = '${settings.translate("Page", "صفحہ", "صفحو", "صفحة")} $savedPage';
       progressPercent = totalPages > 0 ? ((pagesDone / totalPages) * 100).toInt() : 0;
       onTap = () {
-        _openParah(parah);
+        _openParah(parah, savedPage);
       };
     }
 

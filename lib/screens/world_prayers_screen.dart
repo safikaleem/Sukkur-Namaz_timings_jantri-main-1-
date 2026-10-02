@@ -76,6 +76,284 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
     Navigator.of(context).pop(true);
   }
 
+  /// Shows a bottom-sheet dialog after a city is selected, letting the user
+  /// confirm or change the Calculation Method & Asr Juristic Method. If the
+  /// selected city is in a different timezone from the phone, a Notification
+  /// Time Zone section is shown as well.
+  Future<void> _showCitySetupDialog(SettingsProvider settings, String cityName) async {
+    if (!mounted) return;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final muted = isDark ? Colors.white54 : Colors.black54;
+    final hasTzDiff = _clockOffsetMinutes(settings) != 0;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        // Use a StatefulBuilder so dropdowns and radio buttons update live
+        // inside the sheet without needing to rebuild the parent.
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            final settings = sheetContext.watch<SettingsProvider>();
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(sheetContext).size.height * 0.85,
+              ),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 16,
+                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Drag handle
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white24 : Colors.black26,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // City name header
+                    Row(
+                      children: [
+                        Icon(Icons.location_on, color: AppTheme.accent, size: 22),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            cityName,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      settings.translate(
+                        'Configure prayer calculation settings for this city',
+                        'اس شہر کے لیے نماز کے حساب کی ترتیبات مقرر کریں',
+                        'هن شهر لاءِ نماز جي حساب جون سيٽنگون مقرر ڪريو',
+                        'اضبط إعدادات حساب الصلاة لهذه المدينة',
+                      ),
+                      style: TextStyle(fontSize: 13, color: muted),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // ── Calculation Parameters ──
+                    Text(
+                      settings.translate('Calculation Parameters', 'حساب کے پیرامیٹرز', 'حساب جا پيرا ميٽرز', 'معلمات الحساب'),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.accent,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Text(
+                      settings.translate('Calculation Method', 'حساب کا طریقہ', 'حساب جو طريقو', 'طريقة الحساب'),
+                      style: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<String>(
+                      value: settings.calculationMethod,
+                      dropdownColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                      style: TextStyle(color: textColor, fontSize: 14),
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      items: _calculationMethods.map((m) => DropdownMenuItem(
+                        value: m,
+                        child: Text(settings.translate(m, m, m, m)),
+                      )).toList(),
+                      onChanged: (val) {
+                        if (val != null) settings.setCalculationMethod(val);
+                      },
+                    ),
+                    const SizedBox(height: 14),
+
+                    Text(
+                      settings.translate('Asr Juristic Method', 'عصر کا فقہی طریقہ', 'عصر جو فقهي طريقو', 'طريقة العصر الفقهية'),
+                      style: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<String>(
+                      value: settings.asrMethod,
+                      dropdownColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                      style: TextStyle(color: textColor, fontSize: 14),
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      items: _asrMethods.map((m) => DropdownMenuItem(
+                        value: m,
+                        child: Text(_asrMethodLabel(settings, m)),
+                      )).toList(),
+                      onChanged: (val) {
+                        if (val != null) settings.setAsrMethod(val);
+                      },
+                    ),
+
+                    // ── Notification Time Zone (only if city ≠ phone timezone) ──
+                    if (hasTzDiff) ...[
+                      const SizedBox(height: 20),
+                      Divider(color: isDark ? Colors.white12 : Colors.black12),
+                      const SizedBox(height: 12),
+                      Text(
+                        settings.translate('Notification Time Zone', 'اطلاع کا ٹائم زون',
+                            'اطلاع جو ٽائم زون', 'المنطقة الزمنية للإشعار'),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.accent,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(_offsetLabel(settings),
+                          style: TextStyle(fontSize: 12, color: muted)),
+                      const SizedBox(height: 4),
+                      Text(
+                        settings.translate(
+                          'The times shown stay the same either way. This only decides when the notification rings.',
+                          'دکھائے گئے اوقات دونوں صورتوں میں ایک جیسے رہیں گے۔ اس سے صرف یہ طے ہوتا ہے کہ اطلاع کب بجے گی۔',
+                          'ڏيکاريل وقت ٻنهي صورتن ۾ ساڳيا رهندا. هن سان رڳو اهو طئي ٿيندو ته اطلاع ڪڏهن وڄندي.',
+                          'الأوقات المعروضة تبقى كما هي في الحالتين. هذا يحدد فقط وقت رنين الإشعار.',
+                        ),
+                        style: TextStyle(fontSize: 12, color: muted),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildTzOption(
+                        settings: settings,
+                        selected: !settings.worldAlertsFollowDevice,
+                        title: settings.translate("City's time", 'شہر کا وقت', 'شهر جو وقت',
+                            'توقيت المدينة'),
+                        detail: settings.translate(
+                          'Rings at the real prayer moment in that city. Recommended.',
+                          'اس شہر میں نماز کے اصل وقت پر بجے گی۔ تجویز کردہ۔',
+                          'ان شهر ۾ نماز جي اصل وقت تي وڄندي. تجويز ڪيل.',
+                          'يرن في وقت الصلاة الحقيقي في تلك المدينة. موصى به.',
+                        ),
+                        textColor: textColor,
+                        muted: muted,
+                        onTap: () {
+                          settings.setWorldAlertsFollowDevice(false);
+                        },
+                      ),
+                      _buildTzOption(
+                        settings: settings,
+                        selected: settings.worldAlertsFollowDevice,
+                        title: settings.translate("My phone's time", 'میرے فون کا وقت',
+                            'منهنجي فون جو وقت', 'توقيت هاتفي'),
+                        detail: settings.translate(
+                          'Rings at the time shown on screen, on your own clock.',
+                          'اسکرین پر دکھائے گئے وقت پر، آپ کی اپنی گھڑی کے مطابق بجے گی۔',
+                          'اسڪرين تي ڏيکاريل وقت تي، توهان جي پنهنجي گھڙي مطابق وڄندي.',
+                          'يرن في الوقت المعروض على الشاشة، حسب ساعتك.',
+                        ),
+                        textColor: textColor,
+                        muted: muted,
+                        onTap: () {
+                          settings.setWorldAlertsFollowDevice(true);
+                        },
+                      ),
+                    ],
+
+                    const SizedBox(height: 20),
+                    // Confirm button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.accent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        child: Text(
+                          settings.translate('Confirm', 'تصدیق کریں', 'تصديق ڪريو', 'تأكيد'),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Compact timezone radio option used inside the city setup dialog.
+  Widget _buildTzOption({
+    required SettingsProvider settings,
+    required bool selected,
+    required String title,
+    required String detail,
+    required Color textColor,
+    required Color muted,
+    required VoidCallback onTap,
+  }) =>
+      InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                selected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                color: selected ? AppTheme.accent : muted,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: textColor)),
+                    const SizedBox(height: 2),
+                    Text(detail,
+                        style: TextStyle(fontSize: 12, color: muted)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
   Future<void> _getCurrentLocation(SettingsProvider settings) async {
     setState(() {
       _isLoading = true;
@@ -102,14 +380,22 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
       
       // Ask the platform geocoder for the place name in the user's own
       // language/script instead of always returning English.
-      await setLocaleIdentifier(settings.localeIdentifier);
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-      String city = 'Unknown Location';
-      if (placemarks.isNotEmpty) {
-        city = cityNameFrom(placemarks.first) ?? 'Unknown Location';
+      String city = settings.translate('Current Location', 'موجودہ مقام', 'موجوده جڳھ', 'الموقع الحالي');
+      try {
+        await setLocaleIdentifier(settings.localeIdentifier);
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+        if (placemarks.isNotEmpty) {
+          final geocodedCity = cityNameFrom(placemarks.first);
+          if (geocodedCity != null && geocodedCity.isNotEmpty) {
+            city = geocodedCity;
+          }
+        }
+      } catch (_) {
+        // Platform geocoder may fail if device is offline or Google Play Services/Geocoder is unavailable.
+        // Falls back to localized 'Current Location'.
       }
 
       // Standing in (or near) Sukkur: the provider refuses to store it and
@@ -124,6 +410,10 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
       await settings.setLocationMode(LocationMode.world);
 
       if (mounted) {
+        setState(() => _isLoading = false);
+        // Show setup dialog for calculation parameters (and timezone if different)
+        await _showCitySetupDialog(settings, city);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
           '${settings.translate('Location updated: ', 'مقام اپڈیٹ ہو گیا: ', 'جڳهه اپڊيٽ ٿي وئي: ', 'تم تحديث الموقع: ')}$city'
         )));
@@ -167,6 +457,10 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
       await settings.setLocationMode(LocationMode.world);
 
       if (mounted) {
+        setState(() => _isLoading = false);
+        // Show setup dialog for calculation parameters (and timezone if different)
+        await _showCitySetupDialog(settings, chosen.name);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
           '${settings.translate('Location updated: ', 'مقام اپڈیٹ ہو گیا: ', 'جڳهه اپڊيٽ ٿي وئي: ', 'تم تحديث الموقع: ')}${chosen.name}'
         )));

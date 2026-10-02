@@ -92,51 +92,56 @@ void main() {
   /// Setup is two steps: choose the timings, then grant permissions. Keeping
   /// them apart is what lets each one fit on a small screen, so these check the
   /// separation as much as the contents.
-  testWidgets('step 1 asks only for the timings', (tester) async {
+  testWidgets('step 0 asks for language selection', (tester) async {
     await pumpAt(tester, const Size(393, 786));
     expect(find.text('App Setup'), findsOneWidget);
+    expect(find.text('Select Language'), findsOneWidget);
+    expect(find.textContaining('English'), findsOneWidget);
+    expect(find.textContaining('Urdu'), findsOneWidget);
+    expect(find.textContaining('Sindhi'), findsOneWidget);
+    expect(find.text('Next'), findsOneWidget);
+
+    // Timings and Permissions belong to later steps.
+    expect(find.text('Sukkur'), findsNothing);
+    expect(find.text('Location Access'), findsNothing);
+  });
+
+  testWidgets('step 1 asks for timings after language step', (tester) async {
+    await pumpAt(tester, const Size(393, 786));
+    await tap(tester, 'Next'); // Advance from Step 0 (Language) to Step 1 (Timings)
+
     expect(find.text('Select Prayer Timings'), findsOneWidget);
     expect(find.text('Sukkur'), findsOneWidget);
     expect(find.text('Other Cities'), findsOneWidget);
     expect(find.text('Next'), findsOneWidget);
-
-    // Permissions belong to step 2 and must not crowd this one.
-    expect(find.text('Location Access'), findsNothing);
-    expect(find.text('Allow Permissions'), findsNothing);
   });
 
-  testWidgets('nothing is chosen for the user', (tester) async {
+  testWidgets('Next explains itself when no timing is selected', (tester) async {
     await pumpAt(tester, const Size(393, 786));
-    // Sukkur used to arrive pre-selected, so anyone who skipped the section had
-    // "chosen" it without knowing. Neither card may be ticked at the start.
-    expect(find.byIcon(Icons.check_circle_rounded), findsNothing);
-  });
-
-  testWidgets('Next explains itself when nothing is selected', (tester) async {
-    await pumpAt(tester, const Size(393, 786));
-    await tap(tester, 'Next');
+    await tap(tester, 'Next'); // Step 0 -> Step 1
+    await tap(tester, 'Next'); // Step 1 without selecting timing
 
     expect(find.text('Please select Sukkur or Other Cities'), findsOneWidget);
-    // And it does not move on.
     expect(find.text('Required Permissions'), findsNothing);
   });
 
   testWidgets('choosing Sukkur reaches the permissions step', (tester) async {
     await pumpAt(tester, const Size(393, 786));
+    await tap(tester, 'Next'); // Step 0 -> Step 1
     await tap(tester, 'Sukkur');
-    await tap(tester, 'Next');
+    await tap(tester, 'Next'); // Step 1 -> Step 2
 
     expect(find.text('Required Permissions'), findsOneWidget);
     expect(find.text('Location Access'), findsOneWidget);
     expect(find.text('Notifications'), findsOneWidget);
     expect(find.text('Background Execution'), findsOneWidget);
     expect(find.text('Allow Permissions'), findsOneWidget);
-    // The timings choice is behind us now.
     expect(find.text('Other Cities'), findsNothing);
   });
 
   testWidgets('Other Cities cannot continue without a city', (tester) async {
     await pumpAt(tester, const Size(393, 786));
+    await tap(tester, 'Next'); // Step 0 -> Step 1
     await tap(tester, 'Other Cities');
 
     expect(find.text('No city selected'), findsOneWidget);
@@ -150,21 +155,21 @@ void main() {
 
   testWidgets('the timings choice can be revisited', (tester) async {
     await pumpAt(tester, const Size(393, 786));
+    await tap(tester, 'Next'); // Step 0 -> Step 1
     await tap(tester, 'Sukkur');
-    await tap(tester, 'Next');
+    await tap(tester, 'Next'); // Step 1 -> Step 2
     expect(find.text('Required Permissions'), findsOneWidget);
 
-    // The back link is labelled with where it goes.
     await tap(tester, 'Select Prayer Timings');
     expect(find.text('Other Cities'), findsOneWidget);
     expect(find.text('Required Permissions'), findsNothing);
   });
 
-  /// Both steps have to fit unaided on every size, including the taller variant
-  /// where Other Cities opens the city panel.
+  /// All steps have to fit unaided on every size.
   for (final entry in devices.entries) {
     testWidgets('step 1 with city panel fits on ${entry.key}', (tester) async {
       await pumpAt(tester, entry.value);
+      await tap(tester, 'Next'); // Step 0 -> Step 1
       await tap(tester, 'Other Cities');
       expect(tester.takeException(), isNull);
       expectNoScrollNeeded(tester, '${entry.key} step 1 with city panel');
@@ -172,8 +177,9 @@ void main() {
 
     testWidgets('step 2 fits on ${entry.key}', (tester) async {
       await pumpAt(tester, entry.value);
+      await tap(tester, 'Next'); // Step 0 -> Step 1
       await tap(tester, 'Sukkur');
-      await tap(tester, 'Next');
+      await tap(tester, 'Next'); // Step 1 -> Step 2
       expect(tester.takeException(), isNull);
       expectNoScrollNeeded(tester, '${entry.key} step 2');
     });

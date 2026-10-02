@@ -4,10 +4,17 @@ import 'world_translations_extra.dart';
 /// translate(). Built from the base table below plus the later additions in
 /// world_translations_extra.dart, with prayer-name aliases resolved so that
 /// e.g. 'Fajr' always renders the same as 'Fajar'.
+final Set<String> _allLanguages = {
+  'english', 'urdu', 'sindhi', 'arabic', 'bengali',
+  'french', 'hindi', 'indonesian', 'persian', 'turkish',
+  ..._baseTranslations.keys,
+  ...additionalTranslations.keys,
+};
+
 final Map<String, Map<String, String>> worldTranslations = {
-  for (final lang in _baseTranslations.keys)
+  for (final lang in _allLanguages)
     lang: {
-      ..._baseTranslations[lang]!,
+      ...?_baseTranslations[lang],
       ...?additionalTranslations[lang],
       for (final alias in prayerNameAliases.entries)
         if ((_baseTranslations[lang] ?? const {})[alias.value] != null)
@@ -1507,9 +1514,10 @@ const Map<String, String> languageNamesMap = {
 /// scheduling, background isolates - localises identically.
 String translateFor(String language, String en, String ur, String sd,
     [String? ar]) {
-  if (language == 'sindhi') return sd;
-  if (language == 'urdu') return ur;
-  if (language == 'arabic') return ar ?? ur;
-  if (language == 'english') return en;
-  return worldTranslations[language]?[en] ?? en;
+  final dictMatch = worldTranslations[language]?[en];
+  if (dictMatch != null && dictMatch.isNotEmpty) return dictMatch;
+  if (language == 'sindhi' && sd.isNotEmpty && sd != en) return sd;
+  if (language == 'urdu' && ur.isNotEmpty && ur != en) return ur;
+  if (language == 'arabic' && ar != null && ar.isNotEmpty && ar != en) return ar;
+  return en;
 }

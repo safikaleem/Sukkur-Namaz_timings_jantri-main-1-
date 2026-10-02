@@ -5,6 +5,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
+import '../l10n/world_translations.dart';
+import '../utils/app_theme.dart';
 import '../services/city_search.dart';
 import '../services/notification_service.dart';
 import '../utils/world_location.dart';
@@ -24,6 +26,19 @@ const double _kDesignHeightWithCityPanel = _kDesignHeight + 129.0;
 /// And for the permissions step, which carries three cards instead of the
 /// timings choice. Re-measured after the split - see the test named below.
 const double _kPermissionsDesignHeight = 760.0;
+
+const Map<String, String> _dualLanguageDisplayNames = {
+  'english': 'English',
+  'urdu': 'Urdu (اردو)',
+  'sindhi': 'Sindhi (سنڌي)',
+  'arabic': 'Arabic (عربي)',
+  'bengali': 'Bengali (বাংলা)',
+  'indonesian': 'Indonesian (Indonesia)',
+  'turkish': 'Turkish (Türkçe)',
+  'french': 'French (Français)',
+  'hindi': 'Hindi (हिन्दी)',
+  'persian': 'Persian (فارسی)',
+};
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -183,12 +198,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
           desiredAccuracy: LocationAccuracy.medium);
 
       // Ask the platform geocoder for the name in the user's own script.
-      await setLocaleIdentifier(settings.localeIdentifier);
-      final placemarks = await placemarkFromCoordinates(
-          position.latitude, position.longitude);
-      final city = placemarks.isEmpty
-          ? 'Unknown Location'
-          : (cityNameFrom(placemarks.first) ?? 'Unknown Location');
+      String city = settings.translate('Current Location', 'موجودہ مقام', 'موجوده جڳھ', 'الموقع الحالي');
+      try {
+        await setLocaleIdentifier(settings.localeIdentifier);
+        final placemarks = await placemarkFromCoordinates(
+            position.latitude, position.longitude);
+        if (placemarks.isNotEmpty) {
+          final geocodedCity = cityNameFrom(placemarks.first);
+          if (geocodedCity != null && geocodedCity.isNotEmpty) {
+            city = geocodedCity;
+          }
+        }
+      } catch (_) {
+        // Platform geocoder may fail if device is offline or Google Play Services/Geocoder is unavailable.
+      }
 
       if (SukkurLocation.covers(position.latitude, position.longitude, city)) {
         _refuseSukkur(settings);
@@ -242,7 +265,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
     }
     setState(() {
       _showSelectionError = false;
-      _step = 1;
+      _step = 2;
     });
   }
 
@@ -316,6 +339,121 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
     }
   }
 
+  (String, String) _splitLanguageName(String langKey, String defaultNative) {
+    final dual = _dualLanguageDisplayNames[langKey] ?? defaultNative;
+    final match = RegExp(r'^(.+?)\s*\((.+)\)$').firstMatch(dual);
+    if (match != null) {
+      return (match.group(1)!, match.group(2)!);
+    }
+    return (dual, '');
+  }
+
+  Widget _buildStepperHeader({
+    required SettingsProvider settings,
+    required Color accent,
+    required bool isDark,
+    required double Function(double) s,
+  }) {
+    final steps = [
+      settings.translate('Language', 'زبان', 'ٻولي', 'اللغة'),
+      settings.translate('Timings', 'اوقات', 'وقت', 'الأوقات'),
+      settings.translate('Permissions', 'اجازتیں', 'اجازتون', 'الأذونات'),
+    ];
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(steps.length, (index) {
+        final isActive = index == _step;
+        final isCompleted = index < _step;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              padding: EdgeInsets.symmetric(
+                horizontal: s(isActive ? 12 : 8),
+                vertical: s(4),
+              ),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? accent.withValues(alpha: 0.15)
+                    : isCompleted
+                        ? accent.withValues(alpha: 0.08)
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.black.withValues(alpha: 0.04)),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isActive
+                      ? accent
+                      : isCompleted
+                          ? accent.withValues(alpha: 0.4)
+                          : Colors.transparent,
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: s(18),
+                    height: s(18),
+                    decoration: BoxDecoration(
+                      color: isActive || isCompleted
+                          ? accent
+                          : (isDark ? Colors.white24 : Colors.black26),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: isCompleted
+                          ? Icon(Icons.check_rounded, size: s(12), color: Colors.white)
+                          : Text(
+                              '${index + 1}',
+                              style: TextStyle(
+                                fontSize: s(10),
+                                fontWeight: FontWeight.bold,
+                                color: isActive
+                                    ? Colors.white
+                                    : (isDark
+                                        ? Colors.white70
+                                        : Colors.black54),
+                              ),
+                            ),
+                    ),
+                  ),
+                  if (isActive) ...[
+                    SizedBox(width: s(6)),
+                    Text(
+                      steps[index],
+                      style: TextStyle(
+                        fontSize: s(11.5),
+                        fontWeight: FontWeight.bold,
+                        color: accent,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (index < steps.length - 1) ...[
+              SizedBox(width: s(4)),
+              Container(
+                width: s(12),
+                height: s(2),
+                decoration: BoxDecoration(
+                  color: isCompleted
+                      ? accent.withValues(alpha: 0.5)
+                      : (isDark ? Colors.white12 : Colors.black12),
+                  borderRadius: BorderRadius.circular(1),
+                ),
+              ),
+              SizedBox(width: s(4)),
+            ],
+          ],
+        );
+      }),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
@@ -323,24 +461,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
     final accent = settings.displayThemeAccent();
 
     return Scaffold(
-      // Onboarding is a fixed checklist that has to be read at a glance, so the
-      // system font scale is capped here - otherwise a large accessibility
-      // setting alone pushes the Allow button off-screen.
       body: MediaQuery.withClampedTextScaling(
         maxScaleFactor: 1.1,
         child: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // Everything scales off the height actually available, so the whole
-            // checklist fits without scrolling on small and large phones alike.
-            // The user's font scale is folded in too: bigger text means taller
-            // content, so the layout has to shrink further to compensate.
-            final textScale = MediaQuery.textScalerOf(context).scale(100) / 100;
-            final designHeight = _step == 0
-                ? (_selectedLocationMode == LocationMode.world
-                    ? _kDesignHeightWithCityPanel
-                    : _kDesignHeight)
-                : _kPermissionsDesignHeight;
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final textScale = MediaQuery.textScalerOf(context).scale(100) / 100;
+              final designHeight = _step == 0
+                  ? 760.0
+                  : (_step == 1
+                      ? (_selectedLocationMode == LocationMode.world
+                          ? _kDesignHeightWithCityPanel
+                          : _kDesignHeight)
+                      : _kPermissionsDesignHeight);
             // 0.62 is a readability floor: below it the body text stops being
             // legible, so very short screens (or a very large font setting)
             // scroll the last bit instead of shrinking further.
@@ -364,12 +497,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        SizedBox(height: s(4)),
+                        _buildStepperHeader(settings: settings, accent: accent, isDark: isDark, s: s),
                         SizedBox(height: s(12)),
                         Text(
                           settings.translate('App Setup', 'ایپ سیٹ اپ', 'ايپ سيٽ اپ', 'إعداد التطبيق'),
                           style: TextStyle(
-                            fontSize: s(28),
+                            fontSize: s(26),
                             fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -379,6 +515,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                             'To get the most out of Sukkur Salah, we need a few permissions.',
                             'سکھر صلاۃ سے مکمل فائدہ اٹھانے کے لیے، ہمیں کچھ اجازتیں درکار ہیں۔',
                             'سکر صلاۃ مان مڪمل فائدو وٺڻ لاءِ، اسان کي ڪجهه اجازتن جي ضرورت آهي.',
+                            'للحصول على أقصى استفادة من سكر صلاة، نحتاج إلى بعض الأذونات.',
                           ),
                           style: TextStyle(
                             fontSize: s(15),
@@ -388,8 +525,71 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                         ),
                         SizedBox(height: s(18)),
 
-                        // ── Step 1: which timings ───────────────────────────
+                        // ── Step 0: Language Selection ─────────────────────────────
                         if (_step == 0) ...[
+                        Text(
+                          settings.translate('Select Language', 'زبان کا انتخاب کریں', 'ٻولي چونڊيو', 'اختر اللغة'),
+                          style: TextStyle(
+                            fontSize: s(17),
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: s(4)),
+                        Text(
+                          settings.translate(
+                            'Choose your preferred language for the app',
+                            'ایپ کے لیے اپنی پسندیدہ زبان کا انتخاب کریں',
+                            'ايپ لاءِ پنهنجي پسنديده ٻولي چونڊيو',
+                            'اختر لغتك المفضلة للتطبيق',
+                          ),
+                          style: TextStyle(
+                            fontSize: s(12.5),
+                            color: isDark ? Colors.white70 : Colors.black54,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: s(12)),
+
+                        Column(
+                          children: [
+                            for (int i = 0; i < languageNamesMap.length; i += 2) ...[
+                              if (i > 0) SizedBox(height: s(8)),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildLanguageOption(
+                                      langKey: languageNamesMap.keys.elementAt(i),
+                                      nativeName: languageNamesMap.values.elementAt(i),
+                                      settings: settings,
+                                      accent: accent,
+                                      isDark: isDark,
+                                      s: s,
+                                    ),
+                                  ),
+                                  SizedBox(width: s(8)),
+                                  if (i + 1 < languageNamesMap.length)
+                                    Expanded(
+                                      child: _buildLanguageOption(
+                                        langKey: languageNamesMap.keys.elementAt(i + 1),
+                                        nativeName: languageNamesMap.values.elementAt(i + 1),
+                                        settings: settings,
+                                        accent: accent,
+                                        isDark: isDark,
+                                        s: s,
+                                      ),
+                                    )
+                                  else
+                                    const Expanded(child: SizedBox.shrink()),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                        ],
+
+                        // ── Step 1: which timings ───────────────────────────
+                        if (_step == 1) ...[
                         Text(
                           settings.translate('Select Prayer Timings', 'نماز کے اوقات کا انتخاب کریں', 'نماز جي وقتن جو انتخاب ڪريو', 'اختر أوقات الصلاة'),
                           style: TextStyle(
@@ -448,7 +648,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                         ],
 
                         // ── Step 2: permissions ─────────────────────────────
-                        if (_step == 1) ...[
+                        if (_step == 2) ...[
                         Text(
                           settings.translate('Required Permissions', 'مطلوبہ اجازتیں', 'گهربل اجازتون', 'الأذونات المطلوبة'),
                           style: TextStyle(
@@ -466,8 +666,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                             'Needed to accurately calculate prayer times and find the Qibla direction.',
                             'نماز کے اوقات کا درست حساب لگانے اور قبلہ کی سمت معلوم کرنے کے لیے درکار ہے۔',
                             'نماز جي وقتن جو درست حساب لڳائڻ ۽ قبلي جي سمت معلوم ڪرڻ لاءِ گهربل آهي.',
+                            'مطلوب لحساب اوقات الصلاة بدقة وتحديد اتجاه القبلة.',
                           ),
                           accent: accent,
+                          iconBgColor: const Color(0xFF3F7A63),
                           isDark: isDark,
                           isTicked: _locTicked,
                           s: s,
@@ -481,8 +683,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                             'Needed to send you Adhan and prayer time alerts on time.',
                             'اذان اور نماز کے اوقات کی اطلاعات وقت پر بھیجنے کے لیے درکار ہے۔',
                             'اذان ۽ نماز جي وقتن جون اطلاعون وقت تي موڪلڻ لاءِ گهربل آهي.',
+                            'مطلوب لإرسال تنبيهات الأذان وأوقات الصلاة في الوقت المحدد.',
                           ),
                           accent: accent,
+                          iconBgColor: const Color(0xFF1E88E5),
                           isDark: isDark,
                           isTicked: _notifTicked,
                           s: s,
@@ -496,8 +700,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                             'Needed to bypass battery savers so alerts ring exactly on time.',
                             'بیٹری سیورز کو نظر انداز کرنے کے لیے درکار ہے تاکہ الارم بالکل وقت پر بجے۔',
                             'بيٽري سيورز کي نظر انداز ڪرڻ لاءِ گهربل آهي ته جيئن الارم بلڪل وقت تي وڄي.',
+                            'مطلوب لتجاوز موفر البطارية لتعمل التنبيهات في الوقت المحدد.',
                           ),
                           accent: accent,
+                          iconBgColor: const Color(0xFFFFA726),
                           isDark: isDark,
                           isTicked: _batteryTicked,
                           s: s,
@@ -507,12 +713,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                         const Spacer(),
                         SizedBox(height: s(16)),
 
-                        // Going back to change the timings must stay possible -
-                        // the permissions step is where people realise they
-                        // picked the wrong one.
                         if (_step == 1 && !_isProcessing) ...[
                           TextButton.icon(
                             onPressed: () => setState(() => _step = 0),
+                            icon: Icon(Icons.arrow_back_rounded, size: s(18)),
+                            style: TextButton.styleFrom(foregroundColor: accent),
+                            label: Text(
+                              settings.translate('Select Language', 'زبان کا انتخاب کریں', 'ٻولي چونڊيو', 'اختر اللغة'),
+                              style: TextStyle(fontSize: s(13)),
+                            ),
+                          ),
+                          SizedBox(height: s(4)),
+                        ],
+
+                        if (_step == 2 && !_isProcessing) ...[
+                          TextButton.icon(
+                            onPressed: () => setState(() => _step = 1),
                             icon: Icon(Icons.arrow_back_rounded, size: s(18)),
                             style: TextButton.styleFrom(foregroundColor: accent),
                             label: Text(
@@ -523,41 +739,78 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
                           SizedBox(height: s(4)),
                         ],
 
-                        ElevatedButton(
-                          onPressed: _isProcessing
-                              ? null
-                              : (_step == 0
-                                  ? () => _goToPermissions(settings)
-                                  : _requestPermissions),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: accent,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: isDark ? Colors.white12 : Colors.black12,
-                            disabledForegroundColor: isDark ? Colors.white38 : Colors.black38,
-                            padding: EdgeInsets.symmetric(vertical: s(14)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            gradient: _isProcessing
+                                ? null
+                                : LinearGradient(
+                                    colors: [accent, accent.withValues(alpha: 0.85)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                            boxShadow: _isProcessing
+                                ? null
+                                : [
+                                    BoxShadow(
+                                      color: accent.withValues(alpha: 0.3),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                           ),
-                          child: _isProcessing
-                              ? SizedBox(
-                                  height: s(22),
-                                  width: s(22),
-                                  child: const CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2.5,
+                          child: ElevatedButton(
+                            onPressed: _isProcessing
+                                ? null
+                                : (_step == 0
+                                    ? () => setState(() => _step = 1)
+                                    : (_step == 1
+                                        ? () => _goToPermissions(settings)
+                                        : _requestPermissions)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: isDark ? Colors.white12 : Colors.black12,
+                              disabledForegroundColor: isDark ? Colors.white38 : Colors.black38,
+                              padding: EdgeInsets.symmetric(vertical: s(14)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (_isProcessing)
+                                  SizedBox(
+                                    height: s(20),
+                                    width: s(20),
+                                    child: const CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.5,
+                                    ),
+                                  )
+                                else ...[
+                                  Text(
+                                    _step == 2
+                                        ? settings.translate('Allow Permissions', 'اجازت دیں', 'اجازت ڏيو', 'السماح بالأذونات')
+                                        : settings.translate('Next', 'آگے', 'اڳتي', 'التالي'),
+                                    style: TextStyle(
+                                      fontSize: s(16.5),
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.3,
+                                    ),
                                   ),
-                                )
-                              : Text(
-                                  _step == 0
-                                      ? settings.translate('Next', 'آگے', 'اڳتي', 'التالي')
-                                      : settings.translate('Allow Permissions', 'اجازت دیں', 'اجازت ڏيو', 'السماح بالأذونات'),
-                                  style: TextStyle(
-                                    fontSize: s(17),
-                                    fontWeight: FontWeight.bold,
+                                  SizedBox(width: s(8)),
+                                  Icon(
+                                    _step == 2 ? Icons.check_circle_outline_rounded : Icons.arrow_forward_rounded,
+                                    size: s(19),
                                   ),
-                                ),
+                                ],
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -572,11 +825,130 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
     );
   }
 
+  Widget _buildLanguageOption({
+    required String langKey,
+    required String nativeName,
+    required SettingsProvider settings,
+    required Color accent,
+    required bool isDark,
+    required double Function(double) s,
+  }) {
+    final isSelected = settings.language == langKey;
+    final (enName, nativeScript) = _splitLanguageName(langKey, nativeName);
+
+    return InkWell(
+      onTap: () {
+        settings.setLanguage(langKey);
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(horizontal: s(10), vertical: s(8)),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? accent.withValues(alpha: 0.14) 
+              : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03)),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected 
+                ? accent 
+                : (isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08)),
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.18),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: s(30),
+              height: s(30),
+              decoration: BoxDecoration(
+                gradient: isSelected
+                    ? LinearGradient(
+                        colors: [accent, accent.withValues(alpha: 0.75)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: isSelected ? null : (isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.06)),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  langKey.substring(0, 2).toUpperCase(),
+                  style: TextStyle(
+                    fontSize: s(11),
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black54),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(width: s(8)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    enName,
+                    style: TextStyle(
+                      fontSize: s(13),
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                      color: isSelected
+                          ? (isDark ? Colors.white : Colors.black87)
+                          : (isDark ? Colors.white : Colors.black87),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (nativeScript.isNotEmpty) ...[
+                    SizedBox(height: s(1)),
+                    Text(
+                      '($nativeScript)',
+                      style: TextStyle(
+                        fontSize: s(11),
+                        fontWeight: FontWeight.normal,
+                        fontFamily: AppTheme.getFontForLanguage(context, langKey),
+                        color: isSelected
+                            ? accent
+                            : (isDark ? Colors.white54 : Colors.black54),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (isSelected) ...[
+              SizedBox(width: s(4)),
+              Icon(
+                Icons.check_circle_rounded,
+                color: accent,
+                size: s(18),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPermissionCard({
     required IconData icon,
     required String title,
     required String description,
     required Color accent,
+    required Color iconBgColor,
     required bool isDark,
     required bool isTicked,
     required double Function(double) s,
@@ -585,17 +957,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: EdgeInsets.all(s(12)),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+          color: isTicked
+              ? iconBgColor.withValues(alpha: 0.1)
+              : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03)),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isTicked 
-                ? Colors.green.withValues(alpha: 0.5) 
+                ? iconBgColor.withValues(alpha: 0.7) 
                 : (isDark ? Colors.white12 : Colors.black12),
             width: isTicked ? 2 : 1,
           ),
+          boxShadow: isTicked
+              ? [
+                  BoxShadow(
+                    color: iconBgColor.withValues(alpha: 0.15),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -603,12 +987,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
             Container(
               padding: EdgeInsets.all(s(8)),
               decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.15),
+                color: iconBgColor.withValues(alpha: 0.18),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                color: accent,
+                color: iconBgColor,
                 size: s(20),
               ),
             ),
@@ -639,7 +1023,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
             SizedBox(width: s(8)),
             Icon(
               isTicked ? Icons.check_circle_rounded : Icons.circle_outlined,
-              color: isTicked ? Colors.green : (isDark ? Colors.white24 : Colors.black26),
+              color: isTicked ? iconBgColor : (isDark ? Colors.white24 : Colors.black26),
               size: s(24),
             ),
           ],

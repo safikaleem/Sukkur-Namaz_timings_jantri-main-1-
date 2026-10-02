@@ -12,6 +12,8 @@ import '../screens/about_screen.dart';
 import '../screens/notification_health_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/world_prayers_screen.dart';
+import '../screens/hijri_calendar_screen.dart';
+import '../screens/mosque_finder_screen.dart';
 import 'widget_selection_sheet.dart';
 class SettingsDrawer extends StatefulWidget {
   final VoidCallback? onTapSukkur;
@@ -80,6 +82,38 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                         MaterialPageRoute(builder: (_) => const WorldPrayersScreen()),
                       );
                       if (picked == true) onSelected?.call();
+                    },
+                  ),
+                  _DrawerItem(
+                    icon: Icons.calendar_month_rounded,
+                    label: settings.translate(
+                      'Islamic Hijri Calendar',
+                      'اسلامی ہجری تقویم و ایام',
+                      'اسلامي هجري تقويم ۽ ڏينهن',
+                      'التقويم والأحداث الهجرية',
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const HijriCalendarScreen()),
+                      );
+                    },
+                  ),
+                  _DrawerItem(
+                    icon: Icons.mosque_rounded,
+                    label: settings.translate(
+                      'Nearby Mosque Finder',
+                      'قریب ترین مساجد',
+                      'ويجهيون مسجدون',
+                      'مساجد قريبة',
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MosqueFinderScreen()),
+                      );
                     },
                   ),
                   const _Divider(),
@@ -172,7 +206,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Current Version ───────────────────────────
                   _DrawerItem(
                     icon: Icons.new_releases_rounded,
-                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.1.7'}',
+                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.2.8'}',
                     onTap: () => _showWhatsNewDialog(context),
                   ),
 
@@ -259,10 +293,10 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                       SharePlus.instance.share(
                         ShareParams(
                           text: settings.translate(
-                              'Sukkur Salah – Namaz timings for Sukkur. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
-                              'سکھر صلاة - سکھر کے نماز کے اوقات۔ ابھی ڈاؤن لوڈ کریں:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
-                              'سکر صلاة - سکر جي نماز جا وقت۔ هينئر ڊائونلوڊ ڪريو:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
-                              'صلاة سكر - مواقيت الصلاة في سكر. حمل الآن:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah'),
+                              'Sukkur Salah – Namaz timings for Sukkur and all cities worldwide. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+                              'سکھر صلاۃ - سکھر اور دنیا بھر کے تمام شہروں کے لیے نماز کے اوقات۔ ابھی ڈاؤن لوڈ کریں:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+                              'سکر صلاۃ - سکر ۽ سڄي دنيا جي تمام شهرن لاءِ نماز جا وقت. هينئر ڊائونلوڊ ڪريو:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+                              'صلاة سكر - مواقيت الصلاة لسكر وجميع مدن العالم. حمل الآن:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah'),
                         ),
                       );
                     },
@@ -298,7 +332,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.2.7';
+    final versionStr = _version.isNotEmpty ? _version : '1.2.8';
 
     showDialog(
       context: context,
@@ -393,6 +427,38 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Item 0: Bug fixes and improvements ──────────────────────
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    _getLocalizedText(settings, {
+                      'english': '🛠️ Bug Fixes and Improvements',
+                      'urdu': '🛠️ بگ فکسز اور بہتری',
+                      'sindhi': '🛠️ بگ فڪسز ۽ بهتري',
+                      'arabic': '🛠️ إصلاحات وتحسينات',
+                      'bengali': '🛠️ বাগ সংশোধন ও উন্নতি',
+                      'hindi': '🛠️ बग फिक्स और सुधार',
+                      'turkish': '🛠️ Hata Düzeltmeleri ve İyileştirmeler',
+                      'indonesian': '🛠️ Perbaikan Bug dan Peningkatan',
+                      'french': '🛠️ Corrections de bugs et améliorations',
+                      'persian': '🛠️ رفع اشکالات و بهبودها',
+                    }),
+                    _getLocalizedText(settings, {
+                      'english': 'This update includes various bug fixes and performance improvements for a smoother experience.',
+                      'urdu': 'اس اپ ڈیٹ میں ہموار تجربے کے لیے مختلف بگ فکسز اور کارکردگی میں بہتری شامل ہے۔',
+                      'sindhi': 'هن اپ ڊيٽ ۾ بهتر تجربي لاءِ مختلف بگ فڪسز ۽ ڪارڪردگي ۾ بهتري شامل آهي.',
+                      'arabic': 'يتضمن هذا التحديث إصلاحات متنوعة وتحسينات في الأداء لتجربة أكثر سلاسة.',
+                      'bengali': 'এই আপডেটে আরও মসৃণ অভিজ্ঞতার জন্য বিভিন্ন বাগ সংশোধন ও কর্মক্ষমতা উন্নতি রয়েছে।',
+                      'hindi': 'इस अपडेट में बेहतर अनुभव के लिए विभिन्न बग फिक्स और प्रदर्शन सुधार शामिल हैं।',
+                      'turkish': 'Bu güncelleme, daha akıcı bir deneyim için çeşitli hata düzeltmeleri ve performans iyileştirmeleri içerir.',
+                      'indonesian': 'Pembaruan ini mencakup berbagai perbaikan bug dan peningkatan performa untuk pengalaman yang lebih lancar.',
+                      'french': 'Cette mise à jour comprend diverses corrections de bugs et améliorations de performance pour une expérience plus fluide.',
+                      'persian': 'این به‌روزرسانی شامل رفع اشکالات مختلف و بهبود عملکرد برای تجربه‌ای روان‌تر است.',
+                    }),
+                    icon: Icons.build_circle_rounded,
+                    iconColor: const Color(0xFF5C6BC0),
+                  ),
+                  const SizedBox(height: 16),
                   // ── Item 1: 15-Line Quran Pak ──────────────────────────────────
                   _buildNewFeatureItem(
                     context,

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -20,23 +21,57 @@ class _AboutScreenState extends State<AboutScreen> {
   int _selectedTabIndex = 0;
 
   Future<void> _shareCurrentImage(BuildContext context) async {
+    final settings = context.read<SettingsProvider>();
     const assetPath = 'assets/images/about.jpeg';
     const fileName = 'about.jpeg';
     try {
+      if (kIsWeb) {
+        final shareText = settings.translate(
+          'Sukkur Salah – Namaz timings for Sukkur and all cities worldwide. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+          'سکھر صلاۃ – سکھر اور دنیا بھر کے تمام شہروں کے لیے نماز کے اوقات۔ ابھی ڈاؤن لوڈ کریں:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+          'سکر صلاۃ – سکر ۽ سڄي دنيا جي سڀني شهرن لاءِ نماز جا وقت. هاڻي ڊائون لوڊ ڪريو:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+          'سكر صلاة - مواقيت الصلاة لسكر وجميع مدن العالم. حمّل الآن:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+        );
+        await Share.share(shareText);
+        return;
+      }
       final bytes = await rootBundle.load(assetPath);
       final tmp = await getTemporaryDirectory();
       final file = File('${tmp.path}/$fileName');
-      await file.writeAsBytes(bytes.buffer.asUint8List());
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path)],
+      await file.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: settings.translate(
+          'About Sukkur Salah',
+          'سکھر صلاۃ کے بارے میں',
+          'سکر صلاۃ بابت',
+          'عن سكر صلاة',
         ),
       );
     } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not share image')),
+      try {
+        final shareText = settings.translate(
+          'Sukkur Salah – Namaz timings for Sukkur and all cities worldwide. Download now:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+          'سکھر صلاۃ – سکھر اور دنیا بھر کے تمام شہروں کے لیے نماز کے اوقات۔ ابھی ڈاؤن لوڈ کریں:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+          'سکر صلاۃ – سکر ۽ سڄي دنيا جي سڀني شهرن لاءِ نماز جا وقت. هاڻي ڊائون لوڊ ڪريو:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
+          'سكر صلاة - مواقيت الصلاة لسكر وجميع مدن العالم. حمّل الآن:\nhttps://play.google.com/store/apps/details?id=pk.sukkur.salah',
         );
+        await Share.share(shareText);
+      } catch (_) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                settings.translate(
+                  'Could not share image',
+                  'تصویر شیئر نہیں ہو سکی',
+                  'تصوير شيئر نه ٿي سگهي',
+                  'تعذر مشاركة الصورة',
+                ),
+              ),
+            ),
+          );
+        }
       }
     }
   }

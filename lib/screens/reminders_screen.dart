@@ -8,6 +8,7 @@ import '../widgets/dr_slogan_header.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/notification_service.dart';
+import '../l10n/world_translations.dart';
 
 // ── Data model for a custom reminder ─────────────────────────
 class Reminder {
@@ -26,7 +27,7 @@ class Reminder {
   });
 
   String description(String language, {bool isCalculated = false}) {
-    final prayerName = displayKeyFor(this.prayerName, isCalculated: isCalculated);
+    final prayerKey = displayKeyFor(this.prayerName, isCalculated: isCalculated);
     final urduNames = {
       'Intiha e Sehar': 'انتہائے سحر', 'Fajar': 'فجر',
       'Tulu Aftab': 'طلوع آفتاب', 'Ishraq': 'اشراق',
@@ -41,40 +42,80 @@ class Reminder {
       'Asr Hanafi': 'عصر', 'Maghrib': 'مغرب', 'Isha': 'عشاء',
       'Fajr': 'فجر', 'Dhuhr': 'ظھر', 'Asr': 'عصر',
     };
+    final arabicNames = {
+      'Intiha e Sehar': 'نهاية السحر', 'Fajar': 'الفجر',
+      'Tulu Aftab': 'الشروق', 'Ishraq': 'الإشراق',
+      'Zawal': 'الزوال', 'Zuhar': 'الظهر', 'Zuhr': 'الظهر',
+      'Misl Awwal': 'المثل الأول',
+      'Asr Hanafi': 'العصر', 'Asr': 'العصر',
+      'Maghrib': 'المغرب', 'Isha': 'العشاء',
+      'Fajr': 'الفجر', 'Dhuhr': 'الظهر',
+    };
+
+    final ur = urduNames[prayerKey] ?? prayerKey;
+    final sd = sindhiNames[prayerKey] ?? prayerKey;
+    final ar = arabicNames[prayerKey] ?? prayerKey;
+
+    final pName = translateFor(language, prayerKey, ur, sd, ar);
 
     if (language == 'sindhi') {
-      final pName = sindhiNames[prayerName] ?? prayerName;
       if (offsetMinutes == 0) return '$pName جَ وقت تي';
       final abs = offsetMinutes.abs();
       final dir = offsetMinutes < 0 ? 'اڳيان' : 'پوء';
       return '$pName کان $abs منٽ $dir';
     }
     if (language == 'urdu') {
-      final pName = urduNames[prayerName] ?? prayerName;
       if (offsetMinutes == 0) return '$pName کے وقت';
       final abs = offsetMinutes.abs();
       final direction = offsetMinutes < 0 ? 'پہلے' : 'بعد';
       return '$pName سے $abs منٹ $direction';
     }
     if (language == 'arabic') {
-      final arabicNames = {
-        'Intiha e Sehar': 'نهاية السحر', 'Fajar': 'الفجر',
-        'Tulu Aftab': 'الشروق', 'Ishraq': 'الإشراق',
-        'Zawal': 'الزوال', 'Zuhar': 'الظهر', 'Zuhr': 'الظهر',
-        'Misl Awwal': 'المثل الأول',
-        'Asr Hanafi': 'العصر', 'Asr': 'العصر',
-        'Maghrib': 'المغرب', 'Isha': 'العشاء',
-      };
-      final pName = arabicNames[prayerName] ?? prayerName;
       if (offsetMinutes == 0) return 'عند $pName';
       final abs = offsetMinutes.abs();
       final direction = offsetMinutes < 0 ? 'قبل' : 'بعد';
       return '$abs دقيقة $direction $pName';
     }
-    if (offsetMinutes == 0) return 'At $prayerName time';
+    if (language == 'bengali') {
+      if (offsetMinutes == 0) return '$pName-এর সময়';
+      final abs = offsetMinutes.abs();
+      final direction = offsetMinutes < 0 ? 'আগে' : 'পরে';
+      return '$pName-এর $abs মিনিট $direction';
+    }
+    if (language == 'hindi') {
+      if (offsetMinutes == 0) return '$pName के समय';
+      final abs = offsetMinutes.abs();
+      final direction = offsetMinutes < 0 ? 'पहले' : 'बाद';
+      return '$pName से $abs मिनट $direction';
+    }
+    if (language == 'indonesian') {
+      if (offsetMinutes == 0) return 'Saat waktu $pName';
+      final abs = offsetMinutes.abs();
+      final direction = offsetMinutes < 0 ? 'sebelum' : 'sesudah';
+      return '$abs menit $direction $pName';
+    }
+    if (language == 'turkish') {
+      if (offsetMinutes == 0) return '$pName vaktinde';
+      final abs = offsetMinutes.abs();
+      final direction = offsetMinutes < 0 ? 'önce' : 'sonra';
+      return '$pName vaktinden $abs dakika $direction';
+    }
+    if (language == 'french') {
+      if (offsetMinutes == 0) return "À l'heure de $pName";
+      final abs = offsetMinutes.abs();
+      final direction = offsetMinutes < 0 ? 'avant' : 'après';
+      return '$abs min $direction $pName';
+    }
+    if (language == 'persian') {
+      if (offsetMinutes == 0) return 'هنگام $pName';
+      final abs = offsetMinutes.abs();
+      final direction = offsetMinutes < 0 ? 'قبل از' : 'بعد از';
+      return '$abs دقیقه $direction $pName';
+    }
+    if (offsetMinutes == 0) return 'At $pName time';
     final abs = offsetMinutes.abs();
     final direction = offsetMinutes < 0 ? 'before' : 'after';
-    return '$abs min $direction $prayerName';
+    return '$abs min $direction $pName';
   }
 
   Map<String, dynamic> toJson() => {
@@ -420,44 +461,58 @@ class _AddReminderFormState extends State<_AddReminderForm> {
     super.dispose();
   }
 
+  String _getPrayerDisplayName(String prayerName, SettingsProvider settings) {
+    final urduNames = {
+      'Intiha e Sehar': 'انتہائے سحر', 'Fajar': 'فجر', 'Tulu Aftab': 'طلوع آفتاب',
+      'Ishraq': 'اشراق', 'Zawal': 'زوال آفتاب', 'Zuhar': 'ظہر',
+      'Misl Awwal': 'مثل اول', 'Asr Hanafi': 'عصر حنفی', 'Asr': 'عصر', 'Maghrib': 'مغرب', 'Isha': 'عشاء',
+    };
+    final sindhiNames = {
+      'Intiha e Sehar': 'انتهاءِ سحر', 'Fajar': 'فجر', 'Tulu Aftab': 'سج اڀرڻ',
+      'Ishraq': 'اشراق', 'Zawal': 'زوالِ آفتاب', 'Zuhar': 'ظھر',
+      'Misl Awwal': 'مثل اول', 'Asr Hanafi': 'عصر', 'Asr': 'عصر', 'Maghrib': 'مغرب', 'Isha': 'عشاء',
+    };
+    final arabicNames = {
+      'Intiha e Sehar': 'نهاية السحر', 'Fajar': 'الفجر', 'Tulu Aftab': 'الشروق',
+      'Ishraq': 'الإشراق', 'Zawal': 'الزوال', 'Zuhar': 'الظهر', 'Zuhr': 'الظهر',
+      'Misl Awwal': 'المثل الأول', 'Asr Hanafi': 'العصر', 'Asr': 'العصر', 'Maghrib': 'المغرب', 'Isha': 'العشاء',
+    };
+
+    final ur = urduNames[prayerName] ?? prayerName;
+    final sd = sindhiNames[prayerName] ?? prayerName;
+    final ar = arabicNames[prayerName] ?? prayerName;
+
+    return settings.translate(prayerName, ur, sd, ar);
+  }
+
   void _save() {
     final settings = widget.settings;
     final language = settings.language;
     final offset = _direction == 'at' ? 0 : _direction == 'before' ? -_minutes : _minutes;
 
-    final urduNames = {
-      'Intiha e Sehar': 'انتہائے سحر', 'Fajar': 'فجر',
-      'Tulu Aftab': 'طلوع آفتاب', 'Ishraq': 'اشراق',
-      'Zawal': 'زوال آفتاب', 'Zuhar': 'ظہر', 'Misl Awwal': 'مثل اول',
-      'Asr Hanafi': 'عصر حنفی', 'Maghrib': 'مغرب', 'Isha': 'عشاء',
-    };
-    final sindhiNames = {
-      'Intiha e Sehar': 'انتهاءِ سحر', 'Fajar': 'فجر',
-      'Tulu Aftab': 'سج اڀرڻ', 'Ishraq': 'اشراق',
-      'Zawal': 'زوالِ آفتاب', 'Zuhar': 'ظھر', 'Misl Awwal': 'مثل اول',
-      'Asr Hanafi': 'عصر', 'Maghrib': 'مغرب', 'Isha': 'عشاء',
-    };
+    final pName = _getPrayerDisplayName(_selectedPrayer, settings);
 
     String defaultLabel;
     if (language == 'sindhi') {
-      final p = sindhiNames[_selectedPrayer] ?? _selectedPrayer;
-      defaultLabel = _direction == 'at' ? '$p جَ وقت تي' : '$p کان $_minutes منٽ ${_direction == 'before' ? 'اڳيان' : 'پوء'}';
+      defaultLabel = _direction == 'at' ? '$pName جَ وقت تي' : '$pName کان $_minutes منٽ ${_direction == 'before' ? 'اڳيان' : 'پوء'}';
     } else if (language == 'urdu') {
-      final p = urduNames[_selectedPrayer] ?? _selectedPrayer;
-      defaultLabel = _direction == 'at' ? '$p کا وقت' : '$p سے $_minutes منٹ ${_direction == 'before' ? 'پہلے' : 'بعد'}';
+      defaultLabel = _direction == 'at' ? '$pName کے وقت' : '$pName سے $_minutes منٹ ${_direction == 'before' ? 'پہلے' : 'بعد'}';
     } else if (language == 'arabic') {
-      final arabicNames = {
-        'Intiha e Sehar': 'نهاية السحر', 'Fajar': 'الفجر',
-        'Tulu Aftab': 'الشروق', 'Ishraq': 'الإشراق',
-        'Zawal': 'الزوال', 'Zuhar': 'الظهر', 'Zuhr': 'الظهر',
-        'Misl Awwal': 'المثل الأول',
-        'Asr Hanafi': 'العصر', 'Asr': 'العصر',
-        'Maghrib': 'المغرب', 'Isha': 'العشاء',
-      };
-      final p = arabicNames[_selectedPrayer] ?? _selectedPrayer;
-      defaultLabel = _direction == 'at' ? 'عند $p' : '$_minutes دقيقة ${_direction == 'before' ? 'قبل' : 'بعد'} $p';
+      defaultLabel = _direction == 'at' ? 'عند $pName' : '$_minutes دقيقة ${_direction == 'before' ? 'قبل' : 'بعد'} $pName';
+    } else if (language == 'bengali') {
+      defaultLabel = _direction == 'at' ? '$pName-এর সময়' : '$pName-এর $_minutes মিনিট ${_direction == 'before' ? 'আগে' : 'পরে'}';
+    } else if (language == 'hindi') {
+      defaultLabel = _direction == 'at' ? '$pName के समय' : '$pName से $_minutes मिनट ${_direction == 'before' ? 'पहले' : 'बाद'}';
+    } else if (language == 'indonesian') {
+      defaultLabel = _direction == 'at' ? 'Saat waktu $pName' : '$_minutes menit ${_direction == 'before' ? 'sebelum' : 'sesudah'} $pName';
+    } else if (language == 'turkish') {
+      defaultLabel = _direction == 'at' ? '$pName vaktinde' : '$pName vaktinden $_minutes dakika ${_direction == 'before' ? 'önce' : 'sonra'}';
+    } else if (language == 'french') {
+      defaultLabel = _direction == 'at' ? "À l'heure de $pName" : '$_minutes min ${_direction == 'before' ? 'avant' : 'après'} $pName';
+    } else if (language == 'persian') {
+      defaultLabel = _direction == 'at' ? 'هنگام $pName' : '$_minutes دقیقه ${_direction == 'before' ? 'قبل از' : 'بعد از'} $pName';
     } else {
-      defaultLabel = '${_direction == 'at' ? 'At' : '$_minutes min $_direction'} $_selectedPrayer';
+      defaultLabel = '${_direction == 'at' ? 'At' : '$_minutes min $_direction'} $pName';
     }
 
     final label = _labelController.text.trim().isEmpty ? defaultLabel : _labelController.text.trim();
@@ -475,23 +530,6 @@ class _AddReminderFormState extends State<_AddReminderForm> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final settings = widget.settings;
     final isRtl = settings.isRtl;
-    final isSindhi = settings.isSindhi;
-
-    final urduNames = {
-      'Intiha e Sehar': 'انتہائے سحر', 'Fajar': 'فجر', 'Tulu Aftab': 'طلوع آفتاب',
-      'Ishraq': 'اشراق', 'Zawal': 'زوال آفتاب', 'Zuhar': 'ظہر',
-      'Misl Awwal': 'مثل اول', 'Asr Hanafi': 'عصر حنفی', 'Maghrib': 'مغرب', 'Isha': 'عشاء',
-    };
-    final sindhiNames = {
-      'Intiha e Sehar': 'انتهاءِ سحر', 'Fajar': 'فجر', 'Tulu Aftab': 'سج اڀرڻ',
-      'Ishraq': 'اشراق', 'Zawal': 'زوالِ آفتاب', 'Zuhar': 'ظھر',
-      'Misl Awwal': 'مثل اول', 'Asr Hanafi': 'عصر', 'Maghrib': 'مغرب', 'Isha': 'عشاء',
-    };
-    final arabicNames = {
-      'Intiha e Sehar': 'نهاية السحر', 'Fajar': 'الفجر', 'Tulu Aftab': 'الشروق',
-      'Ishraq': 'الإشراق', 'Zawal': 'الزوال', 'Zuhar': 'الظهر',
-      'Misl Awwal': 'المثل الأول', 'Asr Hanafi': 'العصر', 'Maghrib': 'المغرب', 'Isha': 'العشاء',
-    };
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 24),
@@ -513,9 +551,7 @@ class _AddReminderFormState extends State<_AddReminderForm> {
               spacing: 8, runSpacing: 8,
               children: _prayers.map((p) {
                 final isSelected = p == _selectedPrayer;
-                final displayName = settings.language == 'arabic' ? (arabicNames[p] ?? p)
-                    : isSindhi ? (sindhiNames[p] ?? p)
-                    : (isRtl ? (urduNames[p] ?? p) : p);
+                final displayName = _getPrayerDisplayName(p, settings);
                 return GestureDetector(
                   onTap: () => setState(() => _selectedPrayer = p),
                   child: Container(

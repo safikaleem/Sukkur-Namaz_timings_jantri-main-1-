@@ -152,13 +152,18 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
   @override
   void initState() {
     super.initState();
-    final maxPages = widget.settings.quranType == '15_line' ? kQuran15LinePageCount : kQuranPageCount;
+    final type = widget.settings.quranType;
+    final maxPages = type == '15_line' ? kQuran15LinePageCount : kQuranPageCount;
     _currentPage = widget.initialPage.clamp(1, maxPages);
-    _currentParah = locationForPage(_currentPage, widget.settings.quranType).parah;
+    _currentParah = locationForPage(_currentPage, type).parah;
     _pageController = PageController(initialPage: _currentPage - 1);
     // Save straight away: opening at a page is already progress, and the pager
     // will not report a change until the reader actually moves.
-    widget.settings.updateParahProgress(_currentParah, _currentPage);
+    widget.settings.updateReadingPosition(
+      pageNumber: _currentPage,
+      quranType: type,
+      parahNumber: _currentParah,
+    );
   }
 
   @override
@@ -368,9 +373,14 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
 
   void _onPageChanged(int index) {
     final page = index + 1;
-    final parah = locationForPage(page, widget.settings.quranType).parah;
+    final type = widget.settings.quranType;
+    final parah = locationForPage(page, type).parah;
     _currentPage = page;
-    widget.settings.updateParahProgress(parah, page);
+    widget.settings.updateReadingPosition(
+      pageNumber: page,
+      quranType: type,
+      parahNumber: parah,
+    );
 
     if (parah != _currentParah) {
       _currentParah = parah;

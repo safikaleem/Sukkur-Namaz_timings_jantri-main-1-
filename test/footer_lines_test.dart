@@ -22,11 +22,14 @@ Future<SettingsProvider> providerFor(String language, LocationMode mode) async {
   SharedPreferences.setMockInitialValues({
     'language_code': language,
     'location_mode': mode.name,
+    if (mode == LocationMode.world) ...{
+      'latitude': 51.5074,
+      'longitude': -0.1278,
+      'city_name': 'London',
+    },
   });
   final s = SettingsProvider();
   await s.loadFromPrefs();
-  await s.setLanguage(language);
-  await s.setLocationMode(mode);
   return s;
 }
 
