@@ -13,6 +13,7 @@ import '../screens/notification_health_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/world_prayers_screen.dart';
 import '../screens/hijri_calendar_screen.dart';
+import '../screens/jamaat_times_screen.dart';
 import '../screens/mosque_finder_screen.dart';
 import 'widget_selection_sheet.dart';
 class SettingsDrawer extends StatefulWidget {
@@ -84,6 +85,23 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                       if (picked == true) onSelected?.call();
                     },
                   ),
+                  if (!settings.usesCalculatedTimings)
+                    _DrawerItem(
+                      icon: Icons.access_time_filled_rounded,
+                      label: settings.translate(
+                        'Masjid Jama\'at Times (Sukkur)',
+                        'مساجد باجماعت اوقات (سکھر)',
+                        'مسجدن جا باجماعت وقت (سکر)',
+                        'مواقيت الجماعة للمساجد (سَكَر)',
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const JamaatTimesScreen()),
+                        );
+                      },
+                    ),
                   _DrawerItem(
                     icon: Icons.calendar_month_rounded,
                     label: settings.translate(
@@ -206,7 +224,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Current Version ───────────────────────────
                   _DrawerItem(
                     icon: Icons.new_releases_rounded,
-                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.2.8'}',
+                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.2.9'}',
                     onTap: () => _showWhatsNewDialog(context),
                   ),
 
@@ -312,17 +330,22 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
 
   Future<void> _rateApp(BuildContext context) async {
     final url = Uri.parse('https://play.google.com/store/apps/details?id=pk.sukkur.salah');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not open Play Store.'),
-            duration: Duration(seconds: 3),
-          ),
-        );
+    bool launched = false;
+    try {
+      launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        launched = await launchUrl(url, mode: LaunchMode.platformDefault);
       }
+    } catch (_) {
+      launched = false;
+    }
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open Play Store.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
   String _getLocalizedText(SettingsProvider settings, Map<String, String> map) {
@@ -332,7 +355,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.2.8';
+    final versionStr = _version.isNotEmpty ? _version : '1.2.9';
 
     showDialog(
       context: context,
@@ -457,6 +480,106 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                     }),
                     icon: Icons.build_circle_rounded,
                     iconColor: const Color(0xFF5C6BC0),
+                  ),
+                  const SizedBox(height: 16),
+                  // ── Item 1: Masjid Jama'at Prayer Times ────────────────────────
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    _getLocalizedText(settings, {
+                      'english': '🕌 Masjid Jama\'at Prayer Times (Sukkur) Has Been Added!',
+                      'urdu': '🕌 مساجد باجماعت نمازوں کے اوقات (سکھر) کا فیچر!',
+                      'sindhi': '🕌 مسجدن جا باجماعت نمازن جا وقت (سکر) جو فيچر!',
+                      'arabic': '🕌 تمت إضافة مواقيت الجماعة للمساجد (سَكَر)!',
+                      'bengali': '🕌 সুক্কুরের মসজিদ জামায়াতের সময়সূচী যুক্ত করা হয়েছে!',
+                      'hindi': '🕌 मस्जिद जमाअत नमाज़ समय (सुक्कुर) जोड़ा गया है!',
+                      'turkish': '🕌 Mescid Cemaat Namaz Vakitleri (Sukkur) Eklendi!',
+                      'indonesian': '🕌 Waktu Shalat Jamaah Masjid (Sukkur) Telah Ditambahkan!',
+                      'french': '🕌 Les horaires de prière en congrégation des mosquées (Sukkur) ont été ajoutés !',
+                      'persian': '🕌 اوقات نماز جماعت مساجد (سکر) اضافه شد!',
+                    }),
+                    _getLocalizedText(settings, {
+                      'english': 'View accurate congregational (Jama\'at) prayer timings for major Masjids in Sukkur with live updates and multi-language support.',
+                      'urdu': 'سکھر کی تمام اہم مساجد میں باجماعت نمازوں کے مکمل اور درست اوقات، لائیو اپڈیٹس اور تمام ۱۰ زبانوں کی سہولت کے ساتھ دیکھیں۔',
+                      'sindhi': 'سکر جي سڀني اهم مسجدن ۾ باجماعت نمازن جا مڪمل وقت، لائيو اپڊيٽس ۽ سڀني ۱۰ ٻولين جي سهولت سان ڏسو.',
+                      'arabic': 'عرض مواقيت صلاة الجماعة الدقيقة للمساجد الرئيسية في سَكَر مع التحديثات المباشرة والدعم الكامل لـ 10 لغات.',
+                      'bengali': 'সুক্কুরের প্রধান মসজিদসমূহের জামায়াতে সালাতের নির্ভুল সময়সূচী দেখুন, যা তাজা আপডেট ও ১০টি ভাষার পূর্ণ সুবিধাসহ উপলব্ধ।',
+                      'hindi': 'सुक्कुर की मुख्य मस्जिदों में बाज़माअत नमाज़ों के सटीक समय देखें, लाइव अपडेट और 10 भाषाओं की सुविधा के साथ।',
+                      'turkish': 'Sukkur\'daki ana camiler için canlı güncellemeler ve 10 dilde tam destek ile doğru cemaat namaz vakitlerini görüntüleyin.',
+                      'indonesian': 'Lihat waktu shalat berjamaah yang akurat untuk masjid-masjid utama di Sukkur dengan pembaruan langsung dan dukungan penuh 10 bahasa.',
+                      'french': 'Consultez les horaires précis de prière en groupe pour les principales mosquées de Sukkur avec mises à jour en direct et support complet en 10 langues.',
+                      'persian': 'اوقات دقیق نماز جماعت را برای مساجد اصلی سکر همراه با به‌روزرسانی‌های زنده و پشتیبانی کامل از ۱۰ زبان مشاهده کنید.',
+                    }),
+                    icon: Icons.access_time_filled_rounded,
+                    iconColor: const Color(0xFF2D6A4F),
+                  ),
+                  const SizedBox(height: 16),
+                  // ── Item 1: Islamic Hijri Calendar ──────────────────────────────
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    _getLocalizedText(settings, {
+                      'english': '🗓️ Islamic Hijri Calendar Has Been Added!',
+                      'urdu': '🗓️ اسلامی ہجری کیلنڈر کا اضافہ!',
+                      'sindhi': '🗓️ اسلامي هجري ڪيلينڊر جو اضافو!',
+                      'arabic': '🗓️ تمت إضافة التقويم الهجري الإسلامي!',
+                      'bengali': '🗓️ ইসলামিক হিজরি ক্যালেন্ডার যুক্ত করা হয়েছে!',
+                      'hindi': '🗓️ इस्लामिक हिजरी कैलेंडर जोड़ा गया है!',
+                      'turkish': '🗓️ İslami Hicri Takvim Eklendi!',
+                      'indonesian': '🗓️ Kalender Hijriah Islam Telah Ditambahkan!',
+                      'french': '🗓️ Le calendrier hégirien islamique a été ajouté !',
+                      'persian': '🗓️ تقویم هجری اسلامی اضافه شد!',
+                      'russian': '🗓️ Добавлен Исламский Календарь Хиджры!',
+                    }),
+                    _getLocalizedText(settings, {
+                      'english': 'Easily view today\'s Hijri date alongside the Gregorian calendar with accurate moon phase information, Islamic event reminders, and date adjustment options.',
+                      'urdu': 'اب قمری معلومات، اسلامی تہواروں کی یاد دہانی اور تاریخ کی ترتیب کے ساتھ ہجری اور عیسوی کیلنڈر کو ایک ساتھ آسانی سے دیکھیں۔',
+                      'sindhi': 'هاڻي چنڊ جي تاريخ، اسلامي ڏڻن جي ياد دهاني ۽ تاريخ جي ترتيب سان هجري ۽ عيسوي ڪيلينڊر کي گڏجي آساني سان ڏسو.',
+                      'arabic': 'عرض التاريخ الهجري اليوم جنباً إلى جنب مع التقويم الميلادي بسهولة، مع معلومات دقيقة عن منازل القمر والتذكير بالمناسبات الإسلامية.',
+                      'bengali': 'এখন হিজরি ও গ্র Gregorian ক্যালেন্ডার একসাথে সহজেই দেখুন, নির্ভুল চাঁদের হিসাব, ইসলামিক ইভেন্ট রিমাইন্ডার এবং তারিখ সমন্বয় সুবিধা সহ।',
+                      'hindi': 'अब सटीक चंद्र तिथि, इस्लामिक त्योहारों के रिमाइंडर और तारीख समायोजन के साथ हिजरी और ईस्वी कैलेंडर को एक साथ आसानी से देखें।',
+                      'turkish': 'Hicri tarihi Miladi takvim ile birlikte kolayca görüntüleyin; ay evreleri bilgisi, İslami etkinlik hatırlatıcıları ve tarih ayarlama seçenekleri ile.',
+                      'indonesian': 'Lihat tanggal Hijriah hari ini bersanding dengan kalender Masehi secara mudah, dilengkapi informasi fase bulan, pengingat hari besar Islam, dan pengaturan tanggal.',
+                      'french': 'Consultez facilement la date hégirienne aux côtés du calendrier grégorien, avec des informations précises sur la lune, les rappels d\'événements islamiques et l\'ajustement de la date.',
+                      'persian': 'تاریخ هجری را در کنار تقویم میلادی به راحتی مشاهده کنید، همراه با اطلاعات دقیق ماه، یادآوری مناسبت‌های اسلامی و امکان تنظیم تاریخ.',
+                      'russian': 'Удобно просматривайте текущую дату по Хиджре вместе с григорианским календарем, включая фазы луны, напоминания об исламских событиях и настройку даты.',
+                    }),
+                    icon: Icons.calendar_month_rounded,
+                    iconColor: const Color(0xFF2E7D32),
+                  ),
+                  const SizedBox(height: 16),
+                  // ── Item 2: Nearby Mosque Finder ──────────────────────────────────
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    _getLocalizedText(settings, {
+                      'english': '🕌 Nearby Mosque Finder Has Been Added!',
+                      'urdu': '🕌 قریب ترین مساجد کی تلاش کا فیچر!',
+                      'sindhi': '🕌 ويجهيون مسجدون ڳولڻ جو فيچر!',
+                      'arabic': '🕌 تمت إضافة مستكشف المساجد القريبة!',
+                      'bengali': '🕌 নিকটস্থ মসজিদ সার্চ ফিচার যুক্ত করা হয়েছে!',
+                      'hindi': '🕌 निकटतम मस्जिद खोजक जोड़ा गया है!',
+                      'turkish': '🕌 Yakındaki Cami Bulucu Eklendi!',
+                      'indonesian': '🕌 Pencari Masjid Terdekat Telah Ditambahkan!',
+                      'french': '🕌 Le localisateur de mosquées proches a été ajouté !',
+                      'persian': '🕌 جستجوگر مساجد نزدیک اضافه شد!',
+                      'russian': '🕌 Добавлен поиск ближайших мечетей!',
+                    }),
+                    _getLocalizedText(settings, {
+                      'english': 'Quickly locate local Masjids and Jamia Mosques around you for congregational (Jama\'at) prayers with live GPS directions and one-tap map integration.',
+                      'urdu': 'باجماعت نمازوں کے لیے اپنے ارد گرد کی تمام مساجد اور جامع مساجد کو لائیو GPS لوکیشن اور نقشے کے ساتھ سیکنڈوں میں تلاش کریں۔',
+                      'sindhi': 'باجماعت نمازن لاءِ پنهنجي آس پاس جي تمام مساجدن ۽ جامع مسجدن کي لائيو GPS لوڪيشن ۽ نقشي سان منٽن ۾ ڳوليو.',
+                      'arabic': 'حدد موقع المساجد المحلية والمساجد الجامعة من حولك لصلاة الجماعة مع اتجاهات GPS المباشرة والتكامل مع الخريطة بضغطة واحدة.',
+                      'bengali': 'লাইভ জিপিএস নেভিগেশন এবং এক-ট্যাপ ম্যাপ ম্যাপের সাহায্যে জামাতে সালাত আদায়ের জন্য নিকটস্থ সব মসজিদ ও জামে মসজিদ দ্রুত খুঁজে নিন।',
+                      'hindi': 'बाज़मात नमाज़ों के लिए लाइव जीपीएस लोकेशन और एक-टैप मैप नेविगेशन के साथ अपने आस-पास की सभी मस्जिदों और जामा मस्जिदों को तुरंत खोजें।',
+                      'turkish': 'Cemaatle namaz kılmak için etrafınızdaki camileri ve cuma camilerini canlı GPS yol tarifleri ve tek dokunuşla harita entegrasyonu ile hızlıca bulun.',
+                      'indonesian': 'Temukan masjid lokal dan Masjid Jami di sekitar Anda untuk shalat berjamaah secara cepat dengan petunjuk arah GPS langsung dan integrasi peta satu ketukan.',
+                      'french': 'Localisez rapidement les mosquées locales et les grandes mosquées autour de vous pour les prières en groupe avec des directions GPS en direct et l\'intégration de la carte.',
+                      'persian': 'مساجد محل و مساجد جامع اطراف خود را برای نماز جماعت با مسیریابی زنده GPS و اتصال مستقیم به نقشه به سرعت پیدا کنید.',
+                      'russian': 'Быстро находите ближайшие мечети и Соборные мечети для коллективной молитвы с помощью GPS-навигации в реальном времени и удобной карты.',
+                    }),
+                    icon: Icons.near_me_rounded,
+                    iconColor: const Color(0xFF1565C0),
                   ),
                   const SizedBox(height: 16),
                   // ── Item 1: 15-Line Quran Pak ──────────────────────────────────
@@ -1470,9 +1593,11 @@ class _ContactUsInline extends StatelessWidget {
 
   static Future<void> _openMap() async {
     final uri = Uri.parse('https://maps.app.goo.gl/KhS6dMVmqgSTYzdT7');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    try {
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (_) {}
   }
 
   @override

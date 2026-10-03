@@ -1,52 +1,90 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/world_translations.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
 
 class MosqueFinderScreen extends StatelessWidget {
   const MosqueFinderScreen({super.key});
 
+  String _t(
+    SettingsProvider settings,
+    String key, [
+    String? ur,
+    String? sd,
+    String? ar,
+  ]) {
+    final lang = settings.language;
+    final map = worldTranslations[lang];
+    if (map != null && map.containsKey(key)) {
+      return map[key]!;
+    }
+    return settings.translate(key, ur ?? key, sd ?? ur ?? key, ar);
+  }
+
   Future<void> _launchMapsSearch(BuildContext context, String query) async {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final lat = settings.latitude;
     final lng = settings.longitude;
 
-    final String urlString;
-    if (lat != null && lng != null) {
-      urlString = 'https://www.google.com/maps/search/?api=1&query=$query+near+$lat,$lng';
-    } else {
-      urlString = 'https://www.google.com/maps/search/?api=1&query=$query';
+    final String queryText = (lat != null && lng != null)
+        ? '$query near $lat,$lng'
+        : query;
+
+    final Uri httpsUri = Uri.https('www.google.com', '/maps/search/', {
+      'api': '1',
+      'query': queryText,
+    });
+
+    final Uri geoUri = Uri.parse(
+      lat != null && lng != null
+          ? 'geo:$lat,$lng?q=${Uri.encodeComponent(query)}'
+          : 'geo:0,0?q=${Uri.encodeComponent(queryText)}',
+    );
+
+    bool launched = false;
+
+    // 1. Try Google Maps HTTPS URL with external application mode
+    try {
+      launched = await launchUrl(httpsUri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      launched = false;
     }
 
-    final Uri uri = Uri.parse(urlString);
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                settings.translate(
-                  'Could not open Maps app.',
-                  'نقشہ ایپ نہیں کھل سکی۔',
-                  'نقشو ايپ نه کلي سگهي.',
-                  'تعذر فتح تطبيق الخرائط.',
-                ),
-              ),
+    // 2. Fallback to platform default launch mode
+    if (!launched) {
+      try {
+        launched = await launchUrl(httpsUri, mode: LaunchMode.platformDefault);
+      } catch (_) {
+        launched = false;
+      }
+    }
+
+    // 3. Fallback to geo: URI scheme
+    if (!launched) {
+      try {
+        launched = await launchUrl(geoUri, mode: LaunchMode.externalApplication);
+      } catch (_) {
+        launched = false;
+      }
+    }
+
+    // 4. Show SnackBar if map app or browser could not be launched
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _t(
+              settings,
+              'Could not open Maps app.',
+              'نقشہ ایپ نہیں کھل سکی۔',
+              'نقشو ايپ نه کلي سگهي.',
+              'تعذر فتح تطبيق الخرائط.',
             ),
-          );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error launching maps: $e'),
           ),
-        );
-      }
+        ),
+      );
     }
   }
 
@@ -55,13 +93,14 @@ class MosqueFinderScreen extends StatelessWidget {
     final settings = Provider.of<SettingsProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lang = settings.language;
-    final accent = const Color(0xFF2E7D32); // Emerald Green accent
+    const accent = Color(0xFF1B4332);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121619) : const Color(0xFFF4F6F8),
       appBar: AppBar(
         title: Text(
-          settings.translate(
+          _t(
+            settings,
             'Nearby Mosque Finder',
             'قریب ترین مساجد کی تلاش',
             'ويجهيون مسجدون ڳوليو',
@@ -82,15 +121,15 @@ class MosqueFinderScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isDark
-                      ? [const Color(0xFF1B382B), const Color(0xFF11241C)]
-                      : [const Color(0xFF2E7D32), const Color(0xFF1B5E20)],
+                      ? [const Color(0xFF1E282A), const Color(0xFF151C1E)]
+                      : [const Color(0xFF1B4332), const Color(0xFF2D6A4F)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: accent.withValues(alpha: 0.3),
+                    color: (isDark ? Colors.black : accent).withValues(alpha: 0.3),
                     blurRadius: 14,
                     offset: const Offset(0, 6),
                   ),
@@ -112,7 +151,8 @@ class MosqueFinderScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    settings.translate(
+                    _t(
+                      settings,
                       'Find Mosques Near You',
                       'اپنے قریب ترین مساجد تلاش کریں',
                       'پنهنجي ويجهيون مسجدون ڳوليو',
@@ -128,7 +168,8 @@ class MosqueFinderScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    settings.translate(
+                    _t(
+                      settings,
                       'Locate local Masjids for Congregational (Jama\'at) Prayers anywhere around the globe with live GPS directions.',
                       'دنیا بھر میں باجماعت نمازوں کے لیے اپنے قریبی مساجد کا راستہ دیکھیں۔',
                       'سڄي دنيا ۾ باجماعت نمازن لاءِ پنهنجي ويجهين مسجدن جو رستو ڏسو.',
@@ -144,9 +185,10 @@ class MosqueFinderScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: () => _launchMapsSearch(context, 'mosque'),
-                    icon: const Icon(Icons.explore_rounded, color: Color(0xFF1B5E20)),
+                    icon: const Icon(Icons.explore_rounded, color: Color(0xFF1B4332)),
                     label: Text(
-                      settings.translate(
+                      _t(
+                        settings,
                         'Open Nearby Mosques on Map',
                         'نقشے پر قریب ترین مساجد کھولیں',
                         'نقشي تي ويجهيون مسجدون کوليو',
@@ -155,7 +197,7 @@ class MosqueFinderScreen extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        color: const Color(0xFF1B5E20),
+                        color: const Color(0xFF1B4332),
                         fontFamily: AppTheme.getFontForLanguage(context, lang),
                       ),
                     ),
@@ -179,7 +221,8 @@ class MosqueFinderScreen extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                settings.translate(
+                _t(
+                  settings,
                   'Quick Search Categories',
                   'فوری تلاش کے زمرے',
                   'فوري ڳولا جا زمره',
@@ -199,13 +242,15 @@ class MosqueFinderScreen extends StatelessWidget {
               context: context,
               icon: Icons.store_mall_directory_rounded,
               iconColor: const Color(0xFF1565C0),
-              title: settings.translate(
+              title: _t(
+                settings,
                 'Jamia / Main Mosques',
                 'جامع مساجد',
                 'جامع مسجدون',
                 'المساجد الجامعة',
               ),
-              subtitle: settings.translate(
+              subtitle: _t(
+                settings,
                 'Search for larger Jamia Masjids nearby',
                 'قریبی بڑی جامع مساجد کی تلاش',
                 'ويجهين وڏين جامع مسجدن جي ڳولا',
@@ -215,7 +260,6 @@ class MosqueFinderScreen extends StatelessWidget {
               isDark: isDark,
               lang: lang,
             ),
-
           ],
         ),
       ),

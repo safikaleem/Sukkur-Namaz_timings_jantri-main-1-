@@ -32,6 +32,13 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
   void initState() {
     super.initState();
     _loadVibrateSetting();
+    _initAudio();
+  }
+
+  Future<void> _initAudio() async {
+    try {
+      await _audioPlayer.setSource(AssetSource('tasbeeh_click.wav'));
+    } catch (_) {}
   }
 
   @override
@@ -73,8 +80,8 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
     if (!_soundOn) return;
     try {
       SystemSound.play(SystemSoundType.click);
-      _audioPlayer.stop();
-      _audioPlayer.play(AssetSource('mixkit-bell-notification-933.wav'), volume: 0.3);
+      _audioPlayer.seek(Duration.zero);
+      _audioPlayer.resume();
     } catch (_) {}
   }
 

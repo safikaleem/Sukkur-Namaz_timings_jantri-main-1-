@@ -80,16 +80,18 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
   /// confirm or change the Calculation Method & Asr Juristic Method. If the
   /// selected city is in a different timezone from the phone, a Notification
   /// Time Zone section is shown as well.
-  Future<void> _showCitySetupDialog(SettingsProvider settings, String cityName) async {
-    if (!mounted) return;
+  Future<bool> _showCitySetupDialog(SettingsProvider settings, String cityName) async {
+    if (!mounted) return false;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
     final muted = isDark ? Colors.white54 : Colors.black54;
     final hasTzDiff = _clockOffsetMinutes(settings) != 0;
 
-    await showModalBottomSheet(
+    final bool? confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         // Use a StatefulBuilder so dropdowns and radio buttons update live
@@ -291,7 +293,7 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        onPressed: () => Navigator.of(sheetContext).pop(true),
                         child: Text(
                           settings.translate('Confirm', 'تصدیق کریں', 'تصديق ڪريو', 'تأكيد'),
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -306,6 +308,8 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
         );
       },
     );
+
+    return confirmed == true;
   }
 
   /// Compact timezone radio option used inside the city setup dialog.
@@ -412,8 +416,8 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
         // Show setup dialog for calculation parameters (and timezone if different)
-        await _showCitySetupDialog(settings, city);
-        if (!mounted) return;
+        final confirmed = await _showCitySetupDialog(settings, city);
+        if (!mounted || !confirmed) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
           '${settings.translate('Location updated: ', 'مقام اپڈیٹ ہو گیا: ', 'جڳهه اپڊيٽ ٿي وئي: ', 'تم تحديث الموقع: ')}$city'
         )));
@@ -459,8 +463,8 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
         // Show setup dialog for calculation parameters (and timezone if different)
-        await _showCitySetupDialog(settings, chosen.name);
-        if (!mounted) return;
+        final confirmed = await _showCitySetupDialog(settings, chosen.name);
+        if (!mounted || !confirmed) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
           '${settings.translate('Location updated: ', 'مقام اپڈیٹ ہو گیا: ', 'جڳهه اپڊيٽ ٿي وئي: ', 'تم تحديث الموقع: ')}${chosen.name}'
         )));

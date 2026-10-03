@@ -21,11 +21,36 @@
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
     <queries>
+        <!-- Mail queries -->
         <intent>
             <action android:name="android.intent.action.SENDTO" />
             <data android:scheme="mailto" />
         </intent>
         <package android:name="com.google.android.gm" />
+
+        <!-- Web browser / HTTPS / HTTP intents -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
+
+        <!-- Maps & Location intents -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="geo" />
+        </intent>
+        <package android:name="com.google.android.apps.maps" />
+
+        <!-- App Stores -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="market" />
+        </intent>
+        <package android:name="com.android.vending" />
     </queries>
 
     <application

@@ -91,18 +91,33 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   Future<void> _loadFavorites() async {
+    final quranType = context.read<SettingsProvider>().quranType;
     final prefs = await SharedPreferences.getInstance();
-    final favSurahs = prefs.getStringList('favorite_surahs') ?? [];
-    final favParahs = prefs.getStringList('favorite_parahs') ?? [];
-    setState(() {
-      _favoriteSurahs = favSurahs.map((e) => int.tryParse(e) ?? 0).toList();
-      _favoriteParahs = favParahs.map((e) => int.tryParse(e) ?? 0).toList();
-    });
+    final suffix = quranType == '15_line' ? '_15' : '_16';
+
+    List<String>? favSurahs = prefs.getStringList('favorite_surahs$suffix');
+    List<String>? favParahs = prefs.getStringList('favorite_parahs$suffix');
+
+    if (favSurahs == null && suffix == '_16') {
+      favSurahs = prefs.getStringList('favorite_surahs');
+    }
+    if (favParahs == null && suffix == '_16') {
+      favParahs = prefs.getStringList('favorite_parahs');
+    }
+
+    if (mounted) {
+      setState(() {
+        _favoriteSurahs = (favSurahs ?? []).map((e) => int.tryParse(e) ?? 0).where((n) => n > 0).toList();
+        _favoriteParahs = (favParahs ?? []).map((e) => int.tryParse(e) ?? 0).where((n) => n > 0).toList();
+      });
+    }
   }
 
-
   Future<void> _toggleSurahFavorite(int surahNumber) async {
+    final quranType = context.read<SettingsProvider>().quranType;
     final prefs = await SharedPreferences.getInstance();
+    final suffix = quranType == '15_line' ? '_15' : '_16';
+
     setState(() {
       if (_favoriteSurahs.contains(surahNumber)) {
         _favoriteSurahs.remove(surahNumber);
@@ -111,11 +126,14 @@ class _QuranScreenState extends State<QuranScreen> {
       }
     });
     await prefs.setStringList(
-        'favorite_surahs', _favoriteSurahs.map((e) => e.toString()).toList());
+        'favorite_surahs$suffix', _favoriteSurahs.map((e) => e.toString()).toList());
   }
 
   Future<void> _toggleParahFavorite(int parahNumber) async {
+    final quranType = context.read<SettingsProvider>().quranType;
     final prefs = await SharedPreferences.getInstance();
+    final suffix = quranType == '15_line' ? '_15' : '_16';
+
     setState(() {
       if (_favoriteParahs.contains(parahNumber)) {
         _favoriteParahs.remove(parahNumber);
@@ -124,7 +142,7 @@ class _QuranScreenState extends State<QuranScreen> {
       }
     });
     await prefs.setStringList(
-        'favorite_parahs', _favoriteParahs.map((e) => e.toString()).toList());
+        'favorite_parahs$suffix', _favoriteParahs.map((e) => e.toString()).toList());
   }
 
   @override
@@ -166,7 +184,17 @@ class _QuranScreenState extends State<QuranScreen> {
         ? (Quran15LineData.surahStartPages[number] ?? 2)
         : (QuranData.surahStartPages[number] ?? 1);
 
-    final int targetPage = specificPage ?? defaultStartPage;
+    final int? lastReadForType = is15Line ? settings.lastReadPage15 : settings.lastReadPage16;
+    final int surahStart = defaultStartPage;
+    final int surahEnd = is15Line
+        ? (number == 114 ? 611 : (Quran15LineData.surahStartPages[number + 1] ?? 611) - 1)
+        : (number == 114 ? 604 : (QuranData.surahStartPages[number + 1] ?? 604) - 1);
+
+    int targetPage = specificPage ?? defaultStartPage;
+    if (specificPage == null && lastReadForType != null && lastReadForType >= surahStart && lastReadForType <= surahEnd) {
+      targetPage = lastReadForType;
+    }
+
     final int targetParah = is15Line
         ? Quran15LineData.getParahForPage(targetPage)
         : QuranData.getParahForPage(targetPage);
@@ -392,6 +420,7 @@ class _QuranScreenState extends State<QuranScreen> {
                 onTap: () {
                   settings.setQuranType('16_line');
                   QuranDownloadService.instance.startAutoDownloadAll('16_line');
+                  _loadFavorites();
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
@@ -445,6 +474,7 @@ class _QuranScreenState extends State<QuranScreen> {
                 onTap: () {
                   settings.setQuranType('15_line');
                   QuranDownloadService.instance.startAutoDownloadAll('15_line');
+                  _loadFavorites();
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),

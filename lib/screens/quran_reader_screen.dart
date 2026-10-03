@@ -39,6 +39,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   /// Mushaf page the reader opens at. The reader runs continuously from there
   /// across parah boundaries, so this is a starting point only.
   late final int _startPage;
+  int _currentPage = 1;
 
   @override
   void initState() {
@@ -49,20 +50,34 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     final quranType = context.read<SettingsProvider>().quranType;
     final maxPages = quranType == '15_line' ? kQuran15LinePageCount : kQuranPageCount;
     _startPage = widget.initialPage.clamp(1, maxPages);
+    _currentPage = _startPage;
   }
 
   /// Retitles the screen when reading crosses into another parah - but only
-  /// when it was opened as a parah in the first place. Opened at a surah, the
-  /// surah's name stays put: it is what the reader asked for, and it is still
-  /// what the translation tab beside this one is showing.
+  /// when it was opened as a parah in the first place.
   void _onParahChanged(int parah) {
     if (widget.parahNumber == null) return;
-    final parahData = QuranData.parahs[parah - 1];
-    setState(() {
-      _titleEn = 'Parah ${parahData.number} – ${parahData.english}';
-      _titleArabic = parahData.arabic;
-      _titleLocal = 'پارہ ${parahData.number}';
-    });
+    if (parah >= 1 && parah <= QuranData.parahs.length) {
+      final parahData = QuranData.parahs[parah - 1];
+      setState(() {
+        _titleEn = 'Parah ${parahData.number} – ${parahData.english}';
+        _titleArabic = parahData.arabic;
+        _titleLocal = 'پارہ ${parahData.number}';
+      });
+    }
+  }
+
+  /// Retitles the screen when reading crosses into another surah in translation view.
+  void _onSurahChanged(int surahNumber) {
+    if (widget.parahNumber != null) return;
+    if (surahNumber >= 1 && surahNumber <= QuranData.surahs.length) {
+      final surahData = QuranData.surahs[surahNumber - 1];
+      setState(() {
+        _titleEn = surahData.english;
+        _titleArabic = surahData.arabicOnly;
+        _titleLocal = surahData.urdu;
+      });
+    }
   }
 
   @override
@@ -203,12 +218,18 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               isDark: isDark,
               initialPage: _startPage,
               onParahChanged: _onParahChanged,
+              onPageChanged: (page) {
+                _currentPage = page;
+              },
             ),
             TranslationReader(
               surahNumber: widget.surahNumber,
               settings: settings,
               isDark: isDark,
               initialAyah: widget.initialAyah,
+              initialPage: _currentPage,
+              onParahChanged: _onParahChanged,
+              onSurahChanged: _onSurahChanged,
             ),
           ],
         ),

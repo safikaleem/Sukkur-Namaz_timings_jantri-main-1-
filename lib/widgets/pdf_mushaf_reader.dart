@@ -78,12 +78,16 @@ class PdfMushafReader extends StatefulWidget {
   /// reader can retitle itself.
   final ValueChanged<int>? onParahChanged;
 
+  /// Fired when page changes
+  final ValueChanged<int>? onPageChanged;
+
   const PdfMushafReader({
     super.key,
     required this.settings,
     required this.isDark,
     this.initialPage = 1,
     this.onParahChanged,
+    this.onPageChanged,
   });
 
   @override
@@ -376,6 +380,7 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
     final type = widget.settings.quranType;
     final parah = locationForPage(page, type).parah;
     _currentPage = page;
+    widget.onPageChanged?.call(page);
     widget.settings.updateReadingPosition(
       pageNumber: page,
       quranType: type,

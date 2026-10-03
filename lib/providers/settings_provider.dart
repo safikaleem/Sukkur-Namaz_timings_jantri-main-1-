@@ -827,37 +827,69 @@ class SettingsProvider extends ChangeNotifier {
       }
     }
 
-    // Load Quran Progress
-    _lastReadType = prefs.getString('last_read_type');
-    _lastReadId = prefs.getInt('last_read_id');
+    // Load per-type Quran Progress
+    _lastReadType15 = prefs.getString('last_read_type_15');
+    _lastReadType16 = prefs.getString('last_read_type_16');
+    _lastReadId15 = prefs.getInt('last_read_id_15');
+    _lastReadId16 = prefs.getInt('last_read_id_16');
     _lastReadPage15 = prefs.getInt('last_read_page_15');
     _lastReadPage16 = prefs.getInt('last_read_page_16');
 
+    // Migration: copy old shared keys to 16-line if per-type keys don't exist
+    if (_lastReadType16 == null) {
+      _lastReadType16 = prefs.getString('last_read_type');
+    }
+    if (_lastReadId16 == null) {
+      _lastReadId16 = prefs.getInt('last_read_id');
+    }
+
     for (final key in prefs.getKeys()) {
-      if (key.startsWith('surah_progress_')) {
+      if (key.startsWith('surah_progress_15_')) {
+        final id = int.tryParse(key.replaceFirst('surah_progress_15_', ''));
+        if (id != null) _surahProgress15[id] = prefs.getInt(key) ?? 0;
+      } else if (key.startsWith('surah_progress_16_')) {
+        final id = int.tryParse(key.replaceFirst('surah_progress_16_', ''));
+        if (id != null) _surahProgress16[id] = prefs.getInt(key) ?? 0;
+      } else if (key.startsWith('surah_progress_')) {
+        // Migration: old shared key → 16-line
         final id = int.tryParse(key.replaceFirst('surah_progress_', ''));
-        if (id != null) _surahProgress[id] = prefs.getInt(key) ?? 0;
+        if (id != null && !_surahProgress16.containsKey(id)) {
+          _surahProgress16[id] = prefs.getInt(key) ?? 0;
+        }
+      } else if (key.startsWith('parah_progress_15_')) {
+        final id = int.tryParse(key.replaceFirst('parah_progress_15_', ''));
+        if (id != null) _parahProgress15[id] = prefs.getInt(key) ?? 0;
+      } else if (key.startsWith('parah_progress_16_')) {
+        final id = int.tryParse(key.replaceFirst('parah_progress_16_', ''));
+        if (id != null) _parahProgress16[id] = prefs.getInt(key) ?? 0;
       } else if (key.startsWith('parah_progress_')) {
+        // Migration: old shared key → 16-line
         final id = int.tryParse(key.replaceFirst('parah_progress_', ''));
-        if (id != null) _parahProgress[id] = prefs.getInt(key) ?? 0;
+        if (id != null && !_parahProgress16.containsKey(id)) {
+          _parahProgress16[id] = prefs.getInt(key) ?? 0;
+        }
       }
     }
 
     notifyListeners();
   }
 
-  // --- Quran Progress Tracking ---
-  final Map<int, int> _surahProgress = {};
-  final Map<int, int> _parahProgress = {};
-  String? _lastReadType; // 'surah' or 'parah'
-  int? _lastReadId;
+  // --- Quran Progress Tracking (per Quran type) ---
+  final Map<int, int> _surahProgress15 = {};
+  final Map<int, int> _surahProgress16 = {};
+  final Map<int, int> _parahProgress15 = {};
+  final Map<int, int> _parahProgress16 = {};
+  String? _lastReadType15; // 'surah' or 'parah' for 15-line
+  String? _lastReadType16; // 'surah' or 'parah' for 16-line
+  int? _lastReadId15;
+  int? _lastReadId16;
   int? _lastReadPage15;
   int? _lastReadPage16;
 
-  Map<int, int> get surahProgress => _surahProgress;
-  Map<int, int> get parahProgress => _parahProgress;
-  String? get lastReadType => _lastReadType;
-  int? get lastReadId => _lastReadId;
+  Map<int, int> get surahProgress => _quranType == '15_line' ? _surahProgress15 : _surahProgress16;
+  Map<int, int> get parahProgress => _quranType == '15_line' ? _parahProgress15 : _parahProgress16;
+  String? get lastReadType => _quranType == '15_line' ? _lastReadType15 : _lastReadType16;
+  int? get lastReadId => _quranType == '15_line' ? _lastReadId15 : _lastReadId16;
   int? get lastReadPage15 => _lastReadPage15;
   int? get lastReadPage16 => _lastReadPage16;
 
@@ -868,6 +900,7 @@ class SettingsProvider extends ChangeNotifier {
     int? surahNumber,
   }) async {
     final prefs = await SharedPreferences.getInstance();
+    final suffix = quranType == '15_line' ? '15' : '16';
 
     if (quranType == '15_line') {
       _lastReadPage15 = pageNumber;
@@ -878,31 +911,49 @@ class SettingsProvider extends ChangeNotifier {
     }
 
     if (parahNumber != null) {
-      _lastReadType = 'parah';
-      _lastReadId = parahNumber;
-      _parahProgress[parahNumber] = pageNumber;
-      await prefs.setString('last_read_type', 'parah');
-      await prefs.setInt('last_read_id', parahNumber);
-      await prefs.setInt('parah_progress_$parahNumber', pageNumber);
+      if (quranType == '15_line') {
+        _lastReadType15 = 'parah';
+        _lastReadId15 = parahNumber;
+        _parahProgress15[parahNumber] = pageNumber;
+      } else {
+        _lastReadType16 = 'parah';
+        _lastReadId16 = parahNumber;
+        _parahProgress16[parahNumber] = pageNumber;
+      }
+      await prefs.setString('last_read_type_$suffix', 'parah');
+      await prefs.setInt('last_read_id_$suffix', parahNumber);
+      await prefs.setInt('parah_progress_${suffix}_$parahNumber', pageNumber);
     } else if (surahNumber != null) {
-      _lastReadType = 'surah';
-      _lastReadId = surahNumber;
-      await prefs.setString('last_read_type', 'surah');
-      await prefs.setInt('last_read_id', surahNumber);
+      if (quranType == '15_line') {
+        _lastReadType15 = 'surah';
+        _lastReadId15 = surahNumber;
+      } else {
+        _lastReadType16 = 'surah';
+        _lastReadId16 = surahNumber;
+      }
+      await prefs.setString('last_read_type_$suffix', 'surah');
+      await prefs.setInt('last_read_id_$suffix', surahNumber);
     }
   }
 
   Future<void> updateSurahProgress(int surahNumber, int ayahNumber) async {
-    _lastReadType = 'surah';
-    _lastReadId = surahNumber;
+    final suffix = _quranType == '15_line' ? '15' : '16';
+    if (_quranType == '15_line') {
+      _lastReadType15 = 'surah';
+      _lastReadId15 = surahNumber;
+    } else {
+      _lastReadType16 = 'surah';
+      _lastReadId16 = surahNumber;
+    }
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('last_read_type', 'surah');
-    await prefs.setInt('last_read_id', surahNumber);
+    await prefs.setString('last_read_type_$suffix', 'surah');
+    await prefs.setInt('last_read_id_$suffix', surahNumber);
 
-    final current = _surahProgress[surahNumber] ?? 0;
+    final progressMap = _quranType == '15_line' ? _surahProgress15 : _surahProgress16;
+    final current = progressMap[surahNumber] ?? 0;
     if (ayahNumber > current) {
-      _surahProgress[surahNumber] = ayahNumber;
-      await prefs.setInt('surah_progress_$surahNumber', ayahNumber);
+      progressMap[surahNumber] = ayahNumber;
+      await prefs.setInt('surah_progress_${suffix}_$surahNumber', ayahNumber);
       // We do not call notifyListeners() here to avoid excessive rebuilds during scrolling.
       // Progress will be visible when user returns to Quran screen.
     }
