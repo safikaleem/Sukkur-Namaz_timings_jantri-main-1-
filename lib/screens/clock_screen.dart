@@ -142,74 +142,95 @@ class _ClockScreenState extends State<ClockScreen> {
                       ),
 
                       // ── Prayer info ───────────────────────────────────
-                      if (_state != null)
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _state!.prayer.localizedName(settings.language),
-                              style: TextStyle(
-                                fontSize: settings.isRtl ? 28 : 24,
-                                fontWeight: FontWeight.w700,
-                                color: accent,
-                                letterSpacing: 0.5,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: _state != null
+                            ? Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _state!.prayer
+                                        .localizedName(settings.language),
+                                    style: TextStyle(
+                                      fontSize: settings.isRtl ? 28 : 24,
+                                      fontWeight: FontWeight.w700,
+                                      color: accent,
+                                      letterSpacing: 0.5,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${_state!.prayer.displayTime} ${_state!.prayer.displayIsPm ? 'PM' : 'AM'}',
+                                    textDirection: TextDirection.ltr,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: isDark
+                                          ? Colors.white54
+                                          : Colors.black54,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _state!.isElapsed
+                                        ? settings.translate(
+                                            'Time elapsed',
+                                            'گزرا وقت',
+                                            'گذريل وقت',
+                                            'الوقت المنقضي')
+                                        : settings.translate(
+                                            'Time remaining',
+                                            'باقی وقت',
+                                            'باقي وقت',
+                                            'الوقت المتبقي'),
+                                    style: TextStyle(
+                                      fontSize: settings.isRtl ? 14 : 11,
+                                      color: isDark
+                                          ? Colors.white38
+                                          : Colors.black38,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 0.5,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _state!.isElapsed
+                                        ? _formatElapsed(_state!.duration)
+                                        : _formatCountdown(_state!.duration),
+                                    textDirection: TextDirection.ltr,
+                                    style: TextStyle(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.black87,
+                                      letterSpacing: 3,
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures()
+                                      ],
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              )
+                            : Text(
+                                settings.translate(
+                                  'All prayers done for today',
+                                  'آج کی نمازیں مکمل ہو گئیں',
+                                  'اڄ جون نمازون مڪمل ٿي ويون',
+                                ),
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: isDark
+                                      ? Colors.white54
+                                      : Colors.black54,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_state!.prayer.displayTime} ${_state!.prayer.displayIsPm ? 'PM' : 'AM'}',
-                              textDirection: TextDirection.ltr,
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: isDark ? Colors.white54 : Colors.black54,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _state!.isElapsed
-                                  ? settings.translate('Time elapsed', 'گزرا وقت', 'گذريل وقت', 'الوقت المنقضي')
-                                  : settings.translate('Time remaining', 'باقی وقت', 'باقي وقت', 'الوقت المتبقي'),
-                              style: TextStyle(
-                                fontSize: settings.isRtl ? 14 : 11,
-                                color: isDark ? Colors.white38 : Colors.black38,
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 0.5,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              _state!.isElapsed
-                                  ? _formatElapsed(_state!.duration)
-                                  : _formatCountdown(_state!.duration),
-                              textDirection: TextDirection.ltr,
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.white70 : Colors.black87,
-                                letterSpacing: 3,
-                                fontFeatures: const [FontFeature.tabularFigures()],
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        )
-                      else
-                        Text(
-                          settings.translate(
-                            'All prayers done for today',
-                            'آج کی نمازیں مکمل ہو گئیں',
-                            'اڄ جون نمازون مڪمل ٿي ويون',
-                          ),
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: isDark ? Colors.white54 : Colors.black54,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                      ),
                     ],
                   );
                 },

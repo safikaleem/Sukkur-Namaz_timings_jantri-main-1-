@@ -30,10 +30,16 @@ class DrSloganHeader extends StatelessWidget {
     final resolvedTextColor = textColor ?? (isDark ? Colors.white : Colors.black87);
     final resolvedSubColor = subColor ?? (isDark ? Colors.white60 : Colors.black54);
 
+    final isRtl = settings.isRtl;
+    final textDir = isRtl ? TextDirection.rtl : TextDirection.ltr;
     final isSindhi = settings.language == 'sindhi';
-    final String? font = settings.language == 'sindhi' 
-        ? AppTheme.getSindhiFont(context) 
-        : (settings.language == 'arabic' ? null : AppTheme.urduFont);
+    final isUrduStyleScript = settings.language == 'urdu' ||
+        settings.language == 'sindhi' ||
+        settings.language == 'persian' ||
+        settings.language == 'english';
+    final String? font = isSindhi
+        ? AppTheme.getSindhiFont(context)
+        : (isUrduStyleScript ? AppTheme.urduFont : null);
 
     final String title = settings.translate('Jantri', 'جنتری', 'جنتري', 'التقويم');
     final String name = settings.translate('حضرت ڈاکٹر حفیظ اللہ صاحب', 'حضرت ڈاکٹر حفیظ اللہ صاحب', 'حضرت ڊاڪٽر حفيظ الله صاحب', 'الشيخ الدكتور حفيظ الله');
@@ -45,7 +51,7 @@ class DrSloganHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          textDirection: TextDirection.rtl,
+          textDirection: textDir,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: font,
@@ -56,7 +62,7 @@ class DrSloganHeader extends StatelessWidget {
         ),
         Text(
           name,
-          textDirection: TextDirection.rtl,
+          textDirection: textDir,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: font,
@@ -68,7 +74,7 @@ class DrSloganHeader extends StatelessWidget {
         ),
         Text(
           sub,
-          textDirection: TextDirection.rtl,
+          textDirection: textDir,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: font,

@@ -106,12 +106,14 @@ class JamaatMasjidInfo {
   final String nameKey;
   final String addressKey;
   final JamaatTiming defaultTimings;
+  final bool isHidden;
 
   const JamaatMasjidInfo({
     required this.id,
     required this.nameKey,
     required this.addressKey,
     required this.defaultTimings,
+    this.isHidden = false,
   });
 }
 
@@ -139,7 +141,7 @@ class JamaatTimesService {
     ),
     JamaatMasjidInfo(
       id: 'ahmed_thanvi',
-      nameKey: 'Ahmed Thanvi Masjid',
+      nameKey: 'Masjid Molana Muhammad Ahmed Thanvi',
       addressKey: "Queen's Road Sukkur",
       defaultTimings: JamaatTiming(
         fajr: '05:15 AM',
@@ -313,6 +315,86 @@ class JamaatTimesService {
         jummah: '01:15 PM',
       ),
     ),
+    JamaatMasjidInfo(
+      id: 'masjid_ayesha',
+      nameKey: 'Masjid Ayesha',
+      addressKey: 'Chanchar Ghitti, Shahi Bazar Sukkur',
+      defaultTimings: JamaatTiming(
+        fajr: '05:15 AM',
+        fajrUpdated: '04 Oct 2026',
+        zuhar: '01:15 PM',
+        asar: '04:45 PM',
+        asarUpdated: '04 Oct 2026',
+        maghrib: '06:15 PM',
+        isha: '08:00 PM',
+        ishaUpdated: '04 Oct 2026',
+        jummah: '01:15 PM',
+      ),
+    ),
+    JamaatMasjidInfo(
+      id: 'shamsi_masjid',
+      nameKey: 'Shamsi Masjid',
+      addressKey: 'Frere Road Sukkur',
+      defaultTimings: JamaatTiming(
+        fajr: '05:15 AM',
+        fajrUpdated: '04 Oct 2026',
+        zuhar: '01:15 PM',
+        asar: '04:45 PM',
+        asarUpdated: '04 Oct 2026',
+        maghrib: '06:15 PM',
+        isha: '08:00 PM',
+        ishaUpdated: '04 Oct 2026',
+        jummah: '01:15 PM',
+      ),
+    ),
+    JamaatMasjidInfo(
+      id: 'safed_masjid',
+      nameKey: 'Safed Masjid',
+      addressKey: 'Husaini Road Sukkur',
+      defaultTimings: JamaatTiming(
+        fajr: '05:15 AM',
+        fajrUpdated: '04 Oct 2026',
+        zuhar: '01:15 PM',
+        asar: '04:45 PM',
+        asarUpdated: '04 Oct 2026',
+        maghrib: '06:15 PM',
+        isha: '08:00 PM',
+        ishaUpdated: '04 Oct 2026',
+        jummah: '01:15 PM',
+      ),
+    ),
+    JamaatMasjidInfo(
+      id: 'masjid_al_farooq',
+      nameKey: 'Masjid Al Farooq',
+      addressKey: 'Barrage Road, Ghanta Ghar Sukkur',
+      defaultTimings: JamaatTiming(
+        fajr: '05:15 AM',
+        fajrUpdated: '04 Oct 2026',
+        zuhar: '01:15 PM',
+        asar: '04:45 PM',
+        asarUpdated: '04 Oct 2026',
+        maghrib: '06:15 PM',
+        isha: '08:00 PM',
+        ishaUpdated: '04 Oct 2026',
+        jummah: '01:15 PM',
+      ),
+    ),
+    JamaatMasjidInfo(
+      id: 'makrani_masjid',
+      nameKey: 'Makrani Masjid',
+      addressKey: 'Bunder Road Sukkur',
+      defaultTimings: JamaatTiming(
+        fajr: '05:15 AM',
+        fajrUpdated: '04 Oct 2026',
+        zuhar: '01:15 PM',
+        asar: '04:45 PM',
+        asarUpdated: '04 Oct 2026',
+        maghrib: '06:15 PM',
+        isha: '08:00 PM',
+        ishaUpdated: '04 Oct 2026',
+        jummah: '01:15 PM',
+      ),
+    ),
   ];
 
   final Map<String, JamaatTiming> _remoteCache = {};
@@ -326,12 +408,31 @@ class JamaatTimesService {
     _gistRawUrl = url;
   }
 
-  /// Returns active list of masjids (either from remote Gist or default fallback list)
+  /// Returns active list of masjids (merging local built-in list with any remote Gist additions/updates/deletions)
   List<JamaatMasjidInfo> getMasjidList() {
-    if (_dynamicMasjids.isNotEmpty) {
-      return _dynamicMasjids;
+    final List<JamaatMasjidInfo> list = List.from(sukkurMasjids);
+    for (final remote in _dynamicMasjids) {
+      final index = list.indexWhere((m) => m.id == remote.id);
+      if (remote.isHidden) {
+        if (index >= 0) {
+          list.removeAt(index);
+        }
+      } else {
+        if (index >= 0) {
+          final local = list[index];
+          list[index] = JamaatMasjidInfo(
+            id: remote.id,
+            nameKey: remote.nameKey.isNotEmpty ? remote.nameKey : local.nameKey,
+            addressKey: remote.addressKey.isNotEmpty ? remote.addressKey : local.addressKey,
+            defaultTimings: local.defaultTimings,
+            isHidden: false,
+          );
+        } else {
+          list.add(remote);
+        }
+      }
     }
-    return sukkurMasjids;
+    return list.where((m) => !m.isHidden).toList();
   }
 
   /// Helper to convert time string into English 12-hour format with AM/PM & padded hours
@@ -400,6 +501,7 @@ class JamaatTimesService {
               final id = item['id'].toString();
               final name = item['name'] ?? item['nameKey'] ?? id;
               final address = item['address'] ?? item['addressKey'] ?? 'Sukkur';
+              final isHidden = item['hidden'] == true || item['enabled'] == false || item['removed'] == true;
               final timing = JamaatTiming.fromJson(item);
               _remoteCache[id] = timing;
               fetchedList.add(JamaatMasjidInfo(
@@ -407,6 +509,7 @@ class JamaatTimesService {
                 nameKey: name,
                 addressKey: address,
                 defaultTimings: timing,
+                isHidden: isHidden,
               ));
             }
           }

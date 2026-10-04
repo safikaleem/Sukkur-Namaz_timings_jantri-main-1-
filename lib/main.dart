@@ -19,7 +19,7 @@ import 'screens/monthly_screen.dart';
 import 'screens/reminders_screen.dart';
 import 'screens/qibla_screen.dart';
 import 'screens/tasbeeh_screen.dart';
-import 'screens/hidayat_screen.dart';
+import 'screens/jamaat_times_screen.dart';
 import 'screens/quran_screen.dart';
 import 'screens/munajat_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -312,7 +312,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       // Hidayat belongs to the Jantri, so it follows the timings actually in
       // use rather than the radio button.
       if (!settings.usesCalculatedTimings)
-        const HidayatScreen(),    // 8 - Instructions (9)
+        const JamaatTimesScreen(),    // 8 - Jama'at Times (9)
     ];
 
     int safeIndex = _currentIndex;
@@ -508,7 +508,7 @@ class _SukkurNavBar extends StatelessWidget {
       ), // 6
       _NavItem(icon: Icons.explore_rounded,               label: settings.translate('Qibla', 'قبلہ', 'قبلو', 'القبلة')),        // 7
       if (!settings.usesCalculatedTimings)
-        _NavItem(icon: Icons.menu_book_rounded,             label: settings.translate('Instructions', 'ہدایت', 'هدايتون', 'إرشادات')),     // 8
+        _NavItem(icon: Icons.mosque_rounded,               label: settings.translate('Jama\'at', 'جماعت', 'جماعت', 'الجماعة')),     // 8
     ];
 
     return Container(

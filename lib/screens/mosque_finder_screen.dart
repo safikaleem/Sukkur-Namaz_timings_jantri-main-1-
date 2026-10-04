@@ -101,7 +101,7 @@ class MosqueFinderScreen extends StatelessWidget {
         title: Text(
           _t(
             settings,
-            'Nearby Mosque Finder',
+            'Nearby Masjid Finder',
             'قریب ترین مساجد کی تلاش',
             'ويجهيون مسجدون ڳوليو',
             'مساجد قريبة',

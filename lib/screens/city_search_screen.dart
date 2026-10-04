@@ -167,37 +167,83 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
   }
 
   Widget _jantriNote(SettingsProvider settings) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppTheme.accent.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.accent.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.info_outline, color: AppTheme.accent, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              settings.translate(
-                'Select Sukkur Jantri (Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu Sirrahu Jantri) from the side bar for accurate timings',
-                'درست اوقات کے لیے سائیڈ بار سے سکھر جنتری (بمطابق حضرت ڈاکٹر حفیظ اللہ صاحب قَدَّسَ اللہ سِرَّہُ جنتری) منتخب کریں',
-                'صحيح وقتن لاءِ سائيڊ بار مان سکر جنتري (حضرت ڊاڪٽر حفيظ الله صاحب قَدَّسَ اللهُ سِرَّهُ جي جنتري مطابق) چونڊيو',
-                'للحصول على أوقات دقيقة، اختر جنتري سكر (بناءً على تقويم الشيخ الدكتور حفيظ الله قَدَّسَ اللهُ سِرَّهُ) من الشريط الجانبي',
+      child: Material(
+        color: AppTheme.accent.withValues(alpha: isDark ? 0.20 : 0.08),
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            Navigator.of(context).pop(
+              const CityResult(
+                name: 'Sukkur',
+                countryCode: 'PK',
+                latitude: SukkurLocation.lat,
+                longitude: SukkurLocation.lng,
               ),
-              style: TextStyle(
-                fontSize: 13,
-                height: settings.isRtl ? 1.7 : 1.35,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white
-                    : Colors.black87,
-              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accent.withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.push_pin_rounded,
+                    color: AppTheme.accent,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        settings.translate(
+                          'Sukkur',
+                          'سکھر',
+                          'سکر',
+                          'سكر',
+                        ),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        settings.translate(
+                          'Based on Hazrat Dr Hafeezullah Sahib Qaddasallahu Sirrahu Jantri',
+                          'بمطابق حضرت ڈاکٹر حفیظ اللہ صاحب قدس اللہ سرہ جنتری',
+                          'حضرت ڊاڪٽر حفيظ الله صاحب قدس الله سره جي جنتري مطابق',
+                          'بناءً على تقويم الشيخ الدكتور حفيظ الله قدس الله سره',
+                        ),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white70 : Colors.black54,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  settings.isRtl ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+                  color: AppTheme.accent,
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

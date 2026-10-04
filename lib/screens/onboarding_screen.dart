@@ -141,18 +141,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
     );
   }
 
-  /// Sukkur is never a world city: the Jantri is more accurate than any
-  /// calculation for it. Same refusal the World screen makes, worded for this
-  /// screen - here the Jantri is the option directly above, not the side bar.
-  void _refuseSukkur(SettingsProvider settings) {
-    _snack(settings.translate(
-      'Select Sukkur from the option above for accurate timings',
-      'درست اوقات کے لیے اوپر دیے گئے آپشن سے سکھر منتخب کریں',
-      'صحيح وقتن لاءِ مٿي ڏنل آپشن مان سکر چونڊيو',
-      'للحصول على أوقات دقيقة، اختر سكر من الخيار أعلاه',
-    ));
-  }
-
   /// The offline picker: 235,000 cities inside the app, so this is the path
   /// that still works with no permission and no internet.
   Future<void> _searchCity(SettingsProvider settings) async {
@@ -161,10 +149,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
     );
     if (chosen == null || !mounted) return;
 
-    // The picker itself never lists Sukkur; SukkurLocation is the authority,
-    // so check rather than trust.
     if (SukkurLocation.covers(chosen.latitude, chosen.longitude, chosen.name)) {
-      _refuseSukkur(settings);
+      setState(() {
+        _selectedLocationMode = LocationMode.sukkur;
+        _cityName = null;
+        _cityLat = null;
+        _cityLng = null;
+        _showSelectionError = false;
+      });
+      _snack(settings.translate(
+        'Sukkur selected – Sukkur Jantri of Hazrat Dr. Hafeezullah Sahib activated',
+        'سکھر کا انتخاب ہو گیا – حضرت ڈاکٹر حفیظ اللہ صاحب کی سکھر جنتری فعال کر دی گئی',
+        'سکر جو چونڊ ٿيو – حضرت ڊاڪٽر حفيظ الله صاحب جي سکر جنتري فعال ڪئي وئي',
+        'تم اختيار سكر - تم تفعيل تقويم سكر للشيخ الدكتور حفيظ الله',
+      ));
       return;
     }
     setState(() {
@@ -214,7 +212,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
       }
 
       if (SukkurLocation.covers(position.latitude, position.longitude, city)) {
-        _refuseSukkur(settings);
+        setState(() {
+          _selectedLocationMode = LocationMode.sukkur;
+          _cityName = null;
+          _cityLat = null;
+          _cityLng = null;
+          _showSelectionError = false;
+        });
+        _snack(settings.translate(
+          'Sukkur detected – Sukkur Jantri of Hazrat Dr. Hafeezullah Sahib activated',
+          'سکھر کا انتخاب ہو گیا – حضرت ڈاکٹر حفیظ اللہ صاحب کی سکھر جنتری فعال کر دی گئی',
+          'سکر جو چونڊ ٿيو – حضرت ڊاڪٽر حفيظ الله صاحب جي سکر جنتري فعال ڪئي وئي',
+          'تم اختيار سكر - تم تفعيل تقويم سكر للشيخ الدكتور حفيظ الله',
+        ));
         return;
       }
       if (!mounted) return;

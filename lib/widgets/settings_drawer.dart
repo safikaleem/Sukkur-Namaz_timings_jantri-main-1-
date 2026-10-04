@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart' show SettingsProvider, DarkModeOption;
+import '../l10n/world_translations.dart';
 import '../utils/alert_mode.dart';
 import '../utils/app_theme.dart';
 import '../screens/about_screen.dart';
@@ -13,7 +14,7 @@ import '../screens/notification_health_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/world_prayers_screen.dart';
 import '../screens/hijri_calendar_screen.dart';
-import '../screens/jamaat_times_screen.dart';
+import '../screens/hidayat_screen.dart';
 import '../screens/mosque_finder_screen.dart';
 import 'widget_selection_sheet.dart';
 class SettingsDrawer extends StatefulWidget {
@@ -85,23 +86,6 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                       if (picked == true) onSelected?.call();
                     },
                   ),
-                  if (!settings.usesCalculatedTimings)
-                    _DrawerItem(
-                      icon: Icons.access_time_filled_rounded,
-                      label: settings.translate(
-                        'Masjid Jama\'at Times (Sukkur)',
-                        'مساجد باجماعت اوقات (سکھر)',
-                        'مسجدن جا باجماعت وقت (سکر)',
-                        'مواقيت الجماعة للمساجد (سَكَر)',
-                      ),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const JamaatTimesScreen()),
-                        );
-                      },
-                    ),
                   _DrawerItem(
                     icon: Icons.calendar_month_rounded,
                     label: settings.translate(
@@ -121,7 +105,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   _DrawerItem(
                     icon: Icons.mosque_rounded,
                     label: settings.translate(
-                      'Nearby Mosque Finder',
+                      'Nearby Masjid Finder',
                       'قریب ترین مساجد',
                       'ويجهيون مسجدون',
                       'مساجد قريبة',
@@ -181,6 +165,26 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Contact Us (inline) ─────────────────────
                   const _ContactUsInline(),
 
+                  if (!settings.usesCalculatedTimings) ...[
+                    const _Divider(),
+                    _DrawerItem(
+                      icon: Icons.menu_book_rounded,
+                      label: settings.translate(
+                        'Sukkur Salah Instructions',
+                        'ہدایات سکھر صلاة',
+                        'سکر صلاة هدايتون',
+                        'تعليمات صلاة سكر',
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const HidayatScreen()),
+                        );
+                      },
+                    ),
+                  ],
+
                   const _Divider(),
 
                   // ── About ───────────────────────────────────
@@ -224,8 +228,21 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Current Version ───────────────────────────
                   _DrawerItem(
                     icon: Icons.new_releases_rounded,
-                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.2.9'}',
+                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.3.0'}',
                     onTap: () => _showWhatsNewDialog(context),
+                  ),
+
+                  // ── Check for Update ──────────────────────────
+                  _DrawerItem(
+                    icon: Icons.system_update_rounded,
+                    label: worldTranslations[settings.language]?['Check for Update'] ??
+                        settings.translate(
+                          'Check for Update',
+                          'اپڈیٹ چیک کریں',
+                          'اپڊيٽ چيڪ ڪريو',
+                          'التحقق من التحديثات',
+                        ),
+                    onTap: () => _rateApp(context),
                   ),
 
                   const SizedBox(height: 24),
@@ -355,7 +372,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.2.9';
+    final versionStr = _version.isNotEmpty ? _version : '1.3.0';
 
     showDialog(
       context: context,
@@ -487,9 +504,9 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                     context,
                     settings,
                     _getLocalizedText(settings, {
-                      'english': '🕌 Masjid Jama\'at Prayer Times (Sukkur) Has Been Added!',
-                      'urdu': '🕌 مساجد باجماعت نمازوں کے اوقات (سکھر) کا فیچر!',
-                      'sindhi': '🕌 مسجدن جا باجماعت نمازن جا وقت (سکر) جو فيچر!',
+                      'english': '🕌 Masajid Jama\'at Prayer Times (Sukkur) Has Been Added!',
+                      'urdu': '🕌 اوقاتِ جماعتِ مساجد (سکھر) کا فیچر!',
+                      'sindhi': '🕌 مساجدن جي جماعت جي وقتن (سکر) جو فيچر!',
                       'arabic': '🕌 تمت إضافة مواقيت الجماعة للمساجد (سَكَر)!',
                       'bengali': '🕌 সুক্কুরের মসজিদ জামায়াতের সময়সূচী যুক্ত করা হয়েছে!',
                       'hindi': '🕌 मस्जिद जमाअत नमाज़ समय (सुक्कुर) जोड़ा गया है!',
@@ -548,12 +565,12 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                     iconColor: const Color(0xFF2E7D32),
                   ),
                   const SizedBox(height: 16),
-                  // ── Item 2: Nearby Mosque Finder ──────────────────────────────────
+                  // ── Item 2: Nearby Masjid Finder ──────────────────────────────────
                   _buildNewFeatureItem(
                     context,
                     settings,
                     _getLocalizedText(settings, {
-                      'english': '🕌 Nearby Mosque Finder Has Been Added!',
+                      'english': '🕌 Nearby Masjid Finder Has Been Added!',
                       'urdu': '🕌 قریب ترین مساجد کی تلاش کا فیچر!',
                       'sindhi': '🕌 ويجهيون مسجدون ڳولڻ جو فيچر!',
                       'arabic': '🕌 تمت إضافة مستكشف المساجد القريبة!',
@@ -1122,7 +1139,7 @@ class _VolumeSectionState extends State<_VolumeSection> {
                         Switch(
                           value: settings.isAnyPrayerEnabled,
                           onChanged: (val) => settings.setAllPrayersEnabled(val),
-                          activeColor: AppTheme.accent,
+                          activeThumbColor: AppTheme.accent,
                           activeTrackColor: AppTheme.accent.withValues(alpha: 0.3),
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
@@ -1222,15 +1239,14 @@ class _PrayerAlertRowState extends State<_PrayerAlertRow> {
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
     final isRtl = settings.isRtl;
-    final isSindhi = settings.isSindhi;
-    final isArabic = settings.isArabic;
 
     // Pick the right display name for the prayer
-    final String displayName = isSindhi
-        ? (_sindhiNames[widget.name] ?? widget.name)
-        : (isArabic
-            ? (_arabicNames[widget.name] ?? widget.name)
-            : (isRtl ? widget.urdu : widget.name));
+    final String displayName = settings.translate(
+      widget.name,
+      widget.urdu,
+      _sindhiNames[widget.name] ?? widget.name,
+      _arabicNames[widget.name] ?? widget.name,
+    );
 
     return Column(
       mainAxisSize: MainAxisSize.min,

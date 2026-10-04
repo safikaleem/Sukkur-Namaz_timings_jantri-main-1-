@@ -69,17 +69,17 @@ class _ClockStyleScreenState extends State<ClockStyleScreen>
     ),
     _ThemeDef(
       UnifiedTheme.skyGlow,
-      'Sky Glow',
-      'آسمانی چمک',
-      'آسماني چمڪ',
-      const Color(0xFF0284C7),
+      'Slate Teal',
+      'سلیٹ ٹیل',
+      'سليٽ ٽيل',
+      const Color(0xFF1F4D5B),
       (isDark) => BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: isDark
-              ? [const Color(0xFF0F172A), const Color(0xFF1E293B)]
-              : [const Color(0xFFE0F2FE), const Color(0xFFFEF3C7), const Color(0xFFFFFBEB)],
+              ? [const Color(0xFF121920), const Color(0xFF1A232C)]
+              : [const Color(0xFFF0F4F5), const Color(0xFFE2E9EC)],
         ),
       ),
       ClockStyle.classic,
@@ -103,17 +103,17 @@ class _ClockStyleScreenState extends State<ClockStyleScreen>
     ),
     _ThemeDef(
       UnifiedTheme.softOcean,
-      'Soft Ocean',
-      'نرم سمندر',
-      'نرم سمنڊ',
-      const Color(0xFF0EA5E9),
+      'Charcoal Slate',
+      'چارکول سلیٹ',
+      'چارڪول سليٽ',
+      const Color(0xFF1E3F50),
       (isDark) => BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: isDark
-              ? [const Color(0xFF0F172A), const Color(0xFF0B132B)]
-              : [const Color(0xFFF0F9FF), const Color(0xFFE0F2FE), const Color(0xFFF0F9FF)],
+              ? [const Color(0xFF0F151B), const Color(0xFF182028)]
+              : [const Color(0xFFECEFF2), const Color(0xFFD9E2E8)],
         ),
       ),
       ClockStyle.ocean,
@@ -164,7 +164,7 @@ class _ClockStyleScreenState extends State<ClockStyleScreen>
     switch (style) {
       case ClockStyle.rose: return const Color(0xFFF472B6);
       case ClockStyle.sage: return const Color(0xFF059669);
-      case ClockStyle.ocean: return const Color(0xFF0EA5E9);
+      case ClockStyle.ocean: return const Color(0xFF1F4D5B);
       case ClockStyle.linen: return const Color(0xFFD97706);
       case ClockStyle.ivory: return const Color(0xFFB7860C);
       case ClockStyle.lavender: return const Color(0xFF7C3AED);
@@ -1154,8 +1154,8 @@ class _ClockPreviewPainter extends CustomPainter {
 
   void _paintOcean(Canvas canvas, Offset center, double radius) {
     final ri = radius - 2.0;
-    final bgColor = isDark ? const Color(0xFF071828) : const Color(0xFFF0F9FF);
-    const ocean = Color(0xFF0EA5E9);
+    final bgColor = isDark ? const Color(0xFF0F151B) : const Color(0xFFECEFF2);
+    const ocean = Color(0xFF1F4D5B);
     final handColor = isDark ? Colors.white : const Color(0xFF0C4A6E);
     canvas.drawCircle(center, radius, Paint()..color = bgColor);
     _ring(canvas, center, ri, ocean.withValues(alpha: 0.15), ocean, 3.0);

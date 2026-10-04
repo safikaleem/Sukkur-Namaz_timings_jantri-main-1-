@@ -574,8 +574,8 @@ class SettingsProvider extends ChangeNotifier {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: isDark
-                ? [const Color(0xFF0F172A), const Color(0xFF1E293B)]
-                : [const Color(0xFFE0F2FE), const Color(0xFFFEF3C7), const Color(0xFFFFFBEB)],
+                ? [const Color(0xFF121920), const Color(0xFF1A232C)]
+                : [const Color(0xFFF0F4F5), const Color(0xFFE2E9EC)],
           ),
         );
       case DisplayTheme.linenStone:
@@ -594,8 +594,8 @@ class SettingsProvider extends ChangeNotifier {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: isDark
-                ? [const Color(0xFF0F172A), const Color(0xFF0B132B)]
-                : [const Color(0xFFF0F9FF), const Color(0xFFE0F2FE), const Color(0xFFF0F9FF)],
+                ? [const Color(0xFF0F151B), const Color(0xFF182028)]
+                : [const Color(0xFFECEFF2), const Color(0xFFD9E2E8)],
           ),
         );
       case DisplayTheme.emeraldMasjid:
@@ -616,11 +616,11 @@ class SettingsProvider extends ChangeNotifier {
       case DisplayTheme.defaultLight:
         return isDark ? const Color(0xFF0F0F1E) : const Color(0xFFF5F5F5);
       case DisplayTheme.skyGlow:
-        return isDark ? const Color(0xFF0F172A) : const Color(0xFFE0F2FE);
+        return isDark ? const Color(0xFF121920) : const Color(0xFFF0F4F5);
       case DisplayTheme.linenStone:
         return isDark ? const Color(0xFF1E1B18) : const Color(0xFFF4EFE6);
       case DisplayTheme.softOcean:
-        return isDark ? const Color(0xFF0F172A) : const Color(0xFFF0F9FF);
+        return isDark ? const Color(0xFF0F151B) : const Color(0xFFECEFF2);
       case DisplayTheme.emeraldMasjid:
         return isDark ? const Color(0xFF091612) : const Color(0xFFF2F6F1);
     }
@@ -631,11 +631,11 @@ class SettingsProvider extends ChangeNotifier {
       case DisplayTheme.defaultLight:
         return const Color(0xFF1E88E5);
       case DisplayTheme.skyGlow:
-        return const Color(0xFF0284C7);
+        return const Color(0xFF1F4D5B);
       case DisplayTheme.linenStone:
         return const Color(0xFFD97706);
       case DisplayTheme.softOcean:
-        return const Color(0xFF0EA5E9);
+        return const Color(0xFF1E3F50);
       case DisplayTheme.emeraldMasjid:
         return const Color(0xFF0F8A5F);
     }
@@ -647,11 +647,11 @@ class SettingsProvider extends ChangeNotifier {
       case DisplayTheme.defaultLight:
         return Colors.white;
       case DisplayTheme.skyGlow:
-        return const Color(0xFFFFFBEB);
+        return const Color(0xFFE2E9EC);
       case DisplayTheme.linenStone:
         return const Color(0xFFE6DFD3);
       case DisplayTheme.softOcean:
-        return const Color(0xFFE0F2FE);
+        return const Color(0xFFD9E2E8);
       case DisplayTheme.emeraldMasjid:
         return const Color(0xFFE3ECE1);
     }

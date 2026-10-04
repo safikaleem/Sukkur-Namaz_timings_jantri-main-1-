@@ -402,8 +402,24 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
         // Falls back to localized 'Current Location'.
       }
 
-      // Standing in (or near) Sukkur: the provider refuses to store it and
-      // hands the timings back to the Jantri, so don't switch modes either.
+      // Standing in (or near) Sukkur: switch to Sukkur Jantri directly.
+      if (SukkurLocation.covers(position.latitude, position.longitude, city)) {
+        await settings.useSukkurJantri();
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+            settings.translate(
+              'Sukkur detected – Sukkur Jantri of Hazrat Dr. Hafeezullah Sahib activated',
+              'سکھر کا انتخاب ہو گیا – حضرت ڈاکٹر حفیظ اللہ صاحب کی سکھر جنتری فعال کر دی گئی',
+              'سکر جو چونڊ ٿيو – حضرت ڊاڪٽر حفيظ الله صاحب جي سکر جنتري فعال ڪئي وئي',
+              'تم اختيار سكر - تم تفعيل تقويم سكر للشيخ الدكتور حفيظ الله',
+            ),
+          )));
+        }
+        _returnToTimings();
+        return;
+      }
+
       final accepted =
           await settings.setLocation(position.latitude, position.longitude, city);
       if (!accepted) {
@@ -439,10 +455,6 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
   }
 
   /// Opens the live city picker and applies whatever comes back.
-  ///
-  /// The picker itself never offers Sukkur, so a rejection here would mean the
-  /// bundled list disagreed with [SukkurLocation] - handled anyway rather than
-  /// trusted.
   Future<void> _pickCity(SettingsProvider settings) async {
     final chosen = await Navigator.of(context).push<CityResult>(
       MaterialPageRoute(builder: (_) => const CitySearchScreen()),
@@ -451,6 +463,23 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
 
     setState(() => _isLoading = true);
     try {
+      if (SukkurLocation.covers(chosen.latitude, chosen.longitude, chosen.name)) {
+        await settings.useSukkurJantri();
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+            settings.translate(
+              'Sukkur selected – Sukkur Jantri of Hazrat Dr. Hafeezullah Sahib activated',
+              'سکھر کا انتخاب ہو گیا – حضرت ڈاکٹر حفیظ اللہ صاحب کی سکھر جنتری فعال کر دی گئی',
+              'سکر جو چونڊ ٿيو – حضرت ڊاڪٽر حفيظ الله صاحب جي سکر جنتري فعال ڪئي وئي',
+              'تم اختيار سكر - تم تفعيل تقويم سكر للشيخ الدكتور حفيظ الله',
+            ),
+          )));
+        }
+        _returnToTimings();
+        return;
+      }
+
       final accepted = await settings.setLocation(
           chosen.latitude, chosen.longitude, chosen.name);
       if (!accepted) {

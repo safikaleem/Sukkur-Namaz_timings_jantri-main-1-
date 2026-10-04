@@ -381,15 +381,26 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121619) : const Color(0xFFF4F6F8),
       appBar: AppBar(
-        title: Text(
-          _t(
-            settings,
-            'Masjid Jama\'at Times (Sukkur)',
-            'مساجد باجماعت اوقات (سکھر)',
-            'مسجدن جا باجماعت وقت (سکر)',
-            'مواقيت الجماعة للمساجد (سَكَر)',
+        centerTitle: true,
+        iconTheme: IconThemeData(
+          color: isDark ? Colors.white70 : Colors.black87,
+        ),
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            _t(
+              settings,
+              'Masajid Jama\'at Times (Sukkur)',
+              'اوقاتِ جماعتِ مساجد (سکھر)',
+              'مساجدن جي جماعت جا وقت (سکر)',
+              'مواقيت الجماعة للمساجد (سَكَر)',
+            ),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: settings.isRtl ? 20 : 17,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
           ),
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -436,9 +447,9 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
                   Text(
                     _t(
                       settings,
-                      'Masjid Jama\'at Times (Sukkur)',
-                      'مساجد باجماعت اوقات (سکھر)',
-                      'مسجدن جا باجماعت وقت (سکر)',
+                      'Masajid Jama\'at Times (Sukkur)',
+                      'اوقاتِ جماعتِ مساجد (سکھر)',
+                      'مساجدن جي جماعت جا وقت (سکر)',
                       'مواقيت الجماعة للمساجد (سَكَر)',
                     ),
                     style: TextStyle(

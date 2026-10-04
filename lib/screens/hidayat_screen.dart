@@ -86,9 +86,26 @@ class HidayatScreen extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const SizedBox(width: 42),
+                    IconButton(
+                      icon: Icon(
+                        settings.isRtl
+                            ? Icons.arrow_forward_rounded
+                            : Icons.arrow_back_rounded,
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
+                      onPressed: () => Navigator.maybePop(context),
+                      tooltip: settings.translate('Back', 'واپس', 'واپس', 'رجوع'),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 12),
                     Text(
-                      settings.translate('Instructions', 'ہدایت', 'هدايت', 'إرشادات'),
+                      settings.translate(
+                        'Sukkur Salah Instructions',
+                        'ہدایات سکھر صلاة',
+                        'سکر صلاة هدايتون',
+                        'تعليمات صلاة سكر',
+                      ),
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,

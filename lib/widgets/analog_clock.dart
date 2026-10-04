@@ -305,8 +305,8 @@ class _ClockPainter extends CustomPainter {
     final center    = Offset(size.width / 2, size.height / 2);
     final radius    = size.width / 2;
     final ringInset = radius - 3.5;
-    final bgColor   = isDark ? const Color(0xFF071828) : const Color(0xFFF0F9FF);
-    const ocean     = Color(0xFF0EA5E9);
+    final bgColor   = isDark ? const Color(0xFF0F151B) : const Color(0xFFECEFF2);
+    const ocean     = Color(0xFF1F4D5B);
     final handColor = isDark ? Colors.white : const Color(0xFF0C4A6E);
 
     canvas.drawCircle(center, radius, Paint()..color = bgColor);
