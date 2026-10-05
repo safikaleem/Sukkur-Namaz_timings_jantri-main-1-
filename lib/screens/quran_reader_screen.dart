@@ -59,10 +59,13 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     if (widget.parahNumber == null) return;
     if (parah >= 1 && parah <= QuranData.parahs.length) {
       final parahData = QuranData.parahs[parah - 1];
+      final settings = context.read<SettingsProvider>();
+      final parahWord = settings.translate('Parah', 'پارہ', 'پارو', 'جزء');
+      final nameLocal = settings.translate(parahData.english, parahData.urdu, parahData.sindhi, parahData.arabic);
       setState(() {
         _titleEn = 'Parah ${parahData.number} – ${parahData.english}';
         _titleArabic = parahData.arabic;
-        _titleLocal = 'پارہ ${parahData.number}';
+        _titleLocal = '$parahWord ${parahData.number} – $nameLocal';
       });
     }
   }
@@ -148,11 +151,12 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                 ),
               const SizedBox(height: 2),
               Text(
-                isRtl ? _titleLocal : _titleEn,
+                settings.language == 'english' ? _titleEn : _titleLocal,
                 style: TextStyle(
                   color: isDark ? Colors.white70 : Colors.black54,
                   fontWeight: FontWeight.w500,
                   fontSize: _titleArabic.isNotEmpty ? 13 : 18,
+                  fontFamily: settings.language == 'english' ? null : AppTheme.getFontForLanguage(context, settings.language),
                   letterSpacing: 0.5,
                 ),
               ),
@@ -219,7 +223,11 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               initialPage: _startPage,
               onParahChanged: _onParahChanged,
               onPageChanged: (page) {
-                _currentPage = page;
+                if (_currentPage != page) {
+                  setState(() {
+                    _currentPage = page;
+                  });
+                }
               },
             ),
             TranslationReader(

@@ -99,6 +99,14 @@
                 <action android:name="com.vivo.action.BOOT_COMPLETED" />
                 <!-- Samsung One UI specific boot action -->
                 <action android:name="com.samsung.intent.action.BOOT_COMPLETED" />
+                <!-- Xiaomi MIUI specific boot action -->
+                <action android:name="miui.intent.action.OP_BOOT_COMPLETED" />
+                <!-- Oppo ColorOS specific boot action -->
+                <action android:name="com.oppo.action.BOOT_COMPLETED" />
+                <!-- Huawei EMUI specific boot action -->
+                <action android:name="com.huawei.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.REBOOT" />
             </intent-filter>
         </receiver>
 
@@ -247,6 +255,14 @@
                 <action android:name="com.vivo.action.BOOT_COMPLETED" />
                 <!-- Samsung One UI specific boot action -->
                 <action android:name="com.samsung.intent.action.BOOT_COMPLETED" />
+                <!-- Xiaomi MIUI specific boot action -->
+                <action android:name="miui.intent.action.OP_BOOT_COMPLETED" />
+                <!-- Oppo ColorOS specific boot action -->
+                <action android:name="com.oppo.action.BOOT_COMPLETED" />
+                <!-- Huawei EMUI specific boot action -->
+                <action android:name="com.huawei.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.REBOOT" />
             </intent-filter>
         </receiver>
     </application>

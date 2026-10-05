@@ -21,6 +21,7 @@ class MunajatReaderScreen extends StatefulWidget {
 
 class _MunajatReaderScreenState extends State<MunajatReaderScreen> {
   PdfController? _pdfController;
+  final TextEditingController _pageSearchController = TextEditingController();
   bool _isLoading = true;
   String? _errorMessage;
   int _currentPage = 1;
@@ -35,25 +36,15 @@ class _MunajatReaderScreenState extends State<MunajatReaderScreen> {
   Future<void> _initPdf() async {
     try {
       Future<PdfDocument> docFuture;
-      if (kIsWeb) {
-        try {
-          docFuture = PdfDocument.openAsset('assets/quran_pdfs/MUNAJAT_E_MAQBOOL.pdf');
-        } catch (_) {
-          final bytes = await MunajatDownloadService.instance.getPdfBytes();
-          if (bytes == null || bytes.isEmpty) throw 'Munajat PDF file not available.';
-          docFuture = PdfDocument.openData(bytes);
-        }
-      } else {
-        final bytes = await MunajatDownloadService.instance.getPdfBytes();
-        if (bytes == null || bytes.isEmpty) {
-          setState(() {
-            _isLoading = false;
-            _errorMessage = 'Munajat PDF file not available.';
-          });
-          return;
-        }
-        docFuture = PdfDocument.openData(bytes);
+      final bytes = await MunajatDownloadService.instance.getPdfBytes();
+      if (bytes == null || bytes.isEmpty) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Munajat PDF file not available.';
+        });
+        return;
       }
+      docFuture = PdfDocument.openData(bytes);
 
       _pdfController = PdfController(
         document: docFuture,
@@ -64,6 +55,11 @@ class _MunajatReaderScreenState extends State<MunajatReaderScreen> {
         _isLoading = false;
         _currentPage = widget.initialPage;
       });
+
+      // Update position on open
+      if (mounted) {
+        context.read<SettingsProvider>().updateMunajatReadingPosition(widget.initialPage);
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -74,6 +70,7 @@ class _MunajatReaderScreenState extends State<MunajatReaderScreen> {
 
   @override
   void dispose() {
+    _pageSearchController.dispose();
     _pdfController?.dispose();
     super.dispose();
   }
@@ -95,7 +92,7 @@ class _MunajatReaderScreenState extends State<MunajatReaderScreen> {
             ),
             if (_totalPages > 0)
               Text(
-                '${settings.translate('Page', 'صفحہ', 'صفحو', 'صفحة')} ${_currentPage + 1} / $_totalPages',
+                '${settings.translate('Page', 'صفحہ', 'صفحو', 'صفحة')} $_currentPage / $_totalPages',
                 style: const TextStyle(fontSize: 11, fontWeight: FontWeight.normal),
               ),
           ],
@@ -122,24 +119,88 @@ class _MunajatReaderScreenState extends State<MunajatReaderScreen> {
                     ),
                   ),
                 )
-              : Directionality(
-                  textDirection: TextDirection.ltr,
-                  child: PdfView(
-                    controller: _pdfController!,
-                    scrollDirection: Axis.horizontal,
-                    reverse: true,
-                    physics: const BouncingScrollPhysics(),
-                    onPageChanged: (page) {
-                      setState(() {
-                        _currentPage = page;
-                      });
-                    },
-                    onDocumentLoaded: (doc) {
-                      setState(() {
-                        _totalPages = doc.pagesCount;
-                      });
-                    },
-                  ),
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+                      child: SizedBox(
+                        height: 38,
+                        child: TextField(
+                          controller: _pageSearchController,
+                          keyboardType: TextInputType.number,
+                          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            hintText: settings.translate(
+                              'Search Page No (1-136)...',
+                              'صفحہ نمبر تلاش کریں (1-136)...',
+                              'صفحو نمبر ڳوليو (1-136)...',
+                              'ابحث برقم الصفحة (1-136)...',
+                            ),
+                            hintStyle: TextStyle(
+                              color: isDark ? Colors.white54 : Colors.black54,
+                              fontSize: 13,
+                            ),
+                            prefixIcon: const Icon(Icons.search, color: Color(0xFF3F7A63), size: 18),
+                            filled: true,
+                            fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          onSubmitted: (val) {
+                            final maxP = _totalPages > 0 ? _totalPages : 136;
+                            final pageNum = int.tryParse(val.trim());
+                            if (pageNum != null && pageNum >= 1 && pageNum <= maxP) {
+                              _pdfController?.animateToPage(
+                                pageNum,
+                                duration: const Duration(milliseconds: 250),
+                                curve: Curves.easeInOut,
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    settings.translate(
+                                      'Invalid page number',
+                                      'غلط صفحہ نمبر',
+                                      'غلط صفحو نمبر',
+                                      'رقم الصفحة غير صالحة',
+                                    ),
+                                  ),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: PdfView(
+                          controller: _pdfController!,
+                          scrollDirection: Axis.horizontal,
+                          reverse: true,
+                          physics: const BouncingScrollPhysics(),
+                          onPageChanged: (page) {
+                            setState(() {
+                              _currentPage = page;
+                            });
+                            context.read<SettingsProvider>().updateMunajatReadingPosition(page);
+                          },
+                          onDocumentLoaded: (doc) {
+                            setState(() {
+                              _totalPages = doc.pagesCount;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
     );
   }

@@ -123,6 +123,8 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
   }
 
   Future<void> _openManzilPage(BuildContext context, int page, String title) async {
+    final settings = context.read<SettingsProvider>();
+    settings.updateMunajatReadingPosition(page);
     final service = MunajatDownloadService.instance;
     final isAvailable = await service.isMunajatAvailable();
 
@@ -137,10 +139,163 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
             title: title,
           ),
         ),
-      );
+      ).then((_) {
+        if (mounted) setState(() {});
+      });
     } else {
       _showDownloadDialog(context, page, title);
     }
+  }
+
+  int _getManzilForPage(int page) {
+    if (page >= 119) return 7;
+    if (page >= 101) return 6;
+    if (page >= 85) return 5;
+    if (page >= 65) return 4;
+    if (page >= 47) return 3;
+    if (page >= 27) return 2;
+    return 1;
+  }
+
+  String _getManzilTitle(Map<String, dynamic> manzil, SettingsProvider settings) {
+    final en = manzil['en'] as String;
+    final ur = manzil['ur'] as String;
+    final sd = manzil['sd'] as String;
+    final ar = manzil['ar'] as String;
+    return settings.translate(en, ur, sd, ar);
+  }
+
+  Widget _buildContinueReading(BuildContext context, SettingsProvider settings, bool isDark) {
+    final lastPage = settings.munajatLastPage;
+    if (lastPage == null || lastPage < 1) {
+      return const SizedBox.shrink();
+    }
+
+    final int manzilNum = _getManzilForPage(lastPage);
+    final manzilData = _manzilsData.firstWhere(
+      (m) => m['num'] == manzilNum,
+      orElse: () => _manzilsData.first,
+    );
+
+    final String titleEn = manzilData['en'];
+    final String titleLocal = _getManzilTitle(manzilData, settings);
+    final String titleArabic = manzilData['ar'];
+    final String subtitle = '${settings.translate("Page", "صفحہ", "صفحو", "صفحة")} $lastPage';
+    final int progressPercent = ((lastPage / 136) * 100).clamp(0, 100).toInt();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            _openManzilPage(context, lastPage, titleLocal);
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF3F7A63), Color(0xFF2E5E4C)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF2E5E4C).withValues(alpha: 0.25),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1),
+                  ),
+                  child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  settings.translate('CONTINUE READING', 'پڑھنا جاری رکھیں', 'پڙهڻ جاري رکو', 'مواصلة القراءة').toUpperCase(),
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                    fontSize: settings.language == 'english' ? 10 : 12,
+                                    fontFamily: settings.language == 'english' ? null : AppTheme.getFontForLanguage(context, settings.language),
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: settings.language == 'english' ? 1.5 : 0.0,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  settings.language == 'english' ? titleEn : titleLocal,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: settings.language == 'english' ? 18 : 20,
+                                    fontFamily: settings.language == 'english' ? null : AppTheme.urduFont,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  subtitle,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontSize: settings.language == 'english' ? 13 : 15,
+                                    fontFamily: settings.language == 'english' ? null : AppTheme.getFontForLanguage(context, settings.language),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            titleArabic,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontFamily: AppTheme.urduFont,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: progressPercent / 100.0,
+                          backgroundColor: Colors.white.withValues(alpha: 0.2),
+                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                          minHeight: 5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _showDownloadDialog(BuildContext context, int targetPage, String title) {
@@ -316,16 +471,6 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
       default: return '7 Daily Manzils (Saturday to Friday)';
     }
   }
-
-  String _getManzilTitle(Map<String, dynamic> item, SettingsProvider settings) {
-    return settings.translate(
-      item['en'] as String,
-      item['ur'] as String,
-      item['sd'] as String,
-      item['ar'] as String,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
@@ -657,6 +802,8 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
             ),
           ),
         ),
+
+        _buildContinueReading(context, settings, isDark),
 
         // Tab Bar
         TabBar(

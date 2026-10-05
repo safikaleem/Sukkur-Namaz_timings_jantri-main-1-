@@ -248,6 +248,10 @@ class _QuranScreenState extends State<QuranScreen> {
     );
     if (!ready || !mounted) return;
 
+    final parahWord = settings.translate('Parah', 'پارہ', 'پارو', 'جزء');
+    final nameLocal = settings.translate(parah.english, parah.urdu, parah.sindhi, parah.arabic);
+    final titleLocalStr = '$parahWord ${parah.number} – $nameLocal';
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -255,7 +259,7 @@ class _QuranScreenState extends State<QuranScreen> {
           surahNumber: specificSurahId ?? parah.surahId,
           surahNameEn: 'Parah ${parah.number} – ${parah.english}',
           surahNameArabic: parah.arabic,
-          surahNameLocal: 'پارہ ${parah.number}',
+          surahNameLocal: titleLocalStr,
           initialPage: savedPage,
           initialAyah: specificAyahId ?? parah.ayahId,
           parahNumber: parah.number,
@@ -1085,14 +1089,13 @@ class _QuranScreenState extends State<QuranScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${settings.translate('Parah', 'پارہ', 'پاره', 'الجزء')} ${parah.number} — ${settings.translate(parah.english, parah.urdu, parah.sindhi, parah.arabic)}${settings.isRtl ? '' : ' (${parah.arabic})'}',
-                            textDirection: settings.isRtl ? TextDirection.rtl : TextDirection.ltr,
+                            settings.language == 'english'
+                                ? 'Parah ${parah.number} — ${parah.english} (${parah.arabic})'
+                                : '${settings.translate("Parah", "پارہ", "پارہ", "الجزء")} ${parah.number} — ${settings.translate(parah.english, parah.urdu, parah.sindhi, parah.arabic)} (${parah.arabic})',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: settings.isRtl ? 15 : 13,
-                              fontFamily: settings.isRtl 
-                                  ? (settings.language == 'sindhi' ? AppTheme.getSindhiFont(context) : AppTheme.urduFont) 
-                                  : null,
+                              fontSize: 14,
+                              fontFamily: AppTheme.getFontForLanguage(context, settings.language),
                             ),
                           ),
                         ],

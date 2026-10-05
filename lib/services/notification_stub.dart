@@ -42,6 +42,25 @@ class InitializationSettings {
       DarwinInitializationSettings? iOS});
 }
 
+class AndroidNotificationCategory {
+  static const AndroidNotificationCategory alarm = AndroidNotificationCategory._();
+  static const AndroidNotificationCategory event = AndroidNotificationCategory._();
+  static const AndroidNotificationCategory reminder = AndroidNotificationCategory._();
+  static const AndroidNotificationCategory status = AndroidNotificationCategory._();
+  static const AndroidNotificationCategory service = AndroidNotificationCategory._();
+  static const AndroidNotificationCategory call = AndroidNotificationCategory._();
+  static const AndroidNotificationCategory email = AndroidNotificationCategory._();
+  static const AndroidNotificationCategory message = AndroidNotificationCategory._();
+  static const AndroidNotificationCategory navigation = AndroidNotificationCategory._();
+  static const AndroidNotificationCategory progress = AndroidNotificationCategory._();
+  static const AndroidNotificationCategory promo = AndroidNotificationCategory._();
+  static const AndroidNotificationCategory recommendation = AndroidNotificationCategory._();
+  static const AndroidNotificationCategory social = AndroidNotificationCategory._();
+  static const AndroidNotificationCategory transport = AndroidNotificationCategory._();
+  static const AndroidNotificationCategory sys = AndroidNotificationCategory._();
+  const AndroidNotificationCategory._();
+}
+
 class AndroidNotificationDetails {
   const AndroidNotificationDetails(String channelId, String channelName,
       {String? channelDescription,
@@ -54,7 +73,9 @@ class AndroidNotificationDetails {
       dynamic largeIcon,
       dynamic color,
       dynamic visibility,
-      dynamic styleInformation});
+      dynamic styleInformation,
+      dynamic category,
+      dynamic audioAttributesUsage});
 }
 
 class NotificationVisibility {
@@ -84,16 +105,26 @@ class BigTextStyleInformation extends DefaultStyleInformation {
       : super(htmlFormatTitle, htmlFormatContent);
 }
 
+class InterruptionLevel {
+  static const InterruptionLevel passive = InterruptionLevel._();
+  static const InterruptionLevel active = InterruptionLevel._();
+  static const InterruptionLevel timeSensitive = InterruptionLevel._();
+  static const InterruptionLevel critical = InterruptionLevel._();
+  const InterruptionLevel._();
+}
+
 class DarwinNotificationDetails {
   const DarwinNotificationDetails(
       {bool presentAlert = true,
       bool presentBadge = true,
       bool presentSound = true,
-      String? sound});
+      String? sound,
+      dynamic interruptionLevel});
 }
 
 class AudioAttributesUsage {
   static const AudioAttributesUsage notification = AudioAttributesUsage._();
+  static const AudioAttributesUsage alarm = AudioAttributesUsage._();
   const AudioAttributesUsage._();
 }
 

@@ -441,8 +441,10 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
       _returnToTimings();
     } catch (e) {
       if (mounted) {
+        final rawMsg = e.toString().replaceFirst('Exception: ', '').trim();
+        final translatedMsg = settings.translate(rawMsg, rawMsg, rawMsg, rawMsg);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-          '${settings.translate('Error: ', 'خرابی: ', 'غلطي: ', 'خطأ: ')}${e.toString()}'
+          '${settings.translate('Error: ', 'خرابی: ', 'غلطي: ', 'خطأ: ')}$translatedMsg'
         )));
       }
     } finally {

@@ -135,6 +135,28 @@ class _ClockStyleScreenState extends State<ClockStyleScreen>
       ),
       ClockStyle.sage,
     ),
+    _ThemeDef(
+      UnifiedTheme.slateTealWhite,
+      'Slate Teal White',
+      'سلیٹ ٹیل وائٹ',
+      'سليٽ ٽيل وائيٽ',
+      const Color(0xFF1F4D5B),
+      (isDark) => BoxDecoration(
+        color: isDark ? const Color(0xFF121920) : Colors.white,
+      ),
+      ClockStyle.classic,
+    ),
+    _ThemeDef(
+      UnifiedTheme.emeraldMasjidWhite,
+      'Emerald Masjid White',
+      'زمرد مسجد وائٹ',
+      'زمرد مسجد وائيٽ',
+      const Color(0xFF0F8A5F),
+      (isDark) => BoxDecoration(
+        color: isDark ? const Color(0xFF091612) : Colors.white,
+      ),
+      ClockStyle.sage,
+    ),
   ];
 
   // Clock styles available for user selection

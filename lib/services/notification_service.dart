@@ -234,9 +234,6 @@ class NotificationService {
       _chSilent,
       'نماز خاموش',
       description: desc,
-      // Use defaultImportance (not low): Importance.low is aggressively suppressed
-      // by Vivo/Samsung OEM battery managers when the screen is off, causing
-      // silent-mode prayer notifications to never appear.
       importance: Importance.defaultImportance,
       playSound: false,
       enableVibration: false,
@@ -255,20 +252,20 @@ class NotificationService {
       _chLoud,
       'نماز کے اوقات',
       description: desc,
-      importance: Importance.high,
+      importance: Importance.max,
       playSound: true,
       enableVibration: true,
-      audioAttributesUsage: AudioAttributesUsage.notification,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
       sound: RawResourceAndroidNotificationSound('mixkit_bell_notification_933'),
     ));
     await android.createNotificationChannel(const AndroidNotificationChannel(
       _chReminder,
       'ذاتی یاد دہانیاں',
       description: 'آپ کی مقرر کردہ یاد دہانیاں',
-      importance: Importance.high,
+      importance: Importance.max,
       playSound: true,
       enableVibration: true,
-      audioAttributesUsage: AudioAttributesUsage.notification,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
       sound: RawResourceAndroidNotificationSound('mixkit_bell_notification_933'),
     ));
 
@@ -278,10 +275,10 @@ class NotificationService {
         _getAzanChannelId(i),
         'اذان (${azanTracks[i].urduName})',
         description: 'نماز کے وقت اذان کی آواز',
-        importance: Importance.high,
+        importance: Importance.max,
         playSound: true,
         enableVibration: true,
-        audioAttributesUsage: AudioAttributesUsage.notification,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
         sound: RawResourceAndroidNotificationSound(azanTracks[i].androidSound),
       ));
     }
@@ -488,15 +485,13 @@ class NotificationService {
         // time) skips a single notification instead of aborting the batch and
         // leaving the user with none.
         try {
-          await _plugin!.zonedSchedule(
-            notifId,
-            title,
-            body,
-            tzDateTime,
-            _detailsFor(mode, selectedAzanIndex, isRtl: rtlLanguages.contains(langCode)),
-            androidScheduleMode: scheduleMode,
-            uiLocalNotificationDateInterpretation:
-                UILocalNotificationDateInterpretation.absoluteTime,
+          await _safeZonedSchedule(
+            id: notifId,
+            title: title,
+            body: body,
+            scheduledDate: tzDateTime,
+            notificationDetails: _detailsFor(mode, selectedAzanIndex, isRtl: rtlLanguages.contains(langCode)),
+            scheduleMode: scheduleMode,
           );
           writtenIds.add(notifId);
           batchCounter++;
@@ -627,8 +622,8 @@ class NotificationService {
         channelName = 'نماز کے اوقات';
         playSound = true;
         enableVibration = true;
-        importance = Importance.high;
-        priority = Priority.high;
+        importance = Importance.max;
+        priority = Priority.max;
         androidSound = const RawResourceAndroidNotificationSound('mixkit_bell_notification_933');
       case AlertMode.azan:
         // Use safely bounded index
@@ -642,8 +637,8 @@ class NotificationService {
         channelName = 'اذان (${track.urduName})';
         playSound = true;
         enableVibration = true;
-        importance = Importance.high;
-        priority = Priority.high;
+        importance = Importance.max;
+        priority = Priority.max;
         androidSound = RawResourceAndroidNotificationSound(track.androidSound);
         iosSound = track.iosSound;
     }
@@ -665,16 +660,15 @@ class NotificationService {
         // Brand color — tints the small status-bar icon with the app's teal color.
         color: const Color(0xFF0D6B5E),
         visibility: NotificationVisibility.public,
+        category: AndroidNotificationCategory.alarm,
         styleInformation: const DefaultStyleInformation(true, true),
-        // NOTE: fullScreenIntent was removed — it caused the app to open/launch
-        // every time the user pressed the power button to unlock the screen.
-        // fullScreenIntent is only for alarm-clock apps that replace the lock screen.
       ),
       iOS: DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: playSound,
         sound: iosSound,
+        interruptionLevel: InterruptionLevel.timeSensitive,
       ),
     );
   }
@@ -768,12 +762,12 @@ class NotificationService {
     final tzNextFriday = tz.TZDateTime.from(nextFriday, tz.local);
 
     try {
-      await _plugin!.zonedSchedule(
-        8000, // Fixed ID for Friday notification
-        isRtl ? '<b>$title</b>' : '<b>$title</b>',
-        plainBody,
-        tzNextFriday,
-        NotificationDetails(
+      await _safeZonedSchedule(
+        id: 8000,
+        title: isRtl ? '<b>$title</b>' : '<b>$title</b>',
+        body: plainBody,
+        scheduledDate: tzNextFriday,
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             _chSilent,
             'Friday Reminders',
@@ -781,6 +775,7 @@ class NotificationService {
             importance: Importance.defaultImportance,
             priority: Priority.defaultPriority,
             playSound: false,
+            category: AndroidNotificationCategory.event,
             styleInformation: BigTextStyleInformation(
               plainBody,
               htmlFormatBigText: true,
@@ -795,9 +790,7 @@ class NotificationService {
             presentSound: false,
           ),
         ),
-        androidScheduleMode: scheduleMode,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+        scheduleMode: scheduleMode,
         matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       );
       return {8000};
@@ -870,49 +863,107 @@ class NotificationService {
             _reminderBody(prayerName!, offset, reminderLang);
 
         try {
-        await _plugin!.zonedSchedule(
-          id,
-          rtlLanguages.contains(reminderLang)
-              ? '\u200F$reminderTitle'
-              : reminderTitle,
-          rtlLanguages.contains(reminderLang)
-              ? '\u200F$reminderBodyText'
-              : reminderBodyText,
-          tzDt,
-          NotificationDetails(
-            android: AndroidNotificationDetails(
-              _chReminder,
-              'ذاتی یاد دہانیاں',
-              channelDescription: 'آپ کی مقرر کردہ یاد دہانیاں',
-              importance: Importance.high,
-              priority: Priority.high,
-              icon: '@drawable/ic_notification',
-              // No largeIcon for any language — keeps single badge on right.
-              visibility: NotificationVisibility.public,
-              sound: const RawResourceAndroidNotificationSound('mixkit_bell_notification_933'),
-              styleInformation: const DefaultStyleInformation(true, true),
+          await _safeZonedSchedule(
+            id: id,
+            title: rtlLanguages.contains(reminderLang)
+                ? '\u200F$reminderTitle'
+                : reminderTitle,
+            body: rtlLanguages.contains(reminderLang)
+                ? '\u200F$reminderBodyText'
+                : reminderBodyText,
+            scheduledDate: tzDt,
+            notificationDetails: NotificationDetails(
+              android: AndroidNotificationDetails(
+                _chReminder,
+                'ذاتی یاد دہانیاں',
+                channelDescription: 'آپ کی مقرر کردہ یاد دہانیاں',
+                importance: Importance.max,
+                priority: Priority.max,
+                icon: '@drawable/ic_notification',
+                visibility: NotificationVisibility.public,
+                sound: const RawResourceAndroidNotificationSound('mixkit_bell_notification_933'),
+                category: AndroidNotificationCategory.reminder,
+                styleInformation: const DefaultStyleInformation(true, true),
+              ),
+              iOS: DarwinNotificationDetails(
+                presentAlert: true,
+                presentBadge: true,
+                presentSound: true,
+                interruptionLevel: InterruptionLevel.timeSensitive,
+              ),
             ),
-            iOS: const DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-            ),
-          ),
-          androidScheduleMode: scheduleMode,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
-        );
-        written.add(id);
-        // Yield periodically to keep the event loop responsive.
-        if (written.length % 3 == 0) {
-          await Future.delayed(const Duration(milliseconds: 1));
-        }
+            scheduleMode: scheduleMode,
+          );
+          written.add(id);
+          // Yield periodically to keep the event loop responsive.
+          if (written.length % 3 == 0) {
+            await Future.delayed(const Duration(milliseconds: 1));
+          }
         } catch (e) {
           debugPrint('Failed to schedule reminder $id: $e');
         }
       }
     }
     return written;
+  }
+
+  /// Safely schedules a zoned notification with multi-level schedule mode fallback.
+  /// Primary mode is usually [AndroidScheduleMode.alarmClock]. If the OS or device policy
+  /// prevents exact alarm clock scheduling, it automatically tries exactAllowWhileIdle and inexactAllowWhileIdle.
+  Future<void> _safeZonedSchedule({
+    required int id,
+    required String title,
+    required String body,
+    required tz.TZDateTime scheduledDate,
+    required NotificationDetails notificationDetails,
+    required AndroidScheduleMode scheduleMode,
+    DateTimeComponents? matchDateTimeComponents,
+  }) async {
+    try {
+      await _plugin!.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduledDate,
+        notificationDetails,
+        androidScheduleMode: scheduleMode,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: matchDateTimeComponents,
+      );
+    } catch (e) {
+      debugPrint('ZonedSchedule primary mode ($scheduleMode) failed for $id: $e');
+      if (scheduleMode != AndroidScheduleMode.exactAllowWhileIdle) {
+        try {
+          await _plugin!.zonedSchedule(
+            id,
+            title,
+            body,
+            scheduledDate,
+            notificationDetails,
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
+            matchDateTimeComponents: matchDateTimeComponents,
+          );
+          return;
+        } catch (e2) {
+          debugPrint('ZonedSchedule fallback exactAllowWhileIdle failed for $id: $e2');
+        }
+      }
+      // Final resilient fallback: inexactAllowWhileIdle guarantees notification is delivered even if exact alarms are denied by OS
+      await _plugin!.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduledDate,
+        notificationDetails,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: matchDateTimeComponents,
+      );
+    }
   }
 
   /// Title and body for a prayer-time alert.

@@ -11,6 +11,7 @@ import 'package:quran/quran_text.dart' show quranText;
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/quran_data.dart';
+import '../data/quran_data_15_line.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
 
@@ -197,6 +198,17 @@ class _TranslationReaderState extends State<TranslationReader> {
     }
   }
 
+  @override
+  void didUpdateWidget(TranslationReader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialPage != widget.initialPage || oldWidget.surahNumber != widget.surahNumber) {
+      final newIndex = _calculateInitialGlobalIndex();
+      if (_itemScrollController.isAttached) {
+        _itemScrollController.jumpTo(index: newIndex);
+      }
+    }
+  }
+
   int _calculateInitialGlobalIndex() {
     if (widget.initialAyah > 1) {
       final start = _surahStartGlobalIndex[widget.surahNumber] ?? 0;
@@ -204,17 +216,25 @@ class _TranslationReaderState extends State<TranslationReader> {
     }
 
     final page = widget.initialPage;
+    final is15Line = widget.settings.quranType == '15_line';
+
     if (page > 0) {
-      try {
-        final pageData = quran.getPageData(page.clamp(1, 604));
-        if (pageData.isNotEmpty) {
-          final firstRange = pageData.first;
-          final s = firstRange['surah'] as int;
-          final a = firstRange['start'] as int;
-          final start = _surahStartGlobalIndex[s] ?? 0;
-          return (start + a - 1).clamp(0, _allVerses.length - 1);
-        }
-      } catch (_) {}
+      if (is15Line) {
+        final (targetSurah, targetAyah) = Quran15LineData.getFirstVerseForPage(page);
+        final start = _surahStartGlobalIndex[targetSurah] ?? 0;
+        return (start + targetAyah - 1).clamp(0, _allVerses.length - 1);
+      } else {
+        try {
+          final pageData = quran.getPageData(page.clamp(1, 604));
+          if (pageData.isNotEmpty) {
+            final firstRange = pageData.first;
+            final s = firstRange['surah'] as int;
+            final a = firstRange['start'] as int;
+            final start = _surahStartGlobalIndex[s] ?? 0;
+            return (start + a - 1).clamp(0, _allVerses.length - 1);
+          }
+        } catch (_) {}
+      }
     }
 
     return _surahStartGlobalIndex[widget.surahNumber] ?? 0;

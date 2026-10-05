@@ -35,6 +35,10 @@ class UpdateService {
   static const String _defaultStoreUrl =
       'https://play.google.com/store/apps/details?id=pk.sukkur.salah';
 
+  static bool hasPendingUpdate = false;
+  static String? pendingVersion;
+  static String? pendingStoreUrl;
+
   /// Prompts for an update when the hosted version is newer than the installed
   /// one. Silent on every failure: no network, a slow link, a malformed file or
   /// a deleted Gist all leave the app exactly as it was, because a prayer-times
@@ -48,16 +52,81 @@ class UpdateService {
       if (latest == null || latest.isEmpty) return;
 
       final info = await PackageInfo.fromPlatform();
-      if (!isNewerVersion(latest, info.version)) return;
+      if (!isNewerVersion(latest, info.version)) {
+        hasPendingUpdate = false;
+        return;
+      }
 
       final hosted = (data['playStoreUrl'] as String?)?.trim();
       final storeUrl =
           (hosted == null || hosted.isEmpty) ? _defaultStoreUrl : hosted;
 
+      hasPendingUpdate = true;
+      pendingVersion = latest;
+      pendingStoreUrl = storeUrl;
+
       if (!context.mounted) return;
       await _showUpdateDialog(context, latest, storeUrl);
     } catch (e) {
       debugPrint('Failed to check for update: $e');
+    }
+  }
+
+  /// Opens the pending update dialog directly if an update is available.
+  static Future<void> openPendingUpdateDialog(BuildContext context) async {
+    if (pendingVersion != null && pendingStoreUrl != null) {
+      await _showUpdateDialog(context, pendingVersion!, pendingStoreUrl!);
+    } else {
+      await manualCheckForUpdate(context);
+    }
+  }
+
+  /// Called when user taps "Check for Update" in the side menu.
+  /// Checks for a newer version; if found, shows the update dialog.
+  /// If no update exists or placeholder/network failed, opens Play Store directly.
+  static Future<void> manualCheckForUpdate(BuildContext context) async {
+    if (hasPendingUpdate && pendingVersion != null && pendingStoreUrl != null) {
+      await _showUpdateDialog(context, pendingVersion!, pendingStoreUrl!);
+      return;
+    }
+
+    try {
+      final data = await _fetchUpdateInfo();
+      if (data != null) {
+        final latest = (data['latestVersion'] as String?)?.trim();
+        final info = await PackageInfo.fromPlatform();
+        if (latest != null && isNewerVersion(latest, info.version)) {
+          final hosted = (data['playStoreUrl'] as String?)?.trim();
+          final storeUrl =
+              (hosted == null || hosted.isEmpty) ? _defaultStoreUrl : hosted;
+          hasPendingUpdate = true;
+          pendingVersion = latest;
+          pendingStoreUrl = storeUrl;
+          if (context.mounted) {
+            await _showUpdateDialog(context, latest, storeUrl);
+          }
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error during manual check for update: $e');
+    }
+
+    // Always fallback to opening the Play Store listing directly!
+    await openStore();
+  }
+
+  /// Public method to open the store listing directly.
+  static Future<void> openStore([String? url]) async {
+    hasPendingUpdate = false;
+    final storeUrl = (url != null && url.isNotEmpty) ? url : _defaultStoreUrl;
+    try {
+      final uri = Uri.parse(storeUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint('Could not open store listing: $e');
     }
   }
 
@@ -234,6 +303,7 @@ class UpdateService {
   /// Opens the store listing outside the app, which hands off to the Play
   /// Store app when it is installed.
   static Future<void> _openStore(String storeUrl) async {
+    hasPendingUpdate = false;
     try {
       final uri = Uri.parse(storeUrl);
       if (await canLaunchUrl(uri)) {

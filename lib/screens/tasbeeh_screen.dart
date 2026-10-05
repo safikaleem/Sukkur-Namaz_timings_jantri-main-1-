@@ -534,7 +534,7 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
                           onTap: _toggleSound,
                           style: style,
                           scale: scale,
-                          isDarkTheme: isDark,
+                          isDarkTheme: isDark || themeMode == TasbeehThemeMode.teal,
                           tooltip: settings.translate('Sound', 'صدا', 'صدا', 'الصوت'),
                         ),
 
@@ -546,7 +546,7 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
                           onTap: _toggleVibrate,
                           style: style,
                           scale: scale,
-                          isDarkTheme: isDark,
+                          isDarkTheme: isDark || themeMode == TasbeehThemeMode.teal,
                           tooltip: settings.translate('Vibrate', 'وائبریشن', 'وائبريشن', 'اهتزاز'),
                         ),
 
@@ -560,6 +560,7 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
                           },
                           style: style,
                           scale: scale,
+                          isTealTheme: themeMode == TasbeehThemeMode.teal,
                           tooltip: settings.translate('Dark/Light Mode', 'ڈارک/لائٹ موڈ', 'ڊارڪ/لائيٽ موڊ', 'الوضع الداكن/الفاتح'),
                         ),
                       ],
@@ -589,8 +590,12 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
     final thumbSize = 22.0 * scale;
 
     final trackBg = isDarkTheme
-        ? const Color(0xFF14151F)
+        ? (style.screenBg == const Color(0xFF09292B) ? const Color(0xFF041517) : const Color(0xFF14151F))
         : const Color(0xFFE2E8F0);
+
+    final offThumbBg = isDarkTheme
+        ? style.ringTrack
+        : Colors.white;
 
     return Directionality(
       textDirection: TextDirection.ltr,
@@ -644,20 +649,21 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
                     width: thumbSize,
                     height: thumbSize,
                     decoration: BoxDecoration(
-                      color: isActive ? style.ringFill : (isDarkTheme ? const Color(0xFF323444) : Colors.white),
+                      color: isActive ? style.ringFill : offThumbBg,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: (isActive ? style.ringFill : Colors.black).withValues(alpha: 0.25),
-                          blurRadius: 3 * scale,
+                          color: (isActive ? style.ringFill : Colors.black).withValues(alpha: isActive ? 0.35 : 0.3),
+                          blurRadius: 4 * scale,
                           spreadRadius: 1 * scale,
+                          offset: const Offset(0, 1),
                         ),
                       ],
                     ),
                     child: Icon(
                       isActive ? activeIcon : inactiveIcon,
                       size: 12 * scale,
-                      color: isActive ? style.badgeText : style.textColor.withValues(alpha: 0.6),
+                      color: isActive ? style.badgeText : style.textColor.withValues(alpha: 0.7),
                     ),
                   ),
                 ),
@@ -675,10 +681,13 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
     required _TasbeehStyle style,
     required double scale,
     required String tooltip,
+    bool isTealTheme = false,
   }) {
     final width = 42.0 * scale;
     final height = 30.0 * scale;
     final thumbSize = 22.0 * scale;
+
+    final effectiveDark = isDark || isTealTheme;
 
     return Directionality(
       textDirection: TextDirection.ltr,
@@ -691,8 +700,8 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
             height: height,
             padding: EdgeInsets.all(3.0 * scale),
             decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF14151F)
+              color: effectiveDark
+                  ? (isTealTheme ? const Color(0xFF041517) : const Color(0xFF14151F))
                   : const Color(0xFFE2E8F0),
               borderRadius: BorderRadius.circular(18 * scale),
               border: Border.all(
@@ -738,9 +747,10 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: (isDark ? style.ringFill : Colors.black).withValues(alpha: 0.25),
-                          blurRadius: 3 * scale,
+                          color: (isDark ? style.ringFill : Colors.black).withValues(alpha: 0.3),
+                          blurRadius: 4 * scale,
                           spreadRadius: 1 * scale,
+                          offset: const Offset(0, 1),
                         ),
                       ],
                     ),

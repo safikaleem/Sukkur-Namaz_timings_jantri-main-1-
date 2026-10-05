@@ -64,6 +64,22 @@ class _NotificationHealthScreenState extends State<NotificationHealthScreen>
     setState(() => _rescheduling = true);
     try {
       await NotificationService.instance.scheduleWeeklyNotifications();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              settings.translate(
+                'All notifications rescheduled successfully for 14 days!',
+                'تمام اطلاعات 14 دنوں کے لیے کامیابی کے ساتھ دوبارہ شیڈول کر دی گئی ہیں!',
+                'تمام اطلاعون 14 ڏينهن لاءِ كاميابي سان ٻيهر شيڊول ڪيون ويون آهن!',
+                'تمت إعادة جدولة جميع الإشعارات بنجاح لمدة 14 يومًا!',
+              ),
+            ),
+            backgroundColor: const Color(0xFF0D6B5E),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _rescheduling = false);
     }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+import 'package:quran/quran.dart' as quran;
 import 'quran_data.dart';
 
 /// 15-Line Saudi/Madani Mushaf Page Constants & Mapping
@@ -231,5 +233,33 @@ class Quran15LineData {
       'Nisf': (start + step * 0.50).round(),
       'Salasa': (start + step * 0.75).round(),
     };
+  }
+
+  /// Returns the (surah, ayah) pair for the first verse on a given 15-Line page (1-611).
+  static (int, int) getFirstVerseForPage(int page) {
+    final clamped = page.clamp(1, kQuran15LinePageCount);
+    if (clamped <= 2) return (1, 1);
+
+    int surah = 1;
+    for (int s = 114; s >= 1; s--) {
+      final start = surahStartPages[s];
+      if (start != null && clamped >= start) {
+        surah = s;
+        break;
+      }
+    }
+
+    final startP = surahStartPages[surah] ?? 2;
+    if (clamped == startP) return (surah, 1);
+
+    int endP = 605;
+    if (surah < 114) {
+      endP = (surahStartPages[surah + 1] ?? 606) - 1;
+    }
+    final pageCount = math.max(1, endP - startP + 1);
+    final totalAyahs = quran.getVerseCount(surah);
+    final offset = clamped - startP;
+    final ayah = ((offset / pageCount) * totalAyahs).floor() + 1;
+    return (surah, ayah.clamp(1, totalAyahs));
   }
 }

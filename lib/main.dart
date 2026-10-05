@@ -31,6 +31,7 @@ import 'widgets/settings_drawer.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:upgrader/upgrader.dart';
 import 'services/announcement_service.dart';
+import 'services/update_service.dart';
 // import 'services/update_service.dart';
 
 @pragma('vm:entry-point')
@@ -200,6 +201,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initStartupServices();
       AnnouncementService.checkForAnnouncement(context);
+      UpdateService.checkForUpdate(context);
     });
   }
 
@@ -365,21 +367,43 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                   right: isRtl ? 16 : null,
                   child: GestureDetector(
                     onTap: () => _openDrawer(isRtl),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withOpacity(0.05)
-                            : Colors.black.withOpacity(0.04),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.menu_rounded,
-                        size: 22,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withOpacity(0.05)
+                                : Colors.black.withOpacity(0.04),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.menu_rounded,
+                            size: 22,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        if (UpdateService.hasPendingUpdate)
+                          Positioned(
+                            top: -2,
+                            right: -2,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE53935),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),

@@ -27,6 +27,8 @@ enum DisplayTheme {
   linenStone,
   softOcean,
   emeraldMasjid,
+  slateTealWhite,
+  emeraldMasjidWhite,
 }
 
 enum UnifiedTheme {
@@ -35,6 +37,8 @@ enum UnifiedTheme {
   linenStone,
   softOcean,
   emeraldMasjid,
+  slateTealWhite,
+  emeraldMasjidWhite,
 }
 
 enum LocationMode { sukkur, world }
@@ -608,6 +612,14 @@ class SettingsProvider extends ChangeNotifier {
                 : [const Color(0xFFF2F6F1), const Color(0xFFE4ECE2)],
           ),
         );
+      case DisplayTheme.slateTealWhite:
+        return BoxDecoration(
+          color: isDark ? const Color(0xFF121920) : Colors.white,
+        );
+      case DisplayTheme.emeraldMasjidWhite:
+        return BoxDecoration(
+          color: isDark ? const Color(0xFF091612) : Colors.white,
+        );
     }
   }
 
@@ -623,6 +635,10 @@ class SettingsProvider extends ChangeNotifier {
         return isDark ? const Color(0xFF0F151B) : const Color(0xFFECEFF2);
       case DisplayTheme.emeraldMasjid:
         return isDark ? const Color(0xFF091612) : const Color(0xFFF2F6F1);
+      case DisplayTheme.slateTealWhite:
+        return isDark ? const Color(0xFF121920) : Colors.white;
+      case DisplayTheme.emeraldMasjidWhite:
+        return isDark ? const Color(0xFF091612) : Colors.white;
     }
   }
 
@@ -637,6 +653,10 @@ class SettingsProvider extends ChangeNotifier {
       case DisplayTheme.softOcean:
         return const Color(0xFF1E3F50);
       case DisplayTheme.emeraldMasjid:
+        return const Color(0xFF0F8A5F);
+      case DisplayTheme.slateTealWhite:
+        return const Color(0xFF1F4D5B);
+      case DisplayTheme.emeraldMasjidWhite:
         return const Color(0xFF0F8A5F);
     }
   }
@@ -654,6 +674,10 @@ class SettingsProvider extends ChangeNotifier {
         return const Color(0xFFD9E2E8);
       case DisplayTheme.emeraldMasjid:
         return const Color(0xFFE3ECE1);
+      case DisplayTheme.slateTealWhite:
+        return Colors.white;
+      case DisplayTheme.emeraldMasjidWhite:
+        return Colors.white;
     }
   }
 
@@ -834,6 +858,7 @@ class SettingsProvider extends ChangeNotifier {
     _lastReadId16 = prefs.getInt('last_read_id_16');
     _lastReadPage15 = prefs.getInt('last_read_page_15');
     _lastReadPage16 = prefs.getInt('last_read_page_16');
+    _munajatLastPage = prefs.getInt('munajat_last_page');
 
     // Migration: copy old shared keys to 16-line if per-type keys don't exist
     if (_lastReadType16 == null) {
@@ -885,6 +910,7 @@ class SettingsProvider extends ChangeNotifier {
   int? _lastReadId16;
   int? _lastReadPage15;
   int? _lastReadPage16;
+  int? _munajatLastPage;
 
   Map<int, int> get surahProgress => _quranType == '15_line' ? _surahProgress15 : _surahProgress16;
   Map<int, int> get parahProgress => _quranType == '15_line' ? _parahProgress15 : _parahProgress16;
@@ -892,6 +918,15 @@ class SettingsProvider extends ChangeNotifier {
   int? get lastReadId => _quranType == '15_line' ? _lastReadId15 : _lastReadId16;
   int? get lastReadPage15 => _lastReadPage15;
   int? get lastReadPage16 => _lastReadPage16;
+  int? get munajatLastPage => _munajatLastPage;
+
+  Future<void> updateMunajatReadingPosition(int pageNumber) async {
+    if (_munajatLastPage == pageNumber) return;
+    _munajatLastPage = pageNumber;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('munajat_last_page', pageNumber);
+  }
 
   Future<void> updateReadingPosition({
     required int pageNumber,
@@ -1189,6 +1224,12 @@ class SettingsProvider extends ChangeNotifier {
         break;
       case UnifiedTheme.emeraldMasjid:
         _displayTheme = DisplayTheme.emeraldMasjid;
+        break;
+      case UnifiedTheme.slateTealWhite:
+        _displayTheme = DisplayTheme.slateTealWhite;
+        break;
+      case UnifiedTheme.emeraldMasjidWhite:
+        _displayTheme = DisplayTheme.emeraldMasjidWhite;
         break;
     }
     _syncAccent();

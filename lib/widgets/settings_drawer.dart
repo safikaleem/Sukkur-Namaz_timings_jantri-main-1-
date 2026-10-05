@@ -16,6 +16,7 @@ import '../screens/world_prayers_screen.dart';
 import '../screens/hijri_calendar_screen.dart';
 import '../screens/hidayat_screen.dart';
 import '../screens/mosque_finder_screen.dart';
+import '../services/update_service.dart';
 import 'widget_selection_sheet.dart';
 class SettingsDrawer extends StatefulWidget {
   final VoidCallback? onTapSukkur;
@@ -165,6 +166,24 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Contact Us (inline) ─────────────────────
                   const _ContactUsInline(),
 
+                  const _Divider(),
+
+                  // ── Check for Update ──────────────────────────
+                  _DrawerItem(
+                    icon: Icons.system_update_rounded,
+                    label: worldTranslations[settings.language]?['Check for Update'] ??
+                        settings.translate(
+                          'Check for Update',
+                          'اپڈیٹ چیک کریں',
+                          'اپڊيٽ چيڪ ڪريو',
+                          'التحقق من التحديثات',
+                        ),
+                    trailing: UpdateService.hasPendingUpdate
+                        ? _buildUpdateBadge(context, settings)
+                        : null,
+                    onTap: () => UpdateService.manualCheckForUpdate(context),
+                  ),
+
                   if (!settings.usesCalculatedTimings) ...[
                     const _Divider(),
                     _DrawerItem(
@@ -228,21 +247,8 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Current Version ───────────────────────────
                   _DrawerItem(
                     icon: Icons.new_releases_rounded,
-                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.3.0'}',
+                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.3.1'}',
                     onTap: () => _showWhatsNewDialog(context),
-                  ),
-
-                  // ── Check for Update ──────────────────────────
-                  _DrawerItem(
-                    icon: Icons.system_update_rounded,
-                    label: worldTranslations[settings.language]?['Check for Update'] ??
-                        settings.translate(
-                          'Check for Update',
-                          'اپڈیٹ چیک کریں',
-                          'اپڊيٽ چيڪ ڪريو',
-                          'التحقق من التحديثات',
-                        ),
-                    onTap: () => _rateApp(context),
                   ),
 
                   const SizedBox(height: 24),
@@ -250,6 +256,35 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUpdateBadge(BuildContext context, SettingsProvider settings) {
+    final badgeText = worldTranslations[settings.language]?['UPDATE'] ??
+        settings.translate('UPDATE', 'جدید', 'جديد', 'تحديث');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE53935),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE53935).withValues(alpha: 0.35),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        badgeText,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: settings.isRtl ? 12 : 10,
+          fontWeight: FontWeight.bold,
+          letterSpacing: settings.isRtl ? 0 : 0.5,
         ),
       ),
     );
@@ -372,7 +407,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.3.0';
+    final versionStr = _version.isNotEmpty ? _version : '1.3.1';
 
     showDialog(
       context: context,
@@ -797,12 +832,14 @@ class _DrawerItem extends StatelessWidget {
   final IconData? icon;
   final String label;
   final String? subtitle;
+  final Widget? trailing;
   final VoidCallback? onTap;
 
   const _DrawerItem({
     this.icon,
     required this.label,
     this.subtitle,
+    this.trailing,
     this.onTap,
   });
 
@@ -851,6 +888,10 @@ class _DrawerItem extends StatelessWidget {
                 ],
               ),
             ),
+            if (trailing != null) ...[
+              const SizedBox(width: 8),
+              trailing!,
+            ],
           ],
         ),
       ),
