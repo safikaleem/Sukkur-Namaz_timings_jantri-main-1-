@@ -436,7 +436,7 @@ class JamaatTimesService {
   }
 
   /// Helper to convert time string into English 12-hour format with AM/PM & padded hours
-  static String format12HourEnglish(String timeStr) {
+  static String format12HourEnglish(String timeStr, {bool defaultPm = false}) {
     try {
       final clean = timeStr.trim();
       final isPM = clean.contains('PM');
@@ -446,7 +446,7 @@ class JamaatTimesService {
       if (parts.length >= 2) {
         int h = int.parse(parts[0]);
         int m = int.parse(parts[1]);
-        String period = (isPM || (!isAM && h >= 12)) ? 'PM' : 'AM';
+        String period = (isPM || (!isAM && (h >= 12 || defaultPm))) ? 'PM' : 'AM';
         if (h > 12) h -= 12;
         if (h == 0) h = 12;
         String hStr = h.toString().padLeft(2, '0');
@@ -459,28 +459,36 @@ class JamaatTimesService {
 
   /// Returns live or default timing for a masjid by ID
   JamaatTiming getTimingFor(JamaatMasjidInfo info) {
-    // 1. Fetch today's Maghrib time dynamically from Sukkur Jantri
-    final today = TimingsData.instance.timingFor(DateTime.now());
-    String dynamicMaghrib = info.defaultTimings.maghrib;
-    if (today != null) {
-      dynamicMaghrib = format12HourEnglish(today.maghrib);
-    }
-
-    // 2. Fetch base timings from remote cache or fallback defaults
+    // 1. Fetch base timings from remote cache or fallback defaults
     final base = _remoteCache.containsKey(info.id)
         ? _remoteCache[info.id]!
         : info.defaultTimings;
 
+    // 2. Fetch today's Maghrib time dynamically from Sukkur Jantri if base.maghrib is empty, "Sunset", or default
+    String dynamicMaghrib = base.maghrib;
+    if (dynamicMaghrib.isEmpty ||
+        dynamicMaghrib.toLowerCase().contains('sunset') ||
+        dynamicMaghrib == info.defaultTimings.maghrib) {
+      final today = TimingsData.instance.timingFor(DateTime.now());
+      if (today != null) {
+        dynamicMaghrib = format12HourEnglish(today.maghrib, defaultPm: true);
+      } else {
+        dynamicMaghrib = format12HourEnglish(base.maghrib, defaultPm: true);
+      }
+    } else {
+      dynamicMaghrib = format12HourEnglish(dynamicMaghrib, defaultPm: true);
+    }
+
     return JamaatTiming(
       fajr: format12HourEnglish(base.fajr),
       fajrUpdated: base.fajrUpdated,
-      zuhar: format12HourEnglish(base.zuhar),
-      asar: format12HourEnglish(base.asar),
+      zuhar: format12HourEnglish(base.zuhar, defaultPm: true),
+      asar: format12HourEnglish(base.asar, defaultPm: true),
       asarUpdated: base.asarUpdated,
       maghrib: dynamicMaghrib,
-      isha: format12HourEnglish(base.isha),
+      isha: format12HourEnglish(base.isha, defaultPm: true),
       ishaUpdated: base.ishaUpdated,
-      jummah: format12HourEnglish(base.jummah),
+      jummah: format12HourEnglish(base.jummah, defaultPm: true),
     );
   }
 

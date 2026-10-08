@@ -29,7 +29,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
       'sd': 'پهرين منزل (هفتو)',
       'ar': 'المنزل الأول (السبت)',
       'page': 10,
-      'pdfPage': 9,
+      'pdfPage': 10,
     },
     {
       'num': 2,
@@ -38,7 +38,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
       'sd': 'ٻي منزل (آچر)',
       'ar': 'المنزل الثاني (الأحد)',
       'page': 28,
-      'pdfPage': 27,
+      'pdfPage': 28,
     },
     {
       'num': 3,
@@ -47,7 +47,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
       'sd': 'ٽين منزل (سومر)',
       'ar': 'المنزل الثالث (الإثنين)',
       'page': 48,
-      'pdfPage': 47,
+      'pdfPage': 48,
     },
     {
       'num': 4,
@@ -56,7 +56,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
       'sd': 'چوٿين منزل (اڱارو)',
       'ar': 'المنزل الرابع (الثلاثاء)',
       'page': 66,
-      'pdfPage': 65,
+      'pdfPage': 66,
     },
     {
       'num': 5,
@@ -65,7 +65,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
       'sd': 'پنجين منزل (اربع)',
       'ar': 'المنزل الخامس (الأربعاء)',
       'page': 86,
-      'pdfPage': 85,
+      'pdfPage': 86,
     },
     {
       'num': 6,
@@ -74,7 +74,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
       'sd': 'ڇھين منزل (خميس)',
       'ar': 'المنزل السادس (الخميس)',
       'page': 102,
-      'pdfPage': 101,
+      'pdfPage': 102,
     },
     {
       'num': 7,
@@ -83,7 +83,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
       'sd': 'ستين منزل (جمعو)',
       'ar': 'المنزل السابع (الجمعة)',
       'page': 120,
-      'pdfPage': 119,
+      'pdfPage': 120,
     },
   ];
 
@@ -148,12 +148,12 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
   }
 
   int _getManzilForPage(int page) {
-    if (page >= 119) return 7;
-    if (page >= 101) return 6;
-    if (page >= 85) return 5;
-    if (page >= 65) return 4;
-    if (page >= 47) return 3;
-    if (page >= 27) return 2;
+    if (page >= 120) return 7;
+    if (page >= 102) return 6;
+    if (page >= 86) return 5;
+    if (page >= 66) return 4;
+    if (page >= 48) return 3;
+    if (page >= 28) return 2;
     return 1;
   }
 
