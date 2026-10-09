@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../data/hijri_events_data.dart';
+import '../data/timings_data.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
 import '../utils/hijri_converter.dart';
@@ -22,14 +23,27 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lang = settings.language;
 
-    // Get current Hijri Date from HijriConverter
-    final hijriTodayResult = HijriConverter.getTodayResult(adjustment: settings.hijriAdjustment);
+    final now = TimingsData.instance.nowForTimings();
+    final todayTiming = TimingsData.instance.timingFor(now);
+    final maghribDt = todayTiming?.allTimings
+        .where((p) => p.name == 'Maghrib')
+        .map((p) => p.toDateTime(date: now))
+        .firstOrNull;
+
+    // Get current Hijri Date from HijriConverter (Maghrib aware)
+    final hijriTodayResult = HijriConverter.getTodayResult(
+      adjustment: settings.hijriAdjustment,
+      maghribTime: maghribDt,
+      currentTime: now,
+    );
     final currentHijriYear = hijriTodayResult.hYear;
     final activeYear = _selectedYear ?? currentHijriYear;
 
     final hijriDate = HijriConverter.todayHijri(
       adjustment: settings.hijriAdjustment,
       language: lang,
+      maghribTime: maghribDt,
+      currentTime: now,
     );
     const accent = Color(0xFFD4A574); // Warm Islamic Gold accent
 
@@ -113,6 +127,22 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
                         fontFamily: AppTheme.getFontForLanguage(context, lang),
                         color: Colors.white,
                         letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      settings.translate(
+                        '(Hijri date updates after Maghrib)',
+                        '(ہجری تاریخ مغرب کے بعد تبدیل ہوگی)',
+                        '(هجري تاريخ مغرب کان پوءِ بدلجندي)',
+                        '(يتغير التاريخ الهجري بعد المغرب)',
+                      ),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontStyle: FontStyle.italic,
+                        fontFamily: AppTheme.getFontForLanguage(context, lang),
+                        color: Colors.white60,
                       ),
                     ),
                     const SizedBox(height: 10),

@@ -80,9 +80,10 @@ class WidgetService {
       final state = computePrayerState(now, today);
 
       await HomeWidget.saveWidgetData('prayer_name', state?.prayer.name ?? 'Fajr');
-      // displayTime, not time: the widget layouts expect the Jantri's 12-hour
-      // form, which a calculated city no longer stores natively.
-      await HomeWidget.saveWidgetData('prayer_time', state?.prayer.displayTime ?? '');
+      final prayerTimeStr = state != null
+          ? '${state.prayer.displayTime} ${state.prayer.displayIsPm ? 'PM' : 'AM'}'
+          : '';
+      await HomeWidget.saveWidgetData('prayer_time', prayerTimeStr);
       await HomeWidget.saveWidgetData('is_elapsed', state?.isElapsed ?? false);
 
       Duration duration = state?.duration ?? Duration.zero;
@@ -95,22 +96,20 @@ class WidgetService {
       final m = duration.inMinutes.remainder(60);
       final s = duration.inSeconds.remainder(60);
 
+      final sign = state?.isElapsed == true ? '+' : '−';
       final timeStr = h > 0
-          ? '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}'
-          : '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+          ? '$sign${h.toString().padLeft(2, '0')}h ${m.toString().padLeft(2, '0')}m ${s.toString().padLeft(2, '0')}s'
+          : '$sign${m.toString().padLeft(2, '0')}m ${s.toString().padLeft(2, '0')}s';
 
-      final countdown = state == null
-          ? '--:--'
-          : state.isElapsed
-              ? '+$timeStr'
-              : '-$timeStr';
+      final countdown = state == null ? '--:--' : timeStr;
 
       await HomeWidget.saveWidgetData('countdown', countdown);
 
-      // Save all prayer times
+      // Save all prayer times with AM/PM
       for (final p in today.allTimings) {
         await HomeWidget.saveWidgetData(
-            'time_${p.name.replaceAll(' ', '_')}', p.displayTime);
+            'time_${p.name.replaceAll(' ', '_')}',
+            '${p.displayTime} ${p.displayIsPm ? 'PM' : 'AM'}');
       }
 
       // Notify every registered widget provider

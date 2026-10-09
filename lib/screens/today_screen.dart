@@ -11,6 +11,7 @@ import '../widgets/dr_slogan_header.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/widget_service.dart';
+import '../widgets/suhoor_iftar_card.dart';
 import '../utils/urdu_strings.dart';
 
 class TodayScreen extends StatefulWidget {
@@ -27,6 +28,7 @@ class _TodayScreenState extends State<TodayScreen> {
   Timer? _ticker;
   DateTime _now = DateTime.now();
   int _widgetTick = 0;
+  bool _isSuhoorIftarDismissed = false;
 
   @override
   void initState() {
@@ -264,6 +266,19 @@ class _TodayScreenState extends State<TodayScreen> {
 
             SizedBox(height: isSmall ? 4 : 8),
 
+            // ── Suhoor & Iftar Ramzan Card ──────────────────────────────
+            if (isTodaySelected && !_isSuhoorIftarDismissed &&
+                (HijriConverter.convertDate(_selectedDate.add(Duration(days: settings.hijriAdjustment))).hMonth == 9)) ...[
+              SuhoorIftarCard(
+                onDismiss: () {
+                  setState(() {
+                    _isSuhoorIftarDismissed = true;
+                  });
+                },
+              ),
+              SizedBox(height: isSmall ? 4 : 8),
+            ],
+
             // ── Live Prayer Countdown Banner ──────────────────────────────
             if (isTodaySelected && _state != null && _today != null) ...[
               _buildLiveCountdownBanner(context, settings, isDark),
@@ -334,13 +349,17 @@ class _TodayScreenState extends State<TodayScreen> {
 
     final accent = AppTheme.accent;
 
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    final seconds = duration.inSeconds.remainder(60);
+    final ms = duration.inMilliseconds;
+    final secCount = !isElapsed && ms > 0 ? (ms / 1000).ceil() : (ms / 1000).floor();
+    final d = Duration(seconds: secCount < 0 ? 0 : secCount);
+
+    final hours = d.inHours;
+    final minutes = d.inMinutes.remainder(60);
+    final seconds = d.inSeconds.remainder(60);
 
     final String timeStr;
     if (hours > 0) {
-      timeStr = '${hours}h ${minutes.toString().padLeft(2, '0')}m ${seconds.toString().padLeft(2, '0')}s';
+      timeStr = '${hours.toString().padLeft(2, '0')}h ${minutes.toString().padLeft(2, '0')}m ${seconds.toString().padLeft(2, '0')}s';
     } else {
       timeStr = '${minutes.toString().padLeft(2, '0')}m ${seconds.toString().padLeft(2, '0')}s';
     }

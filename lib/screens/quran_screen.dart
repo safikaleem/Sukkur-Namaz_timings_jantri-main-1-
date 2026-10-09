@@ -449,24 +449,27 @@ class _QuranScreenState extends State<QuranScreen> {
                         : null,
                   ),
                   child: Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.menu_book,
-                          size: 16,
-                          color: is16Line ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          settings.translate('16 Line Quran', '16 سطر قرآن', '16 سٽر قرآن', 'القرآن 16 سطر'),
-                          style: TextStyle(
-                            fontWeight: is16Line ? FontWeight.bold : FontWeight.w500,
-                            fontSize: 12.5,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.menu_book,
+                            size: 16,
                             color: is16Line ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Text(
+                            settings.translate('16 Line Quran', '16 سطر قرآن', '16 سٽر قرآن', 'القرآن 16 سطر'),
+                            style: TextStyle(
+                              fontWeight: is16Line ? FontWeight.bold : FontWeight.w500,
+                              fontSize: 12.5,
+                              color: is16Line ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -503,24 +506,27 @@ class _QuranScreenState extends State<QuranScreen> {
                         : null,
                   ),
                   child: Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.auto_stories,
-                          size: 16,
-                          color: !is16Line ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          settings.translate('15 Line Quran', '15 سطر قرآن', '15 سٽر قرآن', 'القرآن 15 سطر'),
-                          style: TextStyle(
-                            fontWeight: !is16Line ? FontWeight.bold : FontWeight.w500,
-                            fontSize: 12.5,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.auto_stories,
+                            size: 16,
                             color: !is16Line ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Text(
+                            settings.translate('15 Line Quran', '15 سطر قرآن', '15 سٽر قرآن', 'القرآن 15 سطر'),
+                            style: TextStyle(
+                              fontWeight: !is16Line ? FontWeight.bold : FontWeight.w500,
+                              fontSize: 12.5,
+                              color: !is16Line ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

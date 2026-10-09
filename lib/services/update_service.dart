@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
+import '../l10n/world_translations.dart';
 
 /// Tells the user when a newer build is on the Play Store.
 ///
@@ -167,6 +168,7 @@ class UpdateService {
   /// Reads the hosted JSON. Short timeout so a dead link never delays the
   /// prompt behind a spinner the user cannot see.
   static Future<Map<String, dynamic>?> _fetchUpdateInfo() async {
+    if (updateUrl.contains('REPLACE_ME')) return null;
     try {
       final response = await http
           .get(Uri.parse(updateUrl))
@@ -191,20 +193,20 @@ class UpdateService {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final font = AppTheme.getFontForLanguage(context, settings.language);
 
-    final title = settings.translate(
-        'Update Available', 'اپ ڈیٹ دستیاب ہے', 'اپڊيٽ موجود آهي', 'تحديث متوفر');
-    final body = settings.translate(
+    final title = translateFor(
+        settings.language, 'Update Available', 'Update Available', 'اپ ڈیٹ دستیاب ہے');
+    final body = translateFor(
+        settings.language,
         'A new version of the app is available.',
-        'ایپ کا نیا ورژن دستیاب ہے۔',
-        'ايپ جو نئون ورزن موجود آهي.',
-        'يتوفر إصدار جديد من التطبيق.');
-    final laterText = settings.translate('Later', 'بعد میں', 'پوءِ', 'لاحقًا');
+        'A new version of the app is available.',
+        'ایپ کا نیا ورژن دستیاب ہے۔');
+    final laterText = translateFor(settings.language, 'Later', 'Later', 'بعد میں');
     final updateText =
-        settings.translate('Update', 'اپ ڈیٹ کریں', 'اپڊيٽ ڪريو', 'تحديث');
+        translateFor(settings.language, 'Update', 'Update', 'اپ ڈیٹ کریں');
 
     return showDialog<void>(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(

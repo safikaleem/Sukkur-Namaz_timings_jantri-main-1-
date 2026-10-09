@@ -418,12 +418,12 @@ class _ClockPainter extends CustomPainter {
     final handColor = isDark ? const Color(0xFFFED7AA) : const Color(0xFF7C3010);
 
     canvas.drawCircle(center, radius, Paint()..color = bgColor);
-    _ring(canvas, center, ringInset, peach.withOpacity(0.18), peach, 3.5);
+    _ring(canvas, center, ringInset, peach.withValues(alpha: 0.18), peach, 3.5);
     _ticks60(canvas, center, ringInset,
-        isDark ? Colors.white.withOpacity(0.48) : peach.withOpacity(0.42),
-        isDark ? Colors.white.withOpacity(0.16) : peach.withOpacity(0.18));
+        isDark ? Colors.white.withValues(alpha: 0.48) : peach.withValues(alpha: 0.42),
+        isDark ? Colors.white.withValues(alpha: 0.16) : peach.withValues(alpha: 0.18));
     _numbers(canvas, center, ringInset,
-        isDark ? Colors.white60 : peach.withOpacity(0.68), radius * 0.111);
+        isDark ? Colors.white60 : peach.withValues(alpha: 0.68), radius * 0.111);
 
     _hands(canvas, center, radius, hand: handColor, second: peach, face: bgColor);
   }
@@ -438,7 +438,7 @@ class _ClockPainter extends CustomPainter {
     final handColor = isDark ? const Color(0xFFFDE68A) : const Color(0xFF4A3000);
 
     canvas.drawCircle(center, radius, Paint()..color = bgColor);
-    _ring(canvas, center, ringInset, gold.withOpacity(0.20), gold, 3.0);
+    _ring(canvas, center, ringInset, gold.withValues(alpha: 0.20), gold, 3.0);
     for (int i = 0; i < 12; i++) {
       final angle      = (i / 12) * 2 * math.pi - math.pi / 2;
       final isCardinal = i % 3 == 0;
@@ -447,11 +447,11 @@ class _ClockPainter extends CustomPainter {
           markerWidth:  radius * (isCardinal ? 0.019 : 0.011),
           markerLength: radius * (isCardinal ? 0.080 : 0.044),
           color: isDark
-              ? Colors.white.withOpacity(isCardinal ? 0.65 : 0.30)
-              : gold.withOpacity(isCardinal ? 0.72 : 0.38));
+              ? Colors.white.withValues(alpha: isCardinal ? 0.65 : 0.30)
+              : gold.withValues(alpha: isCardinal ? 0.72 : 0.38));
     }
     _numbers(canvas, center, ringInset,
-        isDark ? const Color(0xFFFDE68A) : gold.withOpacity(0.75), radius * 0.110);
+        isDark ? const Color(0xFFFDE68A) : gold.withValues(alpha: 0.75), radius * 0.110);
 
     _hands(canvas, center, radius, hand: handColor, second: gold, face: bgColor);
   }
@@ -510,7 +510,7 @@ class _ClockPainter extends CustomPainter {
     stamp(
       center + Offset(radius * 0.008, radius * 0.012),
       Paint()
-        ..color = Colors.black.withOpacity(0.16)
+        ..color = Colors.black.withValues(alpha: 0.16)
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, radius * 0.012),
     );
 

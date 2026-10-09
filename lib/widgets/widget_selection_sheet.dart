@@ -9,11 +9,11 @@ class WidgetSelectionSheet extends StatefulWidget {
   final bool isRtl;
 
   const WidgetSelectionSheet({
-    Key? key,
+    super.key,
     required this.settings,
     required this.isDark,
     required this.isRtl,
-  }) : super(key: key);
+  });
 
   @override
   State<WidgetSelectionSheet> createState() => _WidgetSelectionSheetState();

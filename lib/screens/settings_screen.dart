@@ -4,6 +4,7 @@ import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
 import '../widgets/azan_preview_sheet.dart';
 import '../utils/hijri_converter.dart';
+import '../l10n/world_translations.dart';
 import 'clock_style_screen.dart';
 import 'date_time_settings_screen.dart';
 import 'auto_silent_settings_screen.dart';
@@ -130,6 +131,28 @@ class SettingsScreen extends StatelessWidget {
                         builder: (_) => const AutoSilentSettingsScreen(),
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  _ToggleTile(
+                    icon: Icons.timer_outlined,
+                    label: worldTranslations[settings.language]?['Lock Screen Live Countdown'] ??
+                        settings.translate(
+                          'Lock Screen Live Countdown',
+                          'لاک اسکرین لائیو کاؤنٹ ڈاؤن',
+                          'لاڪ اسڪرين لائيو ڪائونٽ ڊائون',
+                          'العد التنازلي المباشر للشاشة',
+                        ),
+                    subtitle: worldTranslations[settings.language]?[
+                            'Show live countdown for next prayer in notifications and lock screen'] ??
+                        settings.translate(
+                          'Show live countdown for next prayer in notifications and lock screen',
+                          'اطلاعات اور لاک اسکرین پر اگلی نماز کا لائیو کاؤنٹ ڈاؤن دکھائیں',
+                          'نوٽيفڪيشن ۽ لاڪ اسڪرين تي ابلي نماز جو لائيو ڪائونٽ ڊائون ڏيکاريو',
+                          'عرض العد التنازلي للصلاة القادمة في الإشعارات وشاشة القفل',
+                        ),
+                    value: settings.liveCountdownEnabled,
+                    isDark: isDark,
+                    onChanged: (val) => settings.setLiveCountdownEnabled(val),
                   ),
 
                   const SizedBox(height: 20),
@@ -831,3 +854,89 @@ class _DefaultSettingsTile extends StatelessWidget {
     );
   }
 }
+
+class _ToggleTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final bool value;
+  final bool isDark;
+  final ValueChanged<bool> onChanged;
+
+  const _ToggleTile({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.value,
+    required this.isDark,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                )
+              ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppTheme.accent.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: AppTheme.accent, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white54 : Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: value,
+              activeColor: AppTheme.accent,
+              onChanged: onChanged,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

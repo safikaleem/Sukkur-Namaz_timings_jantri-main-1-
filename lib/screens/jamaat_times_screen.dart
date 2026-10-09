@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/world_translations.dart';
+import '../l10n/world_translations_extra.dart';
 import '../providers/settings_provider.dart';
 import '../services/jamaat_times_service.dart';
 import '../utils/app_theme.dart';
@@ -35,11 +36,38 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
     String? ar,
   ]) {
     final lang = settings.language;
+    final extraMap = additionalTranslations[lang];
+    if (extraMap != null && extraMap.containsKey(key)) {
+      return extraMap[key]!;
+    }
     final map = worldTranslations[lang];
     if (map != null && map.containsKey(key)) {
       return map[key]!;
     }
     return settings.translate(key, ur ?? key, sd ?? ur ?? key, ar);
+  }
+
+  String _getPrayerDisplayName(SettingsProvider settings, String nameKey) {
+    final lang = settings.language;
+    final name = _t(settings, nameKey);
+    if (lang == 'english') {
+      const urduMap = {
+        'Fajr': 'فجر',
+        'Fajar': 'فجر',
+        'Zuhar': 'ظہر',
+        'Zuhr': 'ظہر',
+        'Asar': 'عصر',
+        'Asr': 'عصر',
+        'Maghrib': 'مغرب',
+        'Isha': 'عشاء',
+        'Jummah': 'جمعہ',
+      };
+      final urdu = urduMap[nameKey];
+      if (urdu != null) {
+        return '$name ($urdu)';
+      }
+    }
+    return name;
   }
 
   String _getIndividualTabTitle(SettingsProvider settings) {
@@ -430,25 +458,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
   }) {
     final lang = settings.language;
     String getPrayerDisplayName() {
-      final name = _t(settings, nameKey);
-      if (lang == 'english') {
-        const urduMap = {
-          'Fajr': 'فجر',
-          'Fajar': 'فجر',
-          'Zuhar': 'ظہر',
-          'Zuhr': 'ظہر',
-          'Asar': 'عصر',
-          'Asr': 'عصر',
-          'Maghrib': 'مغرب',
-          'Isha': 'عشاء',
-          'Jummah': 'جمعہ',
-        };
-        final urdu = urduMap[nameKey];
-        if (urdu != null) {
-          return '$name ($urdu)';
-        }
-      }
-      return name;
+      return _getPrayerDisplayName(settings, nameKey);
     }
 
     return Padding(
@@ -799,20 +809,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
             return 'All Prayers';
         }
       }
-      final name = _t(settings, key);
-      if (lang == 'english') {
-        const urduMap = {
-          'Fajr': 'فجر',
-          'Zuhar': 'ظہر',
-          'Asar': 'عصر',
-          'Maghrib': 'مغرب',
-          'Isha': 'عشاء',
-          'Jummah': 'جمعہ',
-        };
-        final urdu = urduMap[key];
-        if (urdu != null) return '$name ($urdu)';
-      }
-      return name;
+      return _getPrayerDisplayName(settings, key);
     }
 
     return SingleChildScrollView(
@@ -952,25 +949,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
         : prayers.where((p) => p['key'] == _selectedPrayerFilter).toList();
 
     String getPrayerDisplayName(String nameKey) {
-      final name = _t(settings, nameKey);
-      if (lang == 'english') {
-        const urduMap = {
-          'Fajr': 'فجر',
-          'Fajar': 'فجر',
-          'Zuhar': 'ظہر',
-          'Zuhr': 'ظہر',
-          'Asar': 'عصر',
-          'Asr': 'عصر',
-          'Maghrib': 'مغرب',
-          'Isha': 'عشاء',
-          'Jummah': 'جمعہ',
-        };
-        final urdu = urduMap[nameKey];
-        if (urdu != null) {
-          return '$name ($urdu)';
-        }
-      }
-      return name;
+      return _getPrayerDisplayName(settings, nameKey);
     }
 
     final widgets = <Widget>[];

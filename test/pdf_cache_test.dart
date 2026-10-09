@@ -18,9 +18,15 @@ Future<File> cachedPdf(Directory support, String build, String asset) async {
     await entry.delete(recursive: true);
   }
 
-  final bytes = await rootBundle.load('assets/quran_pdfs/$asset');
+  late List<int> bytesList;
+  try {
+    final bytes = await rootBundle.load('assets/quran_pdfs/$asset');
+    bytesList = bytes.buffer.asUint8List();
+  } catch (_) {
+    bytesList = await File('assets/quran_pdfs/$asset').readAsBytes();
+  }
   final partial = File('${file.path}.part');
-  await partial.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
+  await partial.writeAsBytes(bytesList, flush: true);
   return partial.rename(file.path);
 }
 

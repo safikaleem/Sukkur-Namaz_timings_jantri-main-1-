@@ -376,8 +376,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             color: isDark
-                                ? Colors.white.withOpacity(0.05)
-                                : Colors.black.withOpacity(0.04),
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : Colors.black.withValues(alpha: 0.04),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(

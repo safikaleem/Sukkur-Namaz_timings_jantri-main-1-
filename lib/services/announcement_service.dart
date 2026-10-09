@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
+import '../l10n/world_translations.dart';
 
 class AnnouncementService {
   // The hosted announcement file. Deliberately the revision-less raw link: a
@@ -132,6 +133,30 @@ class AnnouncementService {
         bytes = response.bodyBytes;
       }
 
+      final String shareSubjectText = (title != null && title.isNotEmpty)
+          ? title
+          : settings.translate('Ramzan Timetable', 'رمضان المبارک کا ٹائم ٹیبل', 'Ramzan Timetable', 'Ramzan Timetable');
+
+      if (kIsWeb) {
+        if (loadingCtx != null && loadingCtx!.mounted) {
+          Navigator.pop(loadingCtx!);
+          loadingCtx = null;
+        }
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [
+              XFile.fromData(
+                bytes,
+                mimeType: 'image/jpeg',
+                name: '${_shareFileName(announcementId, isLocal)}.jpg',
+              )
+            ],
+            text: shareSubjectText,
+          ),
+        );
+        return;
+      }
+
       final tempDir = await getTemporaryDirectory();
       String ext = 'jpg';
       if (!isLocal && imageUrl != null) {
@@ -159,12 +184,7 @@ class AnnouncementService {
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path)],
-          // Not `title ?? ...`: the hosted JSON sends "" for an untitled
-          // announcement, and ?? only falls back on null, so the share sheet
-          // opened with an empty message.
-          text: (title != null && title.isNotEmpty)
-              ? title
-              : settings.translate('Ramzan Timetable', 'رمضان المبارک کا ٹائم ٹیبل', 'Ramzan Timetable', 'Ramzan Timetable'),
+          text: shareSubjectText,
         ),
       );
     } catch (e) {
@@ -258,13 +278,13 @@ class AnnouncementService {
     final String? title = data['title'] as String?;
     final String? description = data['description'] as String?;
 
-    final String closeText = settings.translate('Close', 'بند کریں', 'بند ڪريو', 'إغلاق');
-    final String actionText = settings.translate('View Details', 'تفصیلات دیکھیں', 'تفصيل ڏسو', 'عرض التفاصيل');
-    final String shareText = settings.translate('Save / Share', 'محفوظ / شیئر کریں', 'محفوظ / شيئر ڪريو', 'حفظ / مشاركة');
+    final String closeText = translateFor(settings.language, 'Close', 'Close', 'بند کریں');
+    final String actionText = translateFor(settings.language, 'View Details', 'View Details', 'تفصیلات دیکھیں');
+    final String shareText = translateFor(settings.language, 'Save / Share', 'Save / Share', 'محفوظ / شیئر کریں');
 
     return showDialog<void>(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         int reloadCount = 0;
 
@@ -466,9 +486,8 @@ class AnnouncementService {
                               ),
                             ),
                           ),
-                          // Save / Share button (hidden on web due to file system limitations)
-                          if (!kIsWeb)
-                            ElevatedButton.icon(
+                          // Save / Share button
+                          ElevatedButton.icon(
                               onPressed: () async {
                                 try {
                                   await _saveAndShareImage(

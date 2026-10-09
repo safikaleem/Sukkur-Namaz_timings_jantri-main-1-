@@ -113,6 +113,7 @@ class SettingsProvider extends ChangeNotifier {
   DarkModeOption _darkModeOption = DarkModeOption.auto;
   String _language = 'english';
   bool _notificationsEnabled = true;
+  bool _liveCountdownEnabled = true;
   bool _hasCompletedSetup = false;
   int _hijriAdjustment = 0;
   int _selectedAzanIndex = 0;
@@ -242,6 +243,7 @@ class SettingsProvider extends ChangeNotifier {
       translateFor(_language, en, ur, sd, ar);
 
   bool get notificationsEnabled => _notificationsEnabled;
+  bool get liveCountdownEnabled => _liveCountdownEnabled;
   bool get hasCompletedSetup => _hasCompletedSetup;
   int get hijriAdjustment => _hijriAdjustment;
   int get selectedAzanIndex => _selectedAzanIndex;
@@ -750,6 +752,7 @@ class SettingsProvider extends ChangeNotifier {
       }
     }
     _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+    _liveCountdownEnabled = prefs.getBool('live_countdown_enabled') ?? true;
     _hasCompletedSetup = prefs.getBool('has_completed_setup') ?? false;
     _hijriAdjustment = prefs.getInt('hijri_adjustment') ?? 0;
     await HijriSyncService.loadLocalCache();
@@ -897,6 +900,11 @@ class SettingsProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+
+    // Background sync from GitHub Gist for Pakistan Ruet-e-Hilal Hijri month dates
+    HijriSyncService.syncFromNetwork().then((updated) {
+      if (updated) notifyListeners();
+    });
   }
 
   // --- Quran Progress Tracking (per Quran type) ---
@@ -1030,6 +1038,7 @@ class SettingsProvider extends ChangeNotifier {
       // before refreshing the widgets - otherwise it stays in the old script.
       await _relocaliseCityName();
       WidgetService.updateWidget();
+      await NotificationService.instance.updateLiveCountdownNotification();
       if (_notificationsEnabled) {
         await NotificationService.instance.scheduleWeeklyNotifications();
       }
@@ -1101,6 +1110,21 @@ class SettingsProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('notifications_enabled', value);
       await NotificationService.instance.setGlobalEnabled(value);
+    });
+  }
+
+  Future<void> setLiveCountdownEnabled(bool value) async {
+    if (_liveCountdownEnabled == value) return;
+    _liveCountdownEnabled = value;
+    notifyListeners();
+    Future.delayed(const Duration(milliseconds: 150), () async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('live_countdown_enabled', value);
+      if (value) {
+        await NotificationService.instance.updateLiveCountdownNotification();
+      } else {
+        await NotificationService.instance.cancelLiveCountdown();
+      }
     });
   }
 

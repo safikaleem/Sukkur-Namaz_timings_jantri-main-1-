@@ -4,12 +4,11 @@ import 'world_translations_extra.dart';
 /// translate(). Built from the base table below plus the later additions in
 /// world_translations_extra.dart, with prayer-name aliases resolved so that
 /// e.g. 'Fajr' always renders the same as 'Fajar'.
-final Set<String> _allLanguages = {
-  'english', 'urdu', 'sindhi', 'arabic', 'bengali',
-  'french', 'hindi', 'indonesian', 'persian', 'turkish',
+final Set<String> _allLanguages = ({
+  'bengali', 'french', 'hindi', 'indonesian', 'persian', 'turkish',
   ..._baseTranslations.keys,
   ...additionalTranslations.keys,
-};
+}..removeAll({'english', 'urdu', 'sindhi', 'arabic'}));
 
 final Map<String, Map<String, String>> worldTranslations = {
   for (final lang in _allLanguages)
@@ -17,8 +16,11 @@ final Map<String, Map<String, String>> worldTranslations = {
       ...?_baseTranslations[lang],
       ...?additionalTranslations[lang],
       for (final alias in prayerNameAliases.entries)
-        if ((_baseTranslations[lang] ?? const {})[alias.value] != null)
-          alias.key: _baseTranslations[lang]![alias.value]!,
+        if (((_baseTranslations[lang] ?? const {})[alias.value] ??
+                (additionalTranslations[lang] ?? const {})[alias.value]) !=
+            null)
+          alias.key: ((_baseTranslations[lang] ?? const {})[alias.value] ??
+              additionalTranslations[lang]![alias.value])!,
     },
 };
 
@@ -1514,10 +1516,17 @@ const Map<String, String> languageNamesMap = {
 /// scheduling, background isolates - localises identically.
 String translateFor(String language, String en, String ur, String sd,
     [String? ar]) {
-  final dictMatch = worldTranslations[language]?[en];
-  if (dictMatch != null && dictMatch.isNotEmpty) return dictMatch;
+  final extraMatch = additionalTranslations[language]?[en];
+  if (extraMatch != null && extraMatch.isNotEmpty) return extraMatch;
+  if (language == 'english') return en;
   if (language == 'sindhi' && sd.isNotEmpty && sd != en) return sd;
   if (language == 'urdu' && ur.isNotEmpty && ur != en) return ur;
-  if (language == 'arabic' && ar != null && ar.isNotEmpty && ar != en) return ar;
+  if (language == 'arabic') {
+    if (ar != null && ar.isNotEmpty && ar != en) return ar;
+    if (ur.isNotEmpty && ur != en) return ur;
+    return en;
+  }
+  final dictMatch = worldTranslations[language]?[en];
+  if (dictMatch != null && dictMatch.isNotEmpty) return dictMatch;
   return en;
 }

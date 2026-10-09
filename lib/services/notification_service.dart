@@ -17,6 +17,8 @@ import '../data/timings_data.dart';
 import '../models/namaz_timing.dart';
 import '../utils/alert_mode.dart';
 import '../utils/azan_data.dart';
+import '../utils/prayer_state.dart';
+import 'widget_service.dart';
 
 class NotificationService {
   static final NotificationService instance = NotificationService._();
@@ -128,6 +130,10 @@ class NotificationService {
   static const _chVibrate = 'namaz_vibrate_v6';
   static const _chLoud = 'namaz_loud_bell_v7';
   static const _chReminder = 'namaz_reminder_v6';
+  static const _chLiveCountdown = 'namaz_live_countdown_v1';
+  static const liveCountdownId = 999;
+
+  Timer? _liveTimer;
 
   // We will create dynamic azan channels based on the selected azan index.
   static String _getAzanChannelId(int index) => 'namaz_azan_v6_$index';
@@ -163,6 +169,7 @@ class NotificationService {
     final android = _plugin!.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     await _createChannels(android);
+    startLiveCountdownTimer();
   }
 
   Future<void> requestPermissions() async {
@@ -267,6 +274,15 @@ class NotificationService {
       enableVibration: true,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       sound: RawResourceAndroidNotificationSound('mixkit_bell_notification_933'),
+    ));
+    await android.createNotificationChannel(const AndroidNotificationChannel(
+      _chLiveCountdown,
+      'نماز لائیو کاؤنٹ ڈاؤن',
+      description: 'اگلی نماز کا لائیو کاؤنٹ ڈاؤن',
+      importance: Importance.low,
+      playSound: false,
+      enableVibration: false,
+      showBadge: false,
     ));
 
     // Create a channel for each azan track
@@ -1279,6 +1295,196 @@ class NotificationService {
     } catch (e) {
       debugPrint('Failed to show test notification: $e');
     }
+  }
+
+  void startLiveCountdownTimer() {
+    _liveTimer?.cancel();
+    updateLiveCountdownNotification();
+    _liveTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      updateLiveCountdownNotification();
+    });
+  }
+
+  void stopLiveCountdownTimer() {
+    _liveTimer?.cancel();
+    _liveTimer = null;
+  }
+
+  static String _getOngoingLabel(String lang) {
+    switch (lang) {
+      case 'urdu': return 'جاری ہے';
+      case 'sindhi': return 'جاري آهي';
+      case 'arabic': return 'جاري الآن';
+      case 'persian': return 'در حال انجام';
+      case 'hindi': return 'जारी है';
+      case 'bengali': return 'চলমান';
+      case 'turkish': return 'Devam Ediyor';
+      case 'indonesian': return 'Sedang Berlangsung';
+      case 'french': return 'En cours';
+      default: return 'Ongoing';
+    }
+  }
+
+  static String _getRemainingLabel(String lang) {
+    switch (lang) {
+      case 'urdu': return 'باقی ہے';
+      case 'sindhi': return 'باقي آهي';
+      case 'arabic': return 'متبقي';
+      case 'persian': return 'باقی مانده';
+      case 'hindi': return 'शेष है';
+      case 'bengali': return 'বাকি আছে';
+      case 'turkish': return 'Kaldı';
+      case 'indonesian': return 'Tersisa';
+      case 'french': return 'Restant';
+      default: return 'Remaining';
+    }
+  }
+
+  Future<void> updateLiveCountdownNotification() async {
+    if (kIsWeb || _plugin == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final bool enabled = prefs.getBool('live_countdown_enabled') ?? true;
+      final bool globalEnabled = prefs.getBool('notifications_enabled') ?? true;
+
+      if (!enabled || !globalEnabled) {
+        await cancelLiveCountdown();
+        return;
+      }
+
+      await TimingsData.instance.load();
+      final now = TimingsData.instance.nowForTimings();
+      final today = TimingsData.instance.timingFor(now);
+      if (today == null) return;
+
+      final state = computePrayerState(now, today);
+      if (state == null) return;
+
+      final language = prefs.getString('language_code') ??
+          (prefs.getBool('is_sindhi') == true
+              ? 'sindhi'
+              : prefs.getBool('is_urdu') == true
+                  ? 'urdu'
+                  : 'english');
+      final isRtl = rtlLanguages.contains(language);
+      final mark = isRtl ? '\u200F' : '\u202A';
+
+      final prayerRawName = state.prayer.name;
+      final prayerLocalized = worldTranslations[language]?[prayerRawName] ??
+          translateFor(language, prayerRawName, prayerRawName, prayerRawName);
+
+      final nextPrayerHeader = worldTranslations[language]?['Next Prayer'] ??
+          translateFor(language, 'Next Prayer', 'اگلی نماز', 'ابلي نماز', 'الصلاة القادمة');
+      final currentPrayerHeader = worldTranslations[language]?['Current Prayer'] ??
+          translateFor(language, 'Current Prayer', 'موجودہ وقت', 'موجوده وقت', 'الصلاة الحالية');
+
+      final headerText = state.isElapsed ? currentPrayerHeader : nextPrayerHeader;
+      final title = '$mark$headerText: $prayerLocalized';
+
+      Duration duration = state.duration;
+      if (!state.isElapsed) {
+        final ms = duration.inMilliseconds;
+        final seconds = ms <= 0 ? 0 : (ms / 1000).ceil();
+        duration = Duration(seconds: seconds);
+      }
+      final totalMins = duration.inMinutes;
+      final hours = duration.inHours;
+      final mins = duration.inMinutes.remainder(60);
+
+      final timeFormatted = '${state.prayer.displayTime} ${state.prayer.displayIsPm ? 'PM' : 'AM'}';
+
+      final h = duration.inHours;
+      final m = duration.inMinutes.remainder(60);
+      final s = duration.inSeconds.remainder(60);
+
+      final String durationFormatted;
+      if (h > 0) {
+        durationFormatted = '${h.toString().padLeft(2, '0')}h ${m.toString().padLeft(2, '0')}m ${s.toString().padLeft(2, '0')}s';
+      } else {
+        durationFormatted = '${m.toString().padLeft(2, '0')}m ${s.toString().padLeft(2, '0')}s';
+      }
+
+      final String statusLabel = state.isElapsed
+          ? _getOngoingLabel(language)
+          : _getRemainingLabel(language);
+
+      final String sign = state.isElapsed ? '+' : '−';
+      final String timeRemainingStr = '$sign$durationFormatted $statusLabel';
+
+      final body = '$mark$timeFormatted ($timeRemainingStr)';
+
+      final androidDetails = AndroidNotificationDetails(
+        _chLiveCountdown,
+        'نماز لائیو کاؤنٹ ڈاؤن',
+        channelDescription: 'اگلی نماز کا لائیو کاؤنٹ ڈاؤن',
+        importance: Importance.low,
+        priority: Priority.low,
+        ongoing: true,
+        onlyAlertOnce: true,
+        autoCancel: false,
+        showWhen: false,
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: false,
+        presentBadge: false,
+        presentSound: false,
+      );
+
+      final details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await _plugin!.show(
+        liveCountdownId,
+        title,
+        body,
+        details,
+      );
+    } catch (e) {
+      debugPrint('Failed to update live countdown notification: $e');
+    }
+
+    WidgetService.updateWidget();
+  }
+
+  Future<void> cancelLiveCountdown() async {
+    if (kIsWeb || _plugin == null) return;
+    try {
+      await _plugin!.cancel(liveCountdownId);
+    } catch (_) {}
+  }
+
+  static String _formatNumber(int num, String language) {
+    final s = num.toString();
+    if (language == 'urdu' || language == 'sindhi' || language == 'arabic' || language == 'persian') {
+      const w = ['0','1','2','3','4','5','6','7','8','9'];
+      const a = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+      var res = s;
+      for (int i = 0; i < 10; i++) {
+        res = res.replaceAll(w[i], a[i]);
+      }
+      return res;
+    } else if (language == 'bengali') {
+      const w = ['0','1','2','3','4','5','6','7','8','9'];
+      const b = ['০','১','২','৩','৪','৫','۶','৭','৮','৯'];
+      var res = s;
+      for (int i = 0; i < 10; i++) {
+        res = res.replaceAll(w[i], b[i]);
+      }
+      return res;
+    } else if (language == 'hindi') {
+      const w = ['0','1','2','3','4','5','6','7','8','9'];
+      const h = ['०','१','२','३','४','५','६','७','८','९'];
+      var res = s;
+      for (int i = 0; i < 10; i++) {
+        res = res.replaceAll(w[i], h[i]);
+      }
+      return res;
+    }
+    return s;
   }
 }
 

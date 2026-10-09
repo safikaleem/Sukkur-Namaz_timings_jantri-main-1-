@@ -75,7 +75,11 @@ class AndroidNotificationDetails {
       dynamic visibility,
       dynamic styleInformation,
       dynamic category,
-      dynamic audioAttributesUsage});
+      dynamic audioAttributesUsage,
+      bool ongoing = false,
+      bool onlyAlertOnce = false,
+      bool autoCancel = true,
+      bool showWhen = true});
 }
 
 class NotificationVisibility {
@@ -136,7 +140,8 @@ class AndroidNotificationChannel {
       bool enableVibration = true,
       dynamic sound,
       AudioAttributesUsage audioAttributesUsage =
-          AudioAttributesUsage.notification});
+          AudioAttributesUsage.notification,
+      bool showBadge = true});
 }
 
 class AndroidNotificationSound {
