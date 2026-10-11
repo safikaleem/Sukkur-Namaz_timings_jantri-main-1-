@@ -90,8 +90,8 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
     final bool? confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      isDismissible: false,
-      enableDrag: false,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         // Use a StatefulBuilder so dropdowns and radio buttons update live

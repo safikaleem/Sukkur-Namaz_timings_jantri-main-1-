@@ -74,7 +74,7 @@ class _SuhoorIftarCardState extends State<SuhoorIftarCard> {
     // 1. Suhoor End Time (Intiha-e-Sehar in Sukkur, or Subah Sadiq / Fajr)
     final suhoorPrayer = todayTiming?.allTimings.firstWhere(
       (p) => p.name == 'Intiha e Sehar' || p.name == 'Subah Sadiq' || p.name == 'Fajar' || p.name == 'Fajr',
-      orElse: () => PrayerTime(name: 'Intiha e Sehar', urduName: 'انتہائے سحر', time: todayTiming?.subahSadiq ?? '04:45', isPm: false),
+      orElse: () => PrayerTime(name: 'Intiha e Sehar', urduName: 'انتہائے سحر', time: todayTiming.subahSadiq, isPm: false),
     );
     final suhoorDt = suhoorPrayer?.toDateTime(date: now) ?? DateTime(now.year, now.month, now.day, 4, 45);
     final suhoorDiff = suhoorDt.difference(now);
@@ -82,7 +82,7 @@ class _SuhoorIftarCardState extends State<SuhoorIftarCard> {
     // 2. Iftar Time (Maghrib)
     final iftarPrayer = todayTiming?.allTimings.firstWhere(
       (p) => p.name == 'Maghrib',
-      orElse: () => PrayerTime(name: 'Maghrib', urduName: 'مغرب', time: todayTiming?.maghrib ?? '18:35', isPm: true),
+      orElse: () => PrayerTime(name: 'Maghrib', urduName: 'مغرب', time: todayTiming.maghrib, isPm: true),
     );
     final iftarDt = iftarPrayer?.toDateTime(date: now) ?? DateTime(now.year, now.month, now.day, 18, 35);
     final iftarDiff = iftarDt.difference(now);

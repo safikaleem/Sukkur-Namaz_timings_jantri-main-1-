@@ -874,6 +874,7 @@ class _ToggleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRtl = context.watch<SettingsProvider>().isRtl;
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
@@ -912,8 +913,8 @@ class _ToggleTile extends StatelessWidget {
                   Text(
                     label,
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
+                      fontSize: isRtl ? 17 : 14,
+                      fontWeight: FontWeight.w500,
                       color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
@@ -921,8 +922,8 @@ class _ToggleTile extends StatelessWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? Colors.white54 : Colors.black54,
+                      fontSize: isRtl ? 14 : 12,
+                      color: isDark ? Colors.white38 : Colors.black45,
                     ),
                   ),
                 ],

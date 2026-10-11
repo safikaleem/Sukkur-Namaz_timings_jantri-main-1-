@@ -301,6 +301,51 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
                         ],
                       ),
                     ),
+                    IconButton(
+                      icon: Icon(
+                        settings.favoriteMasjidId == masjid.id
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
+                        color: settings.favoriteMasjidId == masjid.id
+                            ? const Color(0xFFE5C158)
+                            : Colors.white60,
+                        size: 28,
+                      ),
+                      tooltip: _t(
+                        settings,
+                        'Set as Favorite Masjid for Jama\'at Alarms',
+                        'باجماعت الارم کے لیے پسندیدہ مسجد مقرر کریں',
+                        'باجماعت الارم لاءِ پسنديده مسجد مقرر ڪريو',
+                        'تعيين كمسجد مفضل لمنبهات صلاة الجماعة',
+                      ),
+                      onPressed: () {
+                        final isRemoving = settings.favoriteMasjidId == masjid.id;
+                        settings.setFavoriteMasjidId(masjid.id);
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              isRemoving
+                                  ? _t(
+                                      settings,
+                                      'Removed from Favorite Masjids',
+                                      'پسندیدہ مساجد سے ہٹا دیا گیا',
+                                      'پسنديده مساجد مان هٽايو ويو',
+                                      'تمت الإزالة من المساجد المفضلة',
+                                    )
+                                  : _t(
+                                      settings,
+                                      'Saved as Favorite Masjid for Jama\'at Alarms',
+                                      'باجماعت نماز الارم کے لیے پسندیدہ مسجد منتخب ہو گئی',
+                                      'باجماعت نماز الارم لاءِ پسنديده مسجد محفوظ ٿي وئي',
+                                      'تم الحفظ كمسجد مفضل لمنبهات صلاة الجماعة',
+                                    ),
+                            ),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -373,6 +418,9 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
                         context,
                         settings,
                         nameKey: 'Fajr',
+                        customNote: timing.getNoteFor('Fajr', lang).isNotEmpty
+                            ? timing.getNoteFor('Fajr', lang)
+                            : null,
                         time: timing.fajr,
                         lastUpdated: timing.fajrUpdated,
                         icon: Icons.wb_twilight_rounded,
@@ -384,6 +432,9 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
                         settings,
                         nameKey: 'Zuhar',
                         subNoteKey: 'Fixed',
+                        customNote: timing.getNoteFor('Zuhar', lang).isNotEmpty
+                            ? timing.getNoteFor('Zuhar', lang)
+                            : null,
                         time: timing.zuhar,
                         lastUpdated: '',
                         icon: Icons.wb_sunny_rounded,
@@ -394,6 +445,9 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
                         context,
                         settings,
                         nameKey: 'Asar',
+                        customNote: timing.getNoteFor('Asar', lang).isNotEmpty
+                            ? timing.getNoteFor('Asar', lang)
+                            : null,
                         time: timing.asar,
                         lastUpdated: timing.asarUpdated,
                         icon: Icons.wb_cloudy_rounded,
@@ -405,6 +459,9 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
                         settings,
                         nameKey: 'Maghrib',
                         subNoteKey: 'According to daily Maghrib time',
+                        customNote: timing.getNoteFor('Maghrib', lang).isNotEmpty
+                            ? timing.getNoteFor('Maghrib', lang)
+                            : null,
                         time: timing.maghrib,
                         lastUpdated: '',
                         icon: Icons.nights_stay_rounded,
@@ -415,6 +472,9 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
                         context,
                         settings,
                         nameKey: 'Isha',
+                        customNote: timing.getNoteFor('Isha', lang).isNotEmpty
+                            ? timing.getNoteFor('Isha', lang)
+                            : null,
                         time: timing.isha,
                         lastUpdated: timing.ishaUpdated,
                         icon: Icons.bedtime_rounded,
@@ -426,6 +486,9 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
                         settings,
                         nameKey: 'Jummah',
                         subNoteKey: 'Fixed',
+                        customNote: timing.getNoteFor('Jummah', lang).isNotEmpty
+                            ? timing.getNoteFor('Jummah', lang)
+                            : null,
                         time: timing.jummah,
                         lastUpdated: '',
                         icon: Icons.star_rounded,
@@ -450,6 +513,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
     SettingsProvider settings, {
     required String nameKey,
     String? subNoteKey,
+    String? customNote,
     required String time,
     required String lastUpdated,
     required IconData icon,
@@ -461,70 +525,99 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
       return _getPrayerDisplayName(settings, nameKey);
     }
 
+    final bool hasCustomNote = customNote != null && customNote.isNotEmpty;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 20,
-            color: const Color(0xFF2D6A4F),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              getPrayerDisplayName(),
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : Colors.black87,
-                fontFamily: AppTheme.getFontForLanguage(context, lang),
-              ),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                width: 95,
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1B4332).withValues(alpha: isDark ? 0.25 : 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: const Color(0xFF1B4332).withValues(alpha: 0.2),
+              Icon(
+                icon,
+                size: 20,
+                color: const Color(0xFF2D6A4F),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  getPrayerDisplayName(),
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.black87,
+                    fontFamily: AppTheme.getFontForLanguage(context, lang),
                   ),
                 ),
-                child: Directionality(
-                  textDirection: TextDirection.ltr,
-                  child: Text(
-                    time,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 95,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1B4332).withValues(alpha: isDark ? 0.25 : 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: const Color(0xFF1B4332).withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Directionality(
+                      textDirection: TextDirection.ltr,
+                      child: Text(
+                        time,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                subNoteKey != null
-                    ? '(${_t(settings, subNoteKey)})'
-                    : '${_t(settings, "Last Updated")}: \u200E${JamaatTiming.normalizeDate(lastUpdated)}\u200E',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  color: isDark ? Colors.white54 : Colors.grey[600],
-                  fontFamily: AppTheme.getFontForLanguage(context, lang),
-                  fontWeight: FontWeight.w400,
-                ),
-                textAlign: TextAlign.end,
+                  if (!hasCustomNote) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      subNoteKey != null
+                          ? '(${_t(settings, subNoteKey)})'
+                          : '${_t(settings, "Last Updated")}: \u200E${JamaatTiming.normalizeDate(lastUpdated)}\u200E',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: isDark ? Colors.white70 : Colors.grey[700],
+                        fontFamily: AppTheme.getFontForLanguage(context, lang),
+                        fontWeight: FontWeight.w400,
+                      ),
+                      textAlign: TextAlign.end,
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
+          if (hasCustomNote) ...[
+            const SizedBox(height: 5),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                customNote,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: isDark ? const Color(0xFFA5D6A7) : const Color(0xFF1B4332),
+                  fontFamily: AppTheme.getFontForLanguage(context, lang),
+                  fontWeight: FontWeight.w400,
+                ),
+                maxLines: 1,
+                textAlign: TextAlign.end,
+              ),
+            ),
+          ],
         ],
       ),
     );

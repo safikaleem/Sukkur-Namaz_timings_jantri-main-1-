@@ -113,7 +113,7 @@ class SettingsProvider extends ChangeNotifier {
   DarkModeOption _darkModeOption = DarkModeOption.auto;
   String _language = 'english';
   bool _notificationsEnabled = true;
-  bool _liveCountdownEnabled = true;
+  bool _liveCountdownEnabled = false;
   bool _hasCompletedSetup = false;
   int _hijriAdjustment = 0;
   int _selectedAzanIndex = 0;
@@ -141,6 +141,10 @@ class SettingsProvider extends ChangeNotifier {
 
   bool _autoSilentEnabled = false;
   String _autoSilentMode = 'vibrate';
+
+  bool _jamaatRemindersEnabled = false;
+  String _favoriteMasjidId = '';
+  int _jamaatReminderOffsetMins = 15;
 
   final Map<String, int> _autoSilentOffsets = {
     'Fajar': 15,
@@ -312,6 +316,46 @@ class SettingsProvider extends ChangeNotifier {
 
   bool get autoSilentEnabled => _autoSilentEnabled;
   String get autoSilentMode => _autoSilentMode;
+
+  bool get jamaatRemindersEnabled => _jamaatRemindersEnabled;
+  String get favoriteMasjidId => _favoriteMasjidId;
+  int get jamaatReminderOffsetMins => _jamaatReminderOffsetMins;
+
+  Future<void> setJamaatRemindersEnabled(bool value) async {
+    _jamaatRemindersEnabled = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('jamaat_reminders_enabled', value);
+    if (value) {
+      await NotificationService.instance.scheduleJamaatReminders();
+    } else {
+      await NotificationService.instance.cancelJamaatReminders();
+    }
+  }
+
+  Future<void> setFavoriteMasjidId(String id) async {
+    if (_favoriteMasjidId == id) {
+      _favoriteMasjidId = '';
+    } else {
+      _favoriteMasjidId = id;
+    }
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('favorite_masjid_id', _favoriteMasjidId);
+    if (_jamaatRemindersEnabled) {
+      await NotificationService.instance.scheduleJamaatReminders();
+    }
+  }
+
+  Future<void> setJamaatReminderOffsetMins(int mins) async {
+    _jamaatReminderOffsetMins = mins;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('jamaat_reminder_offset_mins', mins);
+    if (_jamaatRemindersEnabled) {
+      await NotificationService.instance.scheduleJamaatReminders();
+    }
+  }
 
   int getAutoSilentOffset(String prayer) => _autoSilentOffsets[prayer] ?? 15;
   int getAutoSilentDuration(String prayer) => _autoSilentDurations[prayer] ?? 20;
@@ -752,7 +796,7 @@ class SettingsProvider extends ChangeNotifier {
       }
     }
     _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
-    _liveCountdownEnabled = prefs.getBool('live_countdown_enabled') ?? true;
+    _liveCountdownEnabled = prefs.getBool('live_countdown_enabled') ?? false;
     _hasCompletedSetup = prefs.getBool('has_completed_setup') ?? false;
     _hijriAdjustment = prefs.getInt('hijri_adjustment') ?? 0;
     await HijriSyncService.loadLocalCache();
@@ -827,6 +871,9 @@ class SettingsProvider extends ChangeNotifier {
       }
     }
     _asrMethod = prefs.getString('asr_method') ?? 'Hanafi';
+    _jamaatRemindersEnabled = prefs.getBool('jamaat_reminders_enabled') ?? false;
+    _favoriteMasjidId = prefs.getString('favorite_masjid_id') ?? '';
+    _jamaatReminderOffsetMins = prefs.getInt('jamaat_reminder_offset_mins') ?? 15;
 
     for (final key in _autoSilentOffsets.keys) {
       _autoSilentOffsets[key] = prefs.getInt('auto_silent_offset_$key') ?? _autoSilentOffsets[key]!;
@@ -1041,6 +1088,9 @@ class SettingsProvider extends ChangeNotifier {
       await NotificationService.instance.updateLiveCountdownNotification();
       if (_notificationsEnabled) {
         await NotificationService.instance.scheduleWeeklyNotifications();
+      }
+      if (_jamaatRemindersEnabled) {
+        await NotificationService.instance.scheduleJamaatReminders();
       }
     });
   }

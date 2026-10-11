@@ -1,4 +1,5 @@
 import '../l10n/world_translations.dart';
+import '../l10n/world_translations_extra.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -18,6 +19,7 @@ import '../models/namaz_timing.dart';
 import '../utils/alert_mode.dart';
 import '../utils/azan_data.dart';
 import '../utils/prayer_state.dart';
+import 'jamaat_times_service.dart';
 import 'widget_service.dart';
 
 class NotificationService {
@@ -757,9 +759,6 @@ class NotificationService {
     }
 
     final isRtl = (language == 'urdu' || language == 'sindhi' || language == 'arabic' || language == 'persian');
-    final String bodyHtml = isRtl
-        ? '<div dir="rtl" style="text-align: right;"><p>$subtitle</p><p>$hadith</p></div>'
-        : '<p>$subtitle</p><p>$hadith</p>';
 
     final String plainBody = '$subtitle\n\n$hadith';
 
@@ -1300,7 +1299,7 @@ class NotificationService {
   void startLiveCountdownTimer() {
     _liveTimer?.cancel();
     updateLiveCountdownNotification();
-    _liveTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+    _liveTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       updateLiveCountdownNotification();
     });
   }
@@ -1388,11 +1387,8 @@ class NotificationService {
         final seconds = ms <= 0 ? 0 : (ms / 1000).ceil();
         duration = Duration(seconds: seconds);
       }
-      final totalMins = duration.inMinutes;
-      final hours = duration.inHours;
-      final mins = duration.inMinutes.remainder(60);
 
-      final timeFormatted = '${state.prayer.displayTime} ${state.prayer.displayIsPm ? 'PM' : 'AM'}';
+      final timeFormatted = '\u2066${state.prayer.displayTime} ${state.prayer.displayIsPm ? 'PM' : 'AM'}\u2069';
 
       final h = duration.inHours;
       final m = duration.inMinutes.remainder(60);
@@ -1410,7 +1406,7 @@ class NotificationService {
           : _getRemainingLabel(language);
 
       final String sign = state.isElapsed ? '+' : '−';
-      final String timeRemainingStr = '$sign$durationFormatted $statusLabel';
+      final String timeRemainingStr = '\u2066$sign$durationFormatted\u2069 $statusLabel';
 
       final body = '$mark$timeFormatted ($timeRemainingStr)';
 
@@ -1424,6 +1420,7 @@ class NotificationService {
         onlyAlertOnce: true,
         autoCancel: false,
         showWhen: false,
+        visibility: NotificationVisibility.public,
       );
 
       const iosDetails = DarwinNotificationDetails(
@@ -1457,34 +1454,166 @@ class NotificationService {
     } catch (_) {}
   }
 
-  static String _formatNumber(int num, String language) {
-    final s = num.toString();
-    if (language == 'urdu' || language == 'sindhi' || language == 'arabic' || language == 'persian') {
-      const w = ['0','1','2','3','4','5','6','7','8','9'];
-      const a = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
-      var res = s;
+  static const int jamaatBaseId = 70000;
+
+  Future<void> cancelJamaatReminders() async {
+    if (kIsWeb || _plugin == null) return;
+    try {
       for (int i = 0; i < 10; i++) {
-        res = res.replaceAll(w[i], a[i]);
+        await _plugin!.cancel(jamaatBaseId + i);
       }
-      return res;
-    } else if (language == 'bengali') {
-      const w = ['0','1','2','3','4','5','6','7','8','9'];
-      const b = ['০','১','২','৩','৪','৫','۶','৭','৮','৯'];
-      var res = s;
-      for (int i = 0; i < 10; i++) {
-        res = res.replaceAll(w[i], b[i]);
+    } catch (_) {}
+  }
+
+  Future<void> scheduleJamaatReminders() async {
+    if (kIsWeb || _plugin == null) return;
+    try {
+      await cancelJamaatReminders();
+
+      final prefs = await SharedPreferences.getInstance();
+      final bool enabled = prefs.getBool('jamaat_reminders_enabled') ?? false;
+      if (!enabled) return;
+
+      final String favoriteId = prefs.getString('favorite_masjid_id') ?? '';
+      if (favoriteId.isEmpty) return;
+      final int offsetMins = prefs.getInt('jamaat_reminder_offset_mins') ?? 15;
+      final String language = prefs.getString('language_code') ?? 'english';
+
+      final masjidList = JamaatTimesService.instance.getMasjidList();
+      if (masjidList.isEmpty) return;
+
+      final masjid = masjidList.cast<dynamic>().firstWhere(
+        (m) => m.id == favoriteId,
+        orElse: () => null,
+      );
+      if (masjid == null) return;
+
+      final timing = JamaatTimesService.instance.getTimingFor(masjid);
+      final masjidName = translateFor(language, masjid.nameKey, masjid.nameKey, masjid.nameKey);
+
+      final now = DateTime.now();
+
+      final Map<String, String> prayerTimes = {
+        'Fajr': timing.fajr,
+        'Zuhar': timing.zuhar,
+        'Asar': timing.asar,
+        'Maghrib': timing.maghrib,
+        'Isha': timing.isha,
+      };
+
+      int idOffset = 0;
+      for (final entry in prayerTimes.entries) {
+        final prayerRaw = entry.key;
+        final timeStr = entry.value;
+
+        try {
+          final clean = timeStr.replaceAll('PM', '').replaceAll('AM', '').trim();
+          final parts = clean.split(':');
+          if (parts.length >= 2) {
+            int h = int.parse(parts[0]);
+            int m = int.parse(parts[1]);
+            final isPm = timeStr.contains('PM');
+            if (isPm && h < 12) h += 12;
+            if (!isPm && h == 12) h = 0;
+
+            var jamaatTime = DateTime(now.year, now.month, now.day, h, m);
+            var triggerTime = jamaatTime.subtract(Duration(minutes: offsetMins));
+
+            if (triggerTime.isBefore(now)) {
+              jamaatTime = jamaatTime.add(const Duration(days: 1));
+              triggerTime = triggerTime.add(const Duration(days: 1));
+            }
+
+            final bool isRtl = rtlLanguages.contains(language);
+            final String mark = isRtl ? '\u200F' : '\u202A';
+
+            final prayerName = translateFor(language, prayerRaw, prayerRaw, prayerRaw);
+            final titleText = additionalTranslations[language]?["Pre-Jama'at Reminder"] ??
+                worldTranslations[language]?["Pre-Jama'at Reminder"] ??
+                translateFor(
+                  language,
+                  'Pre-Jama\'at Reminder',
+                  'قبل از جماعت یاد دہانی',
+                  'جماعت کان اڳ ياد دهاني',
+                  'تنبيه قبل الجماعة',
+                );
+            final String title = isRtl ? '$mark🕌 $titleText' : '🕌 $titleText';
+
+            final String timeFormatted = isRtl ? '\u2066$timeStr\u2069' : timeStr;
+            final String body;
+
+            switch (language) {
+              case 'urdu':
+                body = '$mark$masjidName میں $prayerName کی جماعت $offsetMins منٹ میں ($timeFormatted) پر ہوگی۔';
+                break;
+              case 'sindhi':
+                body = '$mark$masjidName ۾ $prayerName جي جماعت $offsetMins منٽن ۾ ($timeFormatted) تي ٿيندي.';
+                break;
+              case 'arabic':
+                body = '$markصلاة $prayerName جماعة في $masjidName بعد $offsetMins دقيقة ($timeFormatted).';
+                break;
+              case 'persian':
+                body = '$markنماز جماعت $prayerName در $masjidName $offsetMins دقیقه دیگر ($timeFormatted) برگزار می‌شود.';
+                break;
+              case 'bengali':
+                body = '$masjidName-এ $offsetMins মিনিটের মধ্যে ($timeFormatted) $prayerName জামাত অনুষ্ঠিত হবে।';
+                break;
+              case 'indonesian':
+                body = 'Jama\'ah $prayerName di $masjidName dalam $offsetMins menit ($timeFormatted).';
+                break;
+              case 'turkish':
+                body = '$masjidName bünyesinde $prayerName cemaati $offsetMins dakika içinde ($timeFormatted).';
+                break;
+              case 'french':
+                body = 'Jama\'at de $prayerName à $masjidName dans $offsetMins min ($timeFormatted).';
+                break;
+              case 'hindi':
+                body = '$masjidName में $prayerName की जमात $offsetMins मिनट में ($timeFormatted) होगी।';
+                break;
+              default:
+                body = '$prayerName Jama\'at at $masjidName in $offsetMins mins ($timeFormatted).';
+            }
+
+            final androidDetails = AndroidNotificationDetails(
+              'ch_jamaat_reminders',
+              'باجماعت نماز الارم',
+              channelDescription: 'پسندیدہ مسجد کی باجماعت نماز کی یاد دہانی',
+              importance: Importance.high,
+              priority: Priority.high,
+              playSound: true,
+              enableVibration: true,
+            );
+
+            const iosDetails = DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+            );
+
+            final details = NotificationDetails(
+              android: androidDetails,
+              iOS: iosDetails,
+            );
+
+            final scheduledTz = tz.TZDateTime.from(triggerTime, tz.local);
+
+            await _plugin!.zonedSchedule(
+              jamaatBaseId + idOffset,
+              title,
+              body,
+              scheduledTz,
+              details,
+              androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+              uiLocalNotificationDateInterpretation:
+                  UILocalNotificationDateInterpretation.absoluteTime,
+            );
+          }
+        } catch (_) {}
+        idOffset++;
       }
-      return res;
-    } else if (language == 'hindi') {
-      const w = ['0','1','2','3','4','5','6','7','8','9'];
-      const h = ['०','१','२','३','४','५','६','७','८','९'];
-      var res = s;
-      for (int i = 0; i < 10; i++) {
-        res = res.replaceAll(w[i], h[i]);
-      }
-      return res;
+    } catch (e) {
+      debugPrint('Failed to schedule Jamaat reminders: $e');
     }
-    return s;
   }
 }
 

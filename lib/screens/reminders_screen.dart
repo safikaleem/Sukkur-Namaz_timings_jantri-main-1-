@@ -8,6 +8,7 @@ import '../widgets/dr_slogan_header.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/notification_service.dart';
+import '../services/jamaat_times_service.dart';
 import '../l10n/world_translations.dart';
 
 // ── Data model for a custom reminder ─────────────────────────
@@ -240,7 +241,9 @@ class _RemindersScreenState extends State<RemindersScreen> {
             ),
             const SizedBox(height: 8),
             const Center(child: DrSloganHeader()),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
+            _buildJamaatSection(context, settings),
+            const SizedBox(height: 8),
             Expanded(
               child: !_loaded
                   ? Center(child: CircularProgressIndicator(color: AppTheme.accent))
@@ -298,6 +301,141 @@ class _RemindersScreenState extends State<RemindersScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildJamaatSection(BuildContext context, SettingsProvider settings) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isRtl = settings.isRtl;
+
+    final masjidList = JamaatTimesService.instance.getMasjidList();
+    final bool hasFavorite = settings.favoriteMasjidId.isNotEmpty;
+    final favMasjid = hasFavorite
+        ? masjidList.firstWhere(
+            (m) => m.id == settings.favoriteMasjidId,
+            orElse: () => masjidList.first,
+          )
+        : null;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E282A) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF1B4332).withValues(alpha: isDark ? 0.3 : 0.15),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1B4332).withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.mosque_rounded,
+                  color: Color(0xFF2D6A4F),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      settings.translate(
+                        'Jama\'at Prayer Alarms',
+                        'باجماعت نماز الارم',
+                        'باجماعت نماز جا الارم',
+                        'منبهات صلاة الجماعة',
+                      ),
+                      style: TextStyle(
+                        fontSize: isRtl ? 16 : 14.5,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      hasFavorite && favMasjid != null
+                          ? '⭐ ${settings.translate(favMasjid.nameKey, favMasjid.nameKey, favMasjid.nameKey)}'
+                          : '⭐ ${settings.translate(
+                              'Tap star on Jama\'at screen to select favorite masjid',
+                              'پسندیدہ مسجد کے لیے جماعت اسکرین پر ستارے پر ٹیپ کریں',
+                              'پسنـديده مسجد لاءِ جماعت اسڪرين تي اسٽار تي ٽيپ ڪريو',
+                              'انقر على النجمة في شاشة الجماعة لاختيار المسجد المفضل',
+                            )}',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: settings.jamaatRemindersEnabled,
+                activeColor: const Color(0xFF2D6A4F),
+                onChanged: (val) => settings.setJamaatRemindersEnabled(val),
+              ),
+            ],
+          ),
+          if (settings.jamaatRemindersEnabled) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text(
+                  settings.translate(
+                    'Notify Before:',
+                    'پہلے اطلاع دیں:',
+                    'اڳ ۾ اطلاع ڏيو:',
+                    'تنبيه قبل:',
+                  ),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: isDark ? Colors.white70 : Colors.black54,
+                  ),
+                ),
+                const Spacer(),
+                Wrap(
+                  spacing: 6,
+                  children: [5, 10, 15].map((mins) {
+                    final bool isSel = settings.jamaatReminderOffsetMins == mins;
+                    return ChoiceChip(
+                      label: Text('${mins}m'),
+                      selected: isSel,
+                      selectedColor: const Color(0xFF1B4332),
+                      backgroundColor: isDark ? Colors.white10 : Colors.grey[200],
+                      labelStyle: TextStyle(
+                        fontSize: 11.5,
+                        color: isSel ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+                        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      onSelected: (_) => settings.setJamaatReminderOffsetMins(mins),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }

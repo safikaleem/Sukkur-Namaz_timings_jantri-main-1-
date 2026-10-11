@@ -5,25 +5,93 @@ import '../data/timings_data.dart';
 class JamaatTiming {
   final String fajr;
   final String fajrUpdated;
+  final String fajrNoteUr;
+  final String fajrNoteEn;
   final String zuhar;
+  final String zuharNoteUr;
+  final String zuharNoteEn;
   final String asar;
   final String asarUpdated;
+  final String asarNoteUr;
+  final String asarNoteEn;
   final String maghrib;
+  final String maghribNoteUr;
+  final String maghribNoteEn;
   final String isha;
   final String ishaUpdated;
+  final String ishaNoteUr;
+  final String ishaNoteEn;
   final String jummah;
+  final String jummahNoteUr;
+  final String jummahNoteEn;
 
   const JamaatTiming({
     required this.fajr,
     required this.fajrUpdated,
+    this.fajrNoteUr = '',
+    this.fajrNoteEn = '',
     required this.zuhar,
+    this.zuharNoteUr = '',
+    this.zuharNoteEn = '',
     required this.asar,
     required this.asarUpdated,
+    this.asarNoteUr = '',
+    this.asarNoteEn = '',
     required this.maghrib,
+    this.maghribNoteUr = '',
+    this.maghribNoteEn = '',
     required this.isha,
     required this.ishaUpdated,
+    this.ishaNoteUr = '',
+    this.ishaNoteEn = '',
     required this.jummah,
+    this.jummahNoteUr = '',
+    this.jummahNoteEn = '',
   });
+
+  String getNoteFor(String prayerKey, String language) {
+    final key = prayerKey.toLowerCase();
+    String ur = '';
+    String en = '';
+    switch (key) {
+      case 'fajr':
+      case 'fajar':
+        ur = fajrNoteUr;
+        en = fajrNoteEn;
+        break;
+      case 'zuhar':
+      case 'zuhr':
+        ur = zuharNoteUr;
+        en = zuharNoteEn;
+        break;
+      case 'asar':
+      case 'asr':
+        ur = asarNoteUr;
+        en = asarNoteEn;
+        break;
+      case 'maghrib':
+        ur = maghribNoteUr;
+        en = maghribNoteEn;
+        break;
+      case 'isha':
+        ur = ishaNoteUr;
+        en = ishaNoteEn;
+        break;
+      case 'jummah':
+      case 'juma':
+        ur = jummahNoteUr;
+        en = jummahNoteEn;
+        break;
+    }
+    if (language == 'english') {
+      if (en.isNotEmpty) return en;
+      if (ur.isNotEmpty) return ur;
+    } else {
+      if (ur.isNotEmpty) return ur;
+      if (en.isNotEmpty) return en;
+    }
+    return '';
+  }
 
   static String normalizeDate(String input) {
     final str = input.trim();
@@ -78,13 +146,25 @@ class JamaatTiming {
     return JamaatTiming(
       fajr: json['fajr'] ?? '05:15 AM',
       fajrUpdated: json['fajr_updated'] != null ? normalizeDate(json['fajr_updated'].toString()) : (json['fajrUpdated'] != null ? normalizeDate(json['fajrUpdated'].toString()) : defaultDate),
+      fajrNoteUr: json['fajr_note_ur']?.toString() ?? json['fajrNoteUr']?.toString() ?? json['fajr_note']?.toString() ?? '',
+      fajrNoteEn: json['fajr_note_en']?.toString() ?? json['fajrNoteEn']?.toString() ?? '',
       zuhar: json['zuhar'] ?? '01:15 PM',
+      zuharNoteUr: json['zuhar_note_ur']?.toString() ?? json['zuharNoteUr']?.toString() ?? json['zuhar_note']?.toString() ?? '',
+      zuharNoteEn: json['zuhar_note_en']?.toString() ?? json['zuharNoteEn']?.toString() ?? '',
       asar: json['asar'] ?? '04:45 PM',
       asarUpdated: json['asar_updated'] != null ? normalizeDate(json['asar_updated'].toString()) : (json['asarUpdated'] != null ? normalizeDate(json['asarUpdated'].toString()) : defaultDate),
+      asarNoteUr: json['asar_note_ur']?.toString() ?? json['asarNoteUr']?.toString() ?? json['asar_note']?.toString() ?? '',
+      asarNoteEn: json['asar_note_en']?.toString() ?? json['asarNoteEn']?.toString() ?? '',
       maghrib: json['maghrib'] ?? 'Sunset',
+      maghribNoteUr: json['maghrib_note_ur']?.toString() ?? json['maghribNoteUr']?.toString() ?? json['maghrib_note']?.toString() ?? '',
+      maghribNoteEn: json['maghrib_note_en']?.toString() ?? json['maghribNoteEn']?.toString() ?? '',
       isha: json['isha'] ?? '08:00 PM',
       ishaUpdated: json['isha_updated'] != null ? normalizeDate(json['isha_updated'].toString()) : (json['ishaUpdated'] != null ? normalizeDate(json['ishaUpdated'].toString()) : defaultDate),
+      ishaNoteUr: json['isha_note_ur']?.toString() ?? json['ishaNoteUr']?.toString() ?? json['isha_note']?.toString() ?? '',
+      ishaNoteEn: json['isha_note_en']?.toString() ?? json['ishaNoteEn']?.toString() ?? '',
       jummah: json['jummah'] ?? '01:15 PM',
+      jummahNoteUr: json['jummah_note_ur']?.toString() ?? json['jummahNoteUr']?.toString() ?? json['jummah_note']?.toString() ?? '',
+      jummahNoteEn: json['jummah_note_en']?.toString() ?? json['jummahNoteEn']?.toString() ?? '',
     );
   }
 
@@ -95,6 +175,8 @@ class JamaatTiming {
         'asar': asar,
         'asar_updated': asarUpdated,
         'maghrib': maghrib,
+        if (maghribNoteUr.isNotEmpty) 'maghrib_note_ur': maghribNoteUr,
+        if (maghribNoteEn.isNotEmpty) 'maghrib_note_en': maghribNoteEn,
         'isha': isha,
         'isha_updated': ishaUpdated,
         'jummah': jummah,
@@ -471,7 +553,27 @@ class JamaatTimesService {
         dynamicMaghrib == info.defaultTimings.maghrib) {
       final today = TimingsData.instance.timingFor(DateTime.now());
       if (today != null) {
-        dynamicMaghrib = format12HourEnglish(today.maghrib, defaultPm: true);
+        String baseTime = today.maghrib;
+        final match = RegExp(r'\+\s*(\d+)').firstMatch(dynamicMaghrib);
+        if (match != null) {
+          final offsetMins = int.tryParse(match.group(1)!) ?? 0;
+          try {
+            final clean = baseTime.replaceAll('PM', '').replaceAll('AM', '').trim();
+            final parts = clean.split(':');
+            int h = int.parse(parts[0]);
+            int m = int.parse(parts[1]);
+            if (h < 12) h += 12;
+            final dt = DateTime(2026, 1, 1, h, m).add(Duration(minutes: offsetMins));
+            int outH = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+            String hStr = outH.toString().padLeft(2, '0');
+            String mStr = dt.minute.toString().padLeft(2, '0');
+            dynamicMaghrib = '$hStr:$mStr PM';
+          } catch (_) {
+            dynamicMaghrib = format12HourEnglish(baseTime, defaultPm: true);
+          }
+        } else {
+          dynamicMaghrib = format12HourEnglish(baseTime, defaultPm: true);
+        }
       } else {
         dynamicMaghrib = format12HourEnglish(base.maghrib, defaultPm: true);
       }
@@ -482,13 +584,25 @@ class JamaatTimesService {
     return JamaatTiming(
       fajr: format12HourEnglish(base.fajr),
       fajrUpdated: base.fajrUpdated,
+      fajrNoteUr: base.fajrNoteUr,
+      fajrNoteEn: base.fajrNoteEn,
       zuhar: format12HourEnglish(base.zuhar, defaultPm: true),
+      zuharNoteUr: base.zuharNoteUr,
+      zuharNoteEn: base.zuharNoteEn,
       asar: format12HourEnglish(base.asar, defaultPm: true),
       asarUpdated: base.asarUpdated,
+      asarNoteUr: base.asarNoteUr,
+      asarNoteEn: base.asarNoteEn,
       maghrib: dynamicMaghrib,
+      maghribNoteUr: base.maghribNoteUr,
+      maghribNoteEn: base.maghribNoteEn,
       isha: format12HourEnglish(base.isha, defaultPm: true),
       ishaUpdated: base.ishaUpdated,
+      ishaNoteUr: base.ishaNoteUr,
+      ishaNoteEn: base.ishaNoteEn,
       jummah: format12HourEnglish(base.jummah, defaultPm: true),
+      jummahNoteUr: base.jummahNoteUr,
+      jummahNoteEn: base.jummahNoteEn,
     );
   }
 
