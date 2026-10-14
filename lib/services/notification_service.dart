@@ -171,7 +171,13 @@ class NotificationService {
     final android = _plugin!.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     await _createChannels(android);
-    startLiveCountdownTimer();
+    final prefs = await SharedPreferences.getInstance();
+    final bool liveEnabled = prefs.getBool('live_countdown_enabled') ?? false;
+    if (liveEnabled) {
+      startLiveCountdownTimer();
+    } else {
+      await cancelLiveCountdown();
+    }
   }
 
   Future<void> requestPermissions() async {
@@ -887,7 +893,7 @@ class NotificationService {
                 ? '\u200F$reminderBodyText'
                 : reminderBodyText,
             scheduledDate: tzDt,
-            notificationDetails: NotificationDetails(
+            notificationDetails: const NotificationDetails(
               android: AndroidNotificationDetails(
                 _chReminder,
                 'ذاتی یاد دہانیاں',
@@ -896,9 +902,9 @@ class NotificationService {
                 priority: Priority.max,
                 icon: '@drawable/ic_notification',
                 visibility: NotificationVisibility.public,
-                sound: const RawResourceAndroidNotificationSound('mixkit_bell_notification_933'),
+                sound: RawResourceAndroidNotificationSound('mixkit_bell_notification_933'),
                 category: AndroidNotificationCategory.reminder,
-                styleInformation: const DefaultStyleInformation(true, true),
+                styleInformation: DefaultStyleInformation(true, true),
               ),
               iOS: DarwinNotificationDetails(
                 presentAlert: true,
@@ -1299,7 +1305,9 @@ class NotificationService {
   void startLiveCountdownTimer() {
     _liveTimer?.cancel();
     updateLiveCountdownNotification();
-    _liveTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+    // On Android, usesChronometer: true natively ticks every second in SystemUI.
+    // Refreshing from Dart every 30 seconds avoids IPC flooding, notification throttling, and ANR.
+    _liveTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       updateLiveCountdownNotification();
     });
   }
@@ -1344,10 +1352,11 @@ class NotificationService {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      final bool enabled = prefs.getBool('live_countdown_enabled') ?? true;
+      final bool enabled = prefs.getBool('live_countdown_enabled') ?? false;
       final bool globalEnabled = prefs.getBool('notifications_enabled') ?? true;
 
       if (!enabled || !globalEnabled) {
+        stopLiveCountdownTimer();
         await cancelLiveCountdown();
         return;
       }
@@ -1390,36 +1399,39 @@ class NotificationService {
 
       final timeFormatted = '\u2066${state.prayer.displayTime} ${state.prayer.displayIsPm ? 'PM' : 'AM'}\u2069';
 
-      final h = duration.inHours;
-      final m = duration.inMinutes.remainder(60);
-      final s = duration.inSeconds.remainder(60);
-
-      final String durationFormatted;
-      if (h > 0) {
-        durationFormatted = '${h.toString().padLeft(2, '0')}h ${m.toString().padLeft(2, '0')}m ${s.toString().padLeft(2, '0')}s';
-      } else {
-        durationFormatted = '${m.toString().padLeft(2, '0')}m ${s.toString().padLeft(2, '0')}s';
-      }
-
+      final String sign = state.isElapsed ? '+' : '-';
       final String statusLabel = state.isElapsed
           ? _getOngoingLabel(language)
           : _getRemainingLabel(language);
 
-      final String sign = state.isElapsed ? '+' : '−';
-      final String timeRemainingStr = '\u2066$sign$durationFormatted\u2069 $statusLabel';
+      final int targetWhenMs = state.isElapsed
+          ? now.subtract(state.duration).millisecondsSinceEpoch
+          : now.add(state.duration).millisecondsSinceEpoch;
 
-      final body = '$mark$timeFormatted ($timeRemainingStr)';
+      final channelName = worldTranslations[language]?['Lock Screen Live Countdown'] ??
+          translateFor(language, 'Lock Screen Live Countdown', 'لاک اسکرین لائیو کاؤنٹ ڈاؤن', 'لاڪ اسڪرين لائيو ڪائونٽ ڊائون', 'العد التنازلي المباشر للشاشة');
+
+      // Body shows clean prayer time only (status and live countdown are in the header above)
+      final body = '$mark$timeFormatted';
+
+      final String subText = isRtl
+          ? '\u202A$statusLabel $sign\u202C'
+          : '$statusLabel $sign';
 
       final androidDetails = AndroidNotificationDetails(
         _chLiveCountdown,
-        'نماز لائیو کاؤنٹ ڈاؤن',
-        channelDescription: 'اگلی نماز کا لائیو کاؤنٹ ڈاؤن',
+        channelName,
+        channelDescription: channelName,
         importance: Importance.low,
         priority: Priority.low,
         ongoing: true,
         onlyAlertOnce: true,
         autoCancel: false,
-        showWhen: false,
+        showWhen: true,
+        when: targetWhenMs,
+        usesChronometer: true,
+        chronometerCountDown: !state.isElapsed,
+        subText: subText,
         visibility: NotificationVisibility.public,
       );
 
@@ -1450,6 +1462,7 @@ class NotificationService {
   Future<void> cancelLiveCountdown() async {
     if (kIsWeb || _plugin == null) return;
     try {
+      stopLiveCountdownTimer();
       await _plugin!.cancel(liveCountdownId);
     } catch (_) {}
   }
@@ -1574,7 +1587,7 @@ class NotificationService {
                 body = '$prayerName Jama\'at at $masjidName in $offsetMins mins ($timeFormatted).';
             }
 
-            final androidDetails = AndroidNotificationDetails(
+            const androidDetails = AndroidNotificationDetails(
               'ch_jamaat_reminders',
               'باجماعت نماز الارم',
               channelDescription: 'پسندیدہ مسجد کی باجماعت نماز کی یاد دہانی',

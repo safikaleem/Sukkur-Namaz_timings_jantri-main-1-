@@ -433,6 +433,56 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
 
   (Color, String) _getCategoryBadge(String cat, SettingsProvider settings) {
     switch (cat) {
+      case 'first_day_islamic_year':
+        return (
+          const Color(0xFF00897B),
+          settings.translate(
+            'First Day of Islamic Year',
+            'اسلامی سال کا پہلا دن',
+            'اسلامي سال جو پهريون ڏينهن',
+            'أول يوم في السنة الهجرية',
+          ),
+        );
+      case 'prophet_birth':
+        return (
+          const Color(0xFF2E7D32),
+          settings.translate(
+            'Day of Birth of Prophet Muhammad ﷺ',
+            'ولادتِ باسعادت حضرت محمد ﷺ',
+            'ولادت باسعادت حضرت محمد ﷺ',
+            'يوم مولد النبي محمد ﷺ',
+          ),
+        );
+      case 'farz_fasting':
+        return (
+          const Color(0xFFD84315),
+          settings.translate(
+            'Farz Fasting',
+            'فرض روزہ',
+            'فرض روزو',
+            'صيام فرض',
+          ),
+        );
+      case 'eid_ul_fitr':
+        return (
+          const Color(0xFF388E3C),
+          settings.translate(
+            'Eid-ul-Fitr',
+            'عید الفطر',
+            'عيد الفطر',
+            'عيد الفطر',
+          ),
+        );
+      case 'eid_ul_adha':
+        return (
+          const Color(0xFF388E3C),
+          settings.translate(
+            'Eid-ul-Adha',
+            'عید الاضحیٰ',
+            'عيد الاضحيٰ',
+            'عيد الأضحى',
+          ),
+        );
       case 'eid':
         return (
           const Color(0xFF388E3C),

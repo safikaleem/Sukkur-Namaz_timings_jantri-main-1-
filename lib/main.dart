@@ -20,6 +20,7 @@ import 'screens/reminders_screen.dart';
 import 'screens/qibla_screen.dart';
 import 'screens/tasbeeh_screen.dart';
 import 'screens/jamaat_times_screen.dart';
+import 'services/jamaat_times_service.dart';
 import 'screens/quran_screen.dart';
 import 'screens/munajat_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -45,6 +46,11 @@ void callbackDispatcher() {
       await settings.loadFromPrefs();
       if (settings.notificationsEnabled) {
         await NotificationService.instance.scheduleWeeklyNotifications();
+      }
+      if (settings.liveCountdownEnabled) {
+        await NotificationService.instance.updateLiveCountdownNotification();
+      } else {
+        await NotificationService.instance.cancelLiveCountdown();
       }
     } catch (e, s) {
       debugPrint('WorkManager task failed: $e\n$s');
@@ -85,6 +91,12 @@ void main() {
 
     try {
       await TimingsData.instance.load();
+    } catch (e, s) {
+      _reportError(e, s);
+    }
+
+    try {
+      await JamaatTimesService.instance.loadLocalCache();
     } catch (e, s) {
       _reportError(e, s);
     }
@@ -183,15 +195,12 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-/// Built once, not per rebuild: the upgrader holds the fetched store version
-/// and the timestamp of the last prompt, and a fresh instance on every frame
-/// would throw both away.
-final _upgrader = Upgrader();
 
 class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   int _currentIndex = 0;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   DateTime? _lastScheduled;
+  DateTime? _lastSyncTime;
   NotificationHealth? _notifHealth;
 
   @override
@@ -210,6 +219,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     try {
       final settings = Provider.of<SettingsProvider>(context, listen: false);
       settings.syncHijriCalendar();
+      JamaatTimesService.instance.fetchRemoteGistTimings();
       if (settings.notificationsEnabled) {
         // Fire-and-forget: scheduling ~140 alarms is heavy, don't block startup.
         NotificationService.instance.scheduleWeeklyNotifications();
@@ -287,6 +297,22 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       // The user may have just come back from the very settings page that fixes
       // this, so re-read it rather than waiting for the next launch.
       _refreshNotificationHealth();
+
+      // Cooldown-gated: only refresh remote Gist sync if at least 15 minutes passed,
+      // avoiding duplicate network bursts and popup dialog clashes on rapid app switching.
+      final lastSync = _lastSyncTime;
+      if (lastSync == null || now.difference(lastSync).inMinutes >= 15) {
+        _lastSyncTime = now;
+        try {
+          final settings = Provider.of<SettingsProvider>(context, listen: false);
+          settings.syncHijriCalendar();
+          JamaatTimesService.instance.fetchRemoteGistTimings();
+          AnnouncementService.checkForAnnouncement(context);
+          UpdateService.checkForUpdate(context);
+        } catch (e, s) {
+          _reportError(e, s);
+        }
+      }
     }
   }
 

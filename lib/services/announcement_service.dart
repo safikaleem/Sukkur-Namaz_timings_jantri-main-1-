@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,16 +23,47 @@ class AnnouncementService {
   static const String announcementUrl =
       'https://gist.githubusercontent.com/safikaleem/2afecaa5e4b86ab5227ee00a7416646a/raw/announcement.json';
 
+  static bool _isDialogOpen = false;
+
+  /// Known city aliases for robust matching across English and Urdu inputs.
+  static const Map<String, List<String>> _cityAliases = {
+    'karachi': ['karachi', 'کراچی'],
+    'sukkur': ['sukkur', 'sukur', 'sukkar', 'sakkhar', 'سکھر', 'سکر', 'سكر'],
+    'lahore': ['lahore', 'لاہور'],
+    'islamabad': ['islamabad', 'اسلام آباد', 'اسلام اباد'],
+    'rawalpindi': ['rawalpindi', 'راولپنڈی'],
+    'multan': ['multan', 'ملتان'],
+    'peshawar': ['peshawar', 'پشاور'],
+    'quetta': ['quetta', 'کوئٹہ'],
+    'faisalabad': ['faisalabad', 'فیصل آباد', 'فیصل اباد'],
+    'hyderabad': ['hyderabad', 'حیدرآباد', 'حیدر اباد'],
+    'larkana': ['larkana', 'لاڑکانہ'],
+  };
+
   /// Checks if there is a new remote announcement/pamphlet and shows it in a popup.
   /// If remote announcement is not active, falls back to the local Ramzan pamphlet.
   static Future<void> checkForAnnouncement(BuildContext context) async {
+    if (_isDialogOpen) return;
     try {
-      final announcement = await _fetchAnnouncement();
+      final dynamic fetchedData = await _fetchAnnouncement();
+      if (fetchedData == null) return;
+      if (!context.mounted || _isDialogOpen) return;
+
+      final settings = Provider.of<SettingsProvider>(context, listen: false);
+      final String userCity = (settings.locationMode == LocationMode.sukkur ||
+              !settings.usesCalculatedTimings ||
+              settings.cityName == null ||
+              settings.cityName!.trim().isEmpty ||
+              SukkurLocation.matchesName(settings.cityName))
+          ? 'Sukkur'
+          : settings.cityName!.trim();
+
+      final announcement = selectAnnouncementForUser(fetchedData, userCity);
       if (announcement != null) {
         final bool enabled = announcement['enabled'] as bool? ?? false;
         final String? id = announcement['id'] as String?;
         if (enabled && id != null && id.isNotEmpty) {
-          if (context.mounted) {
+          if (context.mounted && !_isDialogOpen) {
             await _showAnnouncementDialog(context, id, announcement, isLocal: false);
           }
           return;
@@ -41,26 +72,179 @@ class AnnouncementService {
     } catch (e) {
       debugPrint('Failed to check remote announcement: $e');
     }
+  }
 
+  /// Selects the best announcement matching the user's city.
+  /// Priority:
+  /// 1. An enabled announcement explicitly targeting userCity.
+  /// 2. An enabled announcement targeting "all" or everyone (fallback).
+  @visibleForTesting
+  static Map<String, dynamic>? selectAnnouncementForUser(
+    dynamic fetchedData,
+    String userCity,
+  ) {
+    final candidates = <Map<String, dynamic>>[];
+
+    if (fetchedData is Map<String, dynamic>) {
+      if (fetchedData['announcements'] is List) {
+        for (final item in fetchedData['announcements'] as List) {
+          if (item is Map<String, dynamic>) {
+            candidates.add(item);
+          }
+        }
+      } else {
+        candidates.add(fetchedData);
+      }
+    } else if (fetchedData is List) {
+      for (final item in fetchedData) {
+        if (item is Map<String, dynamic>) {
+          candidates.add(item);
+        }
+      }
+    }
+
+    if (candidates.isEmpty) return null;
+
+    Map<String, dynamic>? citySpecificMatch;
+    Map<String, dynamic>? generalMatch;
+
+    for (final candidate in candidates) {
+      final bool enabled = candidate['enabled'] as bool? ?? false;
+      final String? id = candidate['id'] as String?;
+      if (!enabled || id == null || id.isEmpty) continue;
+
+      final dynamic citiesRaw = candidate['cities'] ??
+          candidate['city'] ??
+          candidate['targetCities'] ??
+          candidate['target_city'];
+
+      if (matchesCitySpecifically(citiesRaw, userCity)) {
+        citySpecificMatch ??= candidate;
+        break; // Specific match has highest priority
+      } else if (isTargetingAll(citiesRaw)) {
+        generalMatch ??= candidate;
+      }
+    }
+
+    return citySpecificMatch ?? generalMatch;
+  }
+
+  /// Checks if the target cities configuration targets all users worldwide.
+  @visibleForTesting
+  static bool isTargetingAll(dynamic citiesRaw) {
+    if (citiesRaw == null) return true;
+    final list = parseCityList(citiesRaw);
+    if (list.isEmpty) return true;
+    return list.any((c) =>
+        c == 'all' ||
+        c == '*' ||
+        c == 'everyone' ||
+        c == 'global' ||
+        c == 'all cities' ||
+        c == 'all_cities');
+  }
+
+  /// Checks if the announcement explicitly matches the given user city.
+  @visibleForTesting
+  static bool matchesCitySpecifically(dynamic citiesRaw, String userCity) {
+    if (citiesRaw == null) return false;
+    final list = parseCityList(citiesRaw);
+    if (list.isEmpty) return false;
+
+    final normUser = userCity.toLowerCase().trim();
+    final cleanUser = normUser.split(',').first.trim();
+    final bool isUserSukkur =
+        normUser == 'sukkur' || SukkurLocation.matchesName(normUser);
+
+    for (final target in list) {
+      if (target.isEmpty ||
+          target == 'all' ||
+          target == '*' ||
+          target == 'everyone' ||
+          target == 'global' ||
+          target == 'all cities' ||
+          target == 'all_cities') {
+        continue;
+      }
+
+      // Check Sukkur match
+      if (isUserSukkur &&
+          (target == 'sukkur' || SukkurLocation.matchesName(target))) {
+        return true;
+      }
+
+      final cleanTarget = target.split(',').first.trim();
+
+      // Direct exact match
+      if (cleanTarget == cleanUser || target == normUser) {
+        return true;
+      }
+
+      // Check against known alias dictionary
+      for (final entry in _cityAliases.entries) {
+        final aliases = entry.value;
+        final targetInGroup = aliases.contains(cleanTarget) || aliases.contains(target);
+        final userInGroup = aliases.contains(cleanUser) || aliases.contains(normUser);
+        if (targetInGroup && userInGroup) {
+          return true;
+        }
+      }
+
+      // Prefix match for longer city names (>= 3 chars) to allow e.g. "Karachi, Pakistan"
+      if (cleanUser.length >= 3 && cleanTarget.length >= 3) {
+        if (cleanUser.startsWith(cleanTarget) || cleanTarget.startsWith(cleanUser)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /// Parses diverse JSON formats (List, comma-delimited String) into lowercase city names.
+  @visibleForTesting
+  static List<String> parseCityList(dynamic raw) {
+    final List<String> result = [];
+    if (raw is List) {
+      for (final item in raw) {
+        if (item != null) {
+          result.addAll(
+            item.toString().split(',').map((s) => s.trim().toLowerCase()),
+          );
+        }
+      }
+    } else if (raw is String) {
+      result.addAll(
+        raw.split(',').map((s) => s.trim().toLowerCase()),
+      );
+    }
+    return result;
   }
 
   /// Fetches the JSON file from the hosted URL using package:http.
-  /// Uses a 10-second timeout with an automatic retry to handle slow mobile networks.
-  static Future<Map<String, dynamic>?> _fetchAnnouncement() async {
-    const headers = {
+  /// Uses cache-busting headers and a timestamp query parameter to bypass CDN/ISP caches.
+  static Future<dynamic> _fetchAnnouncement() async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final headers = {
       'Accept': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
       'User-Agent':
           'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
     };
 
     for (int attempt = 1; attempt <= 2; attempt++) {
       try {
-        final response = await http
-            .get(Uri.parse(announcementUrl), headers: headers)
+        final sep = announcementUrl.contains('?') ? '&' : '?';
+        final freshUrl = '$announcementUrl${sep}t=$timestamp';
+        final response = await (kIsWeb
+                ? http.get(Uri.parse(freshUrl))
+                : http.get(Uri.parse(freshUrl), headers: headers))
             .timeout(const Duration(seconds: 10));
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
-          if (decoded is Map<String, dynamic>) {
+          if (decoded is Map<String, dynamic> || decoded is List) {
             return decoded;
           }
         }
@@ -269,80 +453,85 @@ class AnnouncementService {
     Map<String, dynamic> data, {
     required bool isLocal,
   }) async {
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
-    final isUrdu = settings.isUrdu;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (_isDialogOpen) return;
+    _isDialogOpen = true;
 
-    final String? imageUrl = data['imageUrl'] as String?;
-    final String? actionUrl = data['actionUrl'] as String?;
-    final String? title = data['title'] as String?;
-    final String? description = data['description'] as String?;
+    try {
+      final settings = Provider.of<SettingsProvider>(context, listen: false);
+      final isUrdu = settings.isUrdu;
+      final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final String closeText = translateFor(settings.language, 'Close', 'Close', 'بند کریں');
-    final String actionText = translateFor(settings.language, 'View Details', 'View Details', 'تفصیلات دیکھیں');
-    final String shareText = translateFor(settings.language, 'Save / Share', 'Save / Share', 'محفوظ / شیئر کریں');
+      final String? imageUrl = data['imageUrl'] as String?;
+      final String? actionUrl = data['actionUrl'] as String?;
+      final String? title = data['title'] as String?;
+      final String? description = data['description'] as String?;
 
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        int reloadCount = 0;
+      final String closeText = translateFor(settings.language, 'Close', 'Close', 'بند کریں');
+      final String actionText = translateFor(settings.language, 'View Details', 'View Details', 'تفصیلات دیکھیں');
+      final String shareText = translateFor(settings.language, 'Save / Share', 'Save / Share', 'محفوظ / شیئر کریں');
 
-        return StatefulBuilder(
-          builder: (BuildContext sContext, StateSetter setDialogState) {
-            final mediaQuery = MediaQuery.of(dialogContext);
-            final isLandscape = mediaQuery.orientation == Orientation.landscape;
-            final screenHeight = mediaQuery.size.height;
-            final double imageMaxHeight = isLandscape
-                ? (screenHeight * 0.38).clamp(120.0, 220.0)
-                : (screenHeight * 0.45).clamp(180.0, 420.0);
+      return await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext dialogContext) {
+          int reloadCount = 0;
 
-            return Dialog(
-              insetPadding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 20.0),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              elevation: 10,
-              backgroundColor: isDark ? AppTheme.surfaceDark : Colors.white,
-              clipBehavior: Clip.antiAlias,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: 440.0,
-                  maxHeight: screenHeight * 0.88,
+          return StatefulBuilder(
+            builder: (BuildContext sContext, StateSetter setDialogState) {
+              final mediaQuery = MediaQuery.of(dialogContext);
+              final isLandscape = mediaQuery.orientation == Orientation.landscape;
+              final screenHeight = mediaQuery.size.height;
+              final double imageMaxHeight = isLandscape
+                  ? (screenHeight * 0.38).clamp(120.0, 220.0)
+                  : (screenHeight * 0.45).clamp(180.0, 420.0);
+
+              return Dialog(
+                insetPadding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 20.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16.0),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // 1. Image/Pamphlet section
-                    if (isLocal || (imageUrl != null && imageUrl.isNotEmpty))
-                      GestureDetector(
-                        onTap: () async {
-                          if (!isLocal && actionUrl != null && actionUrl.isNotEmpty) {
-                            final uri = Uri.parse(actionUrl);
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                elevation: 10,
+                backgroundColor: isDark ? AppTheme.surfaceDark : Colors.white,
+                clipBehavior: Clip.antiAlias,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: 440.0,
+                    maxHeight: screenHeight * 0.88,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // 1. Image/Pamphlet section
+                      if (isLocal || (imageUrl != null && imageUrl.isNotEmpty))
+                        GestureDetector(
+                          onTap: () async {
+                            if (!isLocal && actionUrl != null && actionUrl.isNotEmpty) {
+                              final uri = Uri.parse(actionUrl);
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              }
                             }
-                          }
-                        },
-                        child: Container(
-                          constraints: BoxConstraints(
-                            maxHeight: imageMaxHeight,
-                          ),
-                          color: isDark ? Colors.black26 : const Color(0xFFF0F0F0),
-                          child: InteractiveViewer(
-                            panEnabled: true,
-                            minScale: 1.0,
-                            maxScale: 4.0,
-                            child: isLocal
-                                ? Image.asset(
-                                    'assets/images/ramzan_pamphlet.jpg',
-                                    fit: BoxFit.contain,
-                                  )
-                                : CachedNetworkImage(
-                                    key: ValueKey('${imageUrl}_$reloadCount'),
-                                    imageUrl: imageUrl!,
-                                    fit: BoxFit.contain,
+                          },
+                          child: Container(
+                            constraints: BoxConstraints(
+                              maxHeight: imageMaxHeight,
+                            ),
+                            color: isDark ? Colors.black26 : const Color(0xFFF0F0F0),
+                            child: InteractiveViewer(
+                              panEnabled: true,
+                              minScale: 1.0,
+                              maxScale: 4.0,
+                              child: isLocal
+                                  ? Image.asset(
+                                      'assets/images/ramzan_pamphlet.jpg',
+                                      fit: BoxFit.contain,
+                                    )
+                                  : CachedNetworkImage(
+                                      key: ValueKey('${imageUrl}_${announcementId}_$reloadCount'),
+                                      cacheKey: '${imageUrl}_$announcementId',
+                                      imageUrl: imageUrl!,
+                                      fit: BoxFit.contain,
                                     httpHeaders: const {
                                       'User-Agent':
                                           'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
@@ -564,5 +753,8 @@ class AnnouncementService {
         );
       },
     );
+    } finally {
+      _isDialogOpen = false;
+    }
   }
 }

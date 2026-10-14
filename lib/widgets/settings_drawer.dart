@@ -247,7 +247,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Current Version ───────────────────────────
                   _DrawerItem(
                     icon: Icons.new_releases_rounded,
-                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.3.6'}',
+                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.4.0'}',
                     onTap: () => _showWhatsNewDialog(context),
                   ),
 
@@ -407,7 +407,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.3.6';
+    final versionStr = _version.isNotEmpty ? _version : '1.4.0';
 
     showDialog(
       context: context,
@@ -502,6 +502,37 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Item: Jama'at Times Instant Refresh ─────────────
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    _getLocalizedText(settings, {
+                      'english': '🔄 Jama\'at Times Refresh Button',
+                      'urdu': '🔄 اوقاتِ جماعت ریفریش بٹن',
+                      'sindhi': '🔄 جماعت جي وقتن جو ريفريش بٽڻ',
+                      'arabic': '🔄 زر تحديث مواقيت صلاة الجماعة',
+                      'bengali': '🔄 জামায়াতের সময় রিফ্রেশ বোতাম',
+                      'hindi': '🔄 जमाअत समय रिफ्रेश बटन',
+                      'turkish': '🔄 Cemaat Vakitleri Yenileme Butonu',
+                      'indonesian': '🔄 Tombol Segarkan Waktu Jamaah',
+                      'french': '🔄 Bouton d\'actualisation des horaires',
+                      'persian': '🔄 دکمه به‌روزرسانی اوقات جماعت',
+                    }),
+                    _getLocalizedText(settings, {
+                      'english': 'Added instant refresh button on the Jama\'at screen and inside each Masjid card to get the latest times immediately without cache delay.',
+                      'urdu': 'باجماعت اوقات کی اسکرین اور ہر مسجد کے کارڈ میں ریفریش بٹن کا اضافہ، تاکہ تازہ ترین اوقات بغیر کسی تاخیر کے فوری ظاہر ہوں۔',
+                      'sindhi': 'باجماعت وقتن جي اسڪرين ۽ هر مسجد جي ڪارڊ ۾ ريفريش بٽڻ جو اضافو، ته جيئن نوان وقت بغير ڪنهن دير جي فوري ظاهر ٿين.',
+                      'arabic': 'تمت إضافة زر تحديث فوري في شاشة مواقيت الجماعة وداخل بطاقة كل مسجد لعرض أحدث الأوقات فورًا وبدون تأخير.',
+                      'bengali': 'জামায়াত স্ক্রিনে এবং প্রতিটি মসজিদের কার্ডে রিফ্রেশ বোতাম যুক্ত করা হয়েছে যাতে কোনো বিলম্ব ছাড়াই সর্বশেষ সময় তাৎক্ষণিকভাবে পাওয়া যায়।',
+                      'hindi': 'जमाअत स्क्रीन और प्रत्येक मस्जिद कार्ड में रिफ्रेश बटन जोड़ा गया है ताकि बिना किसी देरी के नए समय तुरंत प्राप्त हो सकें।',
+                      'turkish': 'Cemaat vakitleri ekranına ve her cami kartına, en güncel vakitleri gecikme olmadan anında almak için yenileme butonu eklendi.',
+                      'indonesian': 'Menambahkan tombol segarkan di layar waktu jamaah dan di dalam kartu setiap masjid untuk mendapatkan waktu terbaru secara instan.',
+                      'french': 'Ajout d\'un bouton d\'actualisation sur l\'écran des horaires et dans chaque fiche de mosquée pour obtenir instantanément les dernières heures.',
+                      'persian': 'دکمه به‌روزرسانی در صفحه اوقات جماعت و داخل کارت هر مسجد برای دریافت فوری جدیدترین اوقات بدون تأخیر اضافه شد.',
+                    }),
+                    icon: Icons.refresh_rounded,
+                    iconColor: AppTheme.accent,
+                  ),
                   // ── Item 0: Bug Fixes & Improvements ─────────────
                   _buildNewFeatureItem(
                     context,
@@ -533,7 +564,69 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                     icon: Icons.bug_report_outlined,
                     iconColor: AppTheme.accent,
                   ),
-                  // ── Item 2: Lock Screen & Dynamic Live Countdown Widget ─────────────
+                  // ── Item 1: Favorite Masjid & Jama'at Prayer Alarms ─────────────
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    _getLocalizedText(settings, {
+                      'english': '🕌 Favorite Masjid & Jama\'at Prayer Alarms',
+                      'urdu': '🕌 پسندیدہ مسجد اور باجماعت نماز الارم',
+                      'sindhi': '🕌 پسنديده مسجد ۽ باجماعت نماز الارم',
+                      'arabic': '🕌 المسجد المفضل ومنبهات صلاة الجماعة',
+                      'bengali': '🕌 প্রিয় মসজিদ ও জামায়াত নামাজের অ্যালার্ম',
+                      'hindi': '🕌 पसंदीदा मस्जिद और जमात नमाज़ अलार्म',
+                      'turkish': '🕌 Favori Cami ve Cemaat Namazı Alarmları',
+                      'indonesian': '🕌 Masjid Favorit & Alarm Shalat Berjamaah',
+                      'french': '🕌 Mosquée favorite et alarmes de prière en congrégation',
+                      'persian': '🕌 مسجد مورد علاقه و آلارم‌های نماز جماعت',
+                    }),
+                    _getLocalizedText(settings, {
+                      'english': 'Set your favorite Masjid to receive timely Jama\'at prayer alarms and reminders before congregation starts.',
+                      'urdu': 'اپنی پسندیدہ مسجد منتخب کریں اور باجماعت نماز شروع ہونے سے قبل بروقت الارم اور یاد دہانیاں حاصل کریں۔',
+                      'sindhi': 'پنهنجي پسنديده مسجد چونڊيو ۽ باجماعت نماز شروع ٿيڻ کان اڳ وقتائتا الارم ۽ ياد ڏياريندڙ حاصل ڪريو.',
+                      'arabic': 'حدد مسجدك المفضل لتلقي منبهات وتذكيرات صلاة الجماعة في الوقت المناسب قبل إقامة الصلاة.',
+                      'bengali': 'আপনার প্রিয় মসজিদ নির্বাচন করুন এবং জামায়াত শুরু হওয়ার আগে সময়োপযোগী অ্যালার্ম ও রিমাইন্ডার পান।',
+                      'hindi': 'अपनी पसंदीदा मस्जिद चुनें और जमात शुरू होने से पहले समय पर अलार्म और रिमाइंडर प्राप्त करें।',
+                      'turkish': 'Cemaat namazı başlamadan önce zamanında alarmlar ve hatırlatıcılar almak için favori Caminizi belirleyin.',
+                      'indonesian': 'Pilih masjid favorit Anda untuk mendapatkan alarm dan pengingat tepat waktu sebelum shalat berjamaah dimulai.',
+                      'french': 'Définissez votre mosquée favorite pour recevoir des alarmes et des rappels avant le début de la prière en congrégation.',
+                      'persian': 'مسجد مورد علاقه خود را انتخاب کنید تا قبل از شروع نماز جماعت، آلارم‌ها و یادآوری‌های به موقع دریافت نمایید.',
+                    }),
+                    icon: Icons.notifications_active_outlined,
+                    iconColor: AppTheme.accent,
+                  ),
+                  // ── Item 2: Report Jama'at Timing Difference ─────────────
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    _getLocalizedText(settings, {
+                      'english': '⏱️ Report Jama\'at Timing Difference',
+                      'urdu': '⏱️ باجماعت اوقات میں فرق کی اطلاع',
+                      'sindhi': '⏱️ باجماعت وقتن ۾ فرق جو اطلاع',
+                      'arabic': '⏱️ الإبلاغ عن اختلاف مواقيت الجماعة',
+                      'bengali': '⏱️ জামায়াত সময়ের পার্থক্যের রিপোর্ট করুন',
+                      'hindi': '⏱️ जमात के समय में अंतर की रिपोर्ट',
+                      'turkish': '⏱️ Cemaat Vakti Farkını Bildirin',
+                      'indonesian': '⏱️ Laporkan Perbedaan Waktu Shalat Berjamaah',
+                      'french': '⏱️ Signaler une différence d\'horaire de congrégation',
+                      'persian': '⏱️ گزارش اختلاف زمان نماز جماعت',
+                    }),
+                    _getLocalizedText(settings, {
+                      'english': 'Notice a timing difference in any Masjid? Tap the new report bar in Masjid details to email updated times or attach a photo of the clock board.',
+                      'urdu': 'کسی مسجد کے باجماعت وقت میں فرق نظر آئے؟ مسجد کی تفصیلات میں نیا رپورٹ بار دبا کر گھڑی یا نوٹس بورڈ کی تصویر اور نیا وقت ای میل کریں۔',
+                      'sindhi': 'ڪنهن به مسجد جي باجماعت وقت ۾ فرق هجي؟ مسجد جي تفصيل ۾ نئون رپورٽ بار دٻائي ڪلاڪ جي تصوير يا نئون وقت اي ميل ڪريو.',
+                      'arabic': 'هل لاحظت فرقاً في مواقيت أي مسجد؟ انقر على شريط الإبلاغ في تفاصيل المسجد لإرسال صورة الساعة أو المواقيت المحدثة عبر البريد.',
+                      'bengali': 'কোনো মসজিদে জামায়াতের সময়ে পার্থক্য লক্ষ্য করেছেন? মসজিদের বিবরণে নতুন রিপোর্ট বারে ট্যাপ করে ঘড়ির ছবি বা নতুন সময় ইমেইল করুন।',
+                      'hindi': 'किसी मस्जिद के जमात के समय में अंतर दिखे? मस्जिद विवरण में नए रिपोर्ट \u092c\u093e\u0930 पर टैप करके घड़ी की तस्वीर या नया समय ईमेल करें।',
+                      'turkish': 'Herhangi bir camide vakit farkı mı gördünüz? Cami detaylarındaki yeni bildirim çubuğuna dokunarak güncel vakitleri veya saat panosunun fotoğrafını e-postayla gönderin.',
+                      'indonesian': 'Ada perbedaan waktu di masjid Anda? Ketuk bilah laporan di detail masjid untuk mengirim foto jam atau waktu terbaru melalui email.',
+                      'french': 'Vous constatez une différence d\'horaire ? Appuyez sur la barre de signalement dans les détails de la mosquée pour envoyer une photo de l\'horloge ou les nouveaux horaires par e-mail.',
+                      'persian': 'اختلافی در زمان جماعت مسجدی مشاهده کردید؟ روی نوار گزارش در جزئیات مسجد ضربه بزنید تا عکس ساعت یا اوقات جدید را ایمیل کنید.',
+                    }),
+                    icon: Icons.camera_alt_outlined,
+                    iconColor: AppTheme.accent,
+                  ),
+                  // ── Item 3: Lock Screen & Dynamic Live Countdown Widget ─────────────
                   _buildNewFeatureItem(
                     context,
                     settings,

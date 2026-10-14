@@ -29,7 +29,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
       'sd': 'پهرين منزل (هفتو)',
       'ar': 'المنزل الأول (السبت)',
       'page': 10,
-      'pdfPage': 10,
+      'pdfPage': 9,
     },
     {
       'num': 2,
@@ -38,7 +38,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
       'sd': 'ٻي منزل (آچر)',
       'ar': 'المنزل الثاني (الأحد)',
       'page': 28,
-      'pdfPage': 28,
+      'pdfPage': 27,
     },
     {
       'num': 3,
@@ -47,7 +47,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
       'sd': 'ٽين منزل (سومر)',
       'ar': 'المنزل الثالث (الإثنين)',
       'page': 48,
-      'pdfPage': 48,
+      'pdfPage': 47,
     },
     {
       'num': 4,
@@ -56,7 +56,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
       'sd': 'چوٿين منزل (اڱارو)',
       'ar': 'المنزل الرابع (الثلاثاء)',
       'page': 66,
-      'pdfPage': 66,
+      'pdfPage': 65,
     },
     {
       'num': 5,
@@ -65,7 +65,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
       'sd': 'پنجين منزل (اربع)',
       'ar': 'المنزل الخامس (الأربعاء)',
       'page': 86,
-      'pdfPage': 86,
+      'pdfPage': 85,
     },
     {
       'num': 6,
@@ -74,7 +74,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
       'sd': 'ڇھين منزل (خميس)',
       'ar': 'المنزل السادس (الخميس)',
       'page': 102,
-      'pdfPage': 102,
+      'pdfPage': 101,
     },
     {
       'num': 7,
@@ -83,7 +83,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
       'sd': 'ستين منزل (جمعو)',
       'ar': 'المنزل السابع (الجمعة)',
       'page': 120,
-      'pdfPage': 120,
+      'pdfPage': 119,
     },
   ];
 
@@ -181,7 +181,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
     final String titleLocal = _getManzilTitle(manzilData, settings);
     final String titleArabic = manzilData['ar'];
     final String subtitle = '${settings.translate("Page", "صفحہ", "صفحو", "صفحة")} $lastPage';
-    final int progressPercent = ((lastPage / 136) * 100).clamp(0, 100).toInt();
+    final int progressPercent = ((lastPage / 137) * 100).clamp(0, 100).toInt();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -1066,7 +1066,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () => _openManzilPage(context, (item['pdfPage'] as int?) ?? pageVal, titleStr),
+            onTap: () => _openManzilPage(context, pageVal, titleStr),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 18.0),
               child: Directionality(

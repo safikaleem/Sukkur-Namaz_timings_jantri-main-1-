@@ -39,19 +39,26 @@ class HijriSyncService {
   }
 
   /// Syncs Pakistan Ruet-e-Hilal moon sighting calendar from online Gist.
-  /// Returns true if new data was fetched and applied.
+  /// Returns true if new data was fetched and applied immediately.
   static Future<bool> syncFromNetwork() async {
-    const headers = {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final headers = {
       'Accept': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
       'User-Agent':
           'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
     };
 
-    // 1. Try dedicated hijri_calendar.json first
+    // 1. Try dedicated hijri_calendar.json first with cache-busting parameter
     try {
-      final response = await http
-          .get(Uri.parse(hijriCalendarUrl), headers: headers)
-          .timeout(const Duration(seconds: 8));
+      final sep = hijriCalendarUrl.contains('?') ? '&' : '?';
+      final freshHijriUrl = '$hijriCalendarUrl${sep}t=$timestamp';
+      final response = await (kIsWeb
+              ? http.get(Uri.parse(freshHijriUrl))
+              : http.get(Uri.parse(freshHijriUrl), headers: headers))
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
@@ -67,11 +74,14 @@ class HijriSyncService {
       debugPrint('Hijri calendar direct fetch skipped/failed: $e');
     }
 
-    // 2. Fallback: Check announcement.json for "hijri_month_starts"
+    // 2. Fallback: Check announcement.json for "hijri_month_starts" with cache-busting
     try {
-      final response = await http
-          .get(Uri.parse(announcementUrl), headers: headers)
-          .timeout(const Duration(seconds: 8));
+      final sep = announcementUrl.contains('?') ? '&' : '?';
+      final freshAnnounceUrl = '$announcementUrl${sep}t=$timestamp';
+      final response = await (kIsWeb
+              ? http.get(Uri.parse(freshAnnounceUrl))
+              : http.get(Uri.parse(freshAnnounceUrl), headers: headers))
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);

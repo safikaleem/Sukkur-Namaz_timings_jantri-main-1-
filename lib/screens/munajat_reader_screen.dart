@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:provider/provider.dart';
@@ -33,6 +32,17 @@ class _MunajatReaderScreenState extends State<MunajatReaderScreen> {
     _initPdf();
   }
 
+  int _writtenToPdfPage(int writtenPage) {
+    final pdf = writtenPage - 1;
+    if (pdf < 1) return 1;
+    if (_totalPages > 0 && pdf > _totalPages) return _totalPages;
+    return pdf;
+  }
+
+  int _pdfToWrittenPage(int pdfPage) {
+    return pdfPage + 1;
+  }
+
   Future<void> _initPdf() async {
     try {
       Future<PdfDocument> docFuture;
@@ -46,9 +56,10 @@ class _MunajatReaderScreenState extends State<MunajatReaderScreen> {
       }
       docFuture = PdfDocument.openData(bytes);
 
+      final initialPdfPage = _writtenToPdfPage(widget.initialPage);
       _pdfController = PdfController(
         document: docFuture,
-        initialPage: widget.initialPage,
+        initialPage: initialPdfPage,
       );
 
       setState(() {
@@ -92,7 +103,7 @@ class _MunajatReaderScreenState extends State<MunajatReaderScreen> {
             ),
             if (_totalPages > 0)
               Text(
-                '${settings.translate('Page', 'صفحہ', 'صفحو', 'صفحة')} $_currentPage / $_totalPages',
+                '${settings.translate('Page', 'صفحہ', 'صفحو', 'صفحة')} $_currentPage / ${_pdfToWrittenPage(_totalPages)}',
                 style: const TextStyle(fontSize: 11, fontWeight: FontWeight.normal),
               ),
           ],
@@ -132,10 +143,10 @@ class _MunajatReaderScreenState extends State<MunajatReaderScreen> {
                           decoration: InputDecoration(
                             isDense: true,
                             hintText: settings.translate(
-                              'Search Page No (1-136)...',
-                              'صفحہ نمبر تلاش کریں (1-136)...',
-                              'صفحو نمبر ڳوليو (1-136)...',
-                              'ابحث برقم الصفحة (1-136)...',
+                              'Search Page No (1-137)...',
+                              'صفحہ نمبر تلاش کریں (1-137)...',
+                              'صفحو نمبر ڳوليو (1-137)...',
+                              'ابحث برقم الصفحة (1-137)...',
                             ),
                             hintStyle: TextStyle(
                               color: isDark ? Colors.white54 : Colors.black54,
@@ -151,11 +162,12 @@ class _MunajatReaderScreenState extends State<MunajatReaderScreen> {
                             ),
                           ),
                           onSubmitted: (val) {
-                            final maxP = _totalPages > 0 ? _totalPages : 136;
-                            final pageNum = int.tryParse(val.trim());
-                            if (pageNum != null && pageNum >= 1 && pageNum <= maxP) {
+                            final maxWritten = _totalPages > 0 ? _pdfToWrittenPage(_totalPages) : 137;
+                            final writtenPage = int.tryParse(val.trim());
+                            if (writtenPage != null && writtenPage >= 1 && writtenPage <= maxWritten) {
+                              final targetPdfPage = _writtenToPdfPage(writtenPage);
                               _pdfController?.animateToPage(
-                                pageNum,
+                                targetPdfPage,
                                 duration: const Duration(milliseconds: 250),
                                 curve: Curves.easeInOut,
                               );
@@ -187,10 +199,11 @@ class _MunajatReaderScreenState extends State<MunajatReaderScreen> {
                           reverse: true,
                           physics: const BouncingScrollPhysics(),
                           onPageChanged: (page) {
+                            final writtenPage = _pdfToWrittenPage(page);
                             setState(() {
-                              _currentPage = page;
+                              _currentPage = writtenPage;
                             });
-                            context.read<SettingsProvider>().updateMunajatReadingPosition(page);
+                            context.read<SettingsProvider>().updateMunajatReadingPosition(writtenPage);
                           },
                           onDocumentLoaded: (doc) {
                             setState(() {

@@ -39,7 +39,7 @@ class HijriEventsData {
       titleKey: 'Islamic New Year (1st Muharram)',
       descKey: 'Beginning of the Hijri New Year 1448 AH.',
       icon: Icons.calendar_month_rounded,
-      category: 'historical',
+      category: 'first_day_islamic_year',
     ),
     HijriEvent(
       id: 'ashura',
@@ -59,7 +59,7 @@ class HijriEventsData {
       titleKey: '12 Rabi-ul-Awwal',
       descKey: 'Blessed birth anniversary of Prophet Muhammad ﷺ.',
       icon: Icons.auto_awesome_rounded,
-      category: 'historical',
+      category: 'prophet_birth',
     ),
 
     // Rajab (7)
@@ -92,7 +92,7 @@ class HijriEventsData {
       titleKey: '1st Ramzan-ul-Mubarak',
       descKey: 'Beginning of the Holy Month of Ramzan fasting.',
       icon: Icons.brightness_3_rounded,
-      category: 'fasting',
+      category: 'farz_fasting',
     ),
     HijriEvent(
       id: 'laylatul_qadr',
@@ -112,7 +112,7 @@ class HijriEventsData {
       titleKey: 'Eid-ul-Fitr (1st Shawwal)',
       descKey: 'Blessed festival of Fitr after completing Ramzan.',
       icon: Icons.celebration_rounded,
-      category: 'eid',
+      category: 'eid_ul_fitr',
     ),
 
     // Dhul Hijjah (12)
@@ -132,7 +132,7 @@ class HijriEventsData {
       titleKey: 'Eid-ul-Adha (10 Dhul Hijjah)',
       descKey: 'Festival of Sacrifice honoring Prophet Ibrahim (A.S).',
       icon: Icons.volunteer_activism_rounded,
-      category: 'eid',
+      category: 'eid_ul_adha',
     ),
   ];
 

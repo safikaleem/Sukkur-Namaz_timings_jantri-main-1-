@@ -79,7 +79,11 @@ class AndroidNotificationDetails {
       bool ongoing = false,
       bool onlyAlertOnce = false,
       bool autoCancel = true,
-      bool showWhen = true});
+      bool showWhen = true,
+      int? when,
+      bool usesChronometer = false,
+      bool chronometerCountDown = false,
+      String? subText});
 }
 
 class NotificationVisibility {

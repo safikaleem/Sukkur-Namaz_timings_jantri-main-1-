@@ -1171,8 +1171,10 @@ class SettingsProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('live_countdown_enabled', value);
       if (value) {
+        NotificationService.instance.startLiveCountdownTimer();
         await NotificationService.instance.updateLiveCountdownNotification();
       } else {
+        NotificationService.instance.stopLiveCountdownTimer();
         await NotificationService.instance.cancelLiveCountdown();
       }
     });
@@ -1372,6 +1374,7 @@ class SettingsProvider extends ChangeNotifier {
     
     _autoSilentEnabled = false;
     _autoSilentMode = 'vibrate';
+    _liveCountdownEnabled = false;
 
     final defaultOffsets = {'Fajar': 15, 'Zuhar': 15, 'Misl Awwal': 15, 'Asr Hanafi': 15, 'Maghrib': 5, 'Isha': 15};
     final defaultDurations = {'Fajar': 20, 'Zuhar': 20, 'Misl Awwal': 20, 'Asr Hanafi': 20, 'Maghrib': 15, 'Isha': 20};
@@ -1436,6 +1439,10 @@ class SettingsProvider extends ChangeNotifier {
       for (final key in _autoSilentPrayerToggles.keys) {
         await prefs.setBool('auto_silent_enabled_$key', true);
       }
+
+      await prefs.setBool('live_countdown_enabled', false);
+      NotificationService.instance.stopLiveCountdownTimer();
+      await NotificationService.instance.cancelLiveCountdown();
 
       WidgetService.updateWidget();
       if (_notificationsEnabled) {

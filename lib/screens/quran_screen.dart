@@ -270,6 +270,32 @@ class _QuranScreenState extends State<QuranScreen> {
     });
   }
 
+  String _getQuranKareemTitle(SettingsProvider settings) {
+    switch (settings.language) {
+      case 'urdu':
+        return 'قرآن کریم';
+      case 'sindhi':
+        return 'قرآن ڪريم';
+      case 'arabic':
+        return 'القرآن الكريم';
+      case 'bengali':
+        return 'কুরআন কারীম';
+      case 'hindi':
+        return 'क़ुरआन करीम';
+      case 'turkish':
+        return "Kur'an-ı Kerim";
+      case 'indonesian':
+        return "Al-Qur'an Al-Karim";
+      case 'french':
+        return 'Coran Kareem';
+      case 'persian':
+        return 'قرآن کریم';
+      case 'english':
+      default:
+        return 'Quran Kareem';
+    }
+  }
+
   // ── Build ─────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -286,7 +312,32 @@ class _QuranScreenState extends State<QuranScreen> {
         backgroundColor: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF5F5F5),
         body: Column(
           children: [
-            const SizedBox(height: 52), // Space for the floating hamburger menu
+            // Top bar (aligned with floating hamburger menu)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: SizedBox(
+                height: 36,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(width: 42),
+                    Expanded(
+                      child: Text(
+                        _getQuranKareemTitle(settings),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: settings.isRtl ? 24 : 20,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                          fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             _buildScriptSelector(context, settings, isDark),
             _buildDownloadBanner(context, settings, isDark),
             _buildContinueReading(context, settings, isDark),

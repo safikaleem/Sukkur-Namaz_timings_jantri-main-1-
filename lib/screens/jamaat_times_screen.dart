@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../l10n/world_translations.dart';
 import '../l10n/world_translations_extra.dart';
 import '../providers/settings_provider.dart';
@@ -13,19 +15,34 @@ class JamaatTimesScreen extends StatefulWidget {
   State<JamaatTimesScreen> createState() => _JamaatTimesScreenState();
 }
 
-class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
+class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindingObserver {
   int _selectedTabIndex = 0; // 0 = Individual Masajid, 1 = Combined Chart
   String _selectedPrayerFilter = 'All'; // 'All', 'Fajr', 'Zuhar', 'Asar', 'Maghrib', 'Isha', 'Jummah'
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadRemoteTimings();
   }
 
-  Future<void> _loadRemoteTimings() async {
-    await JamaatTimesService.instance.fetchRemoteGistTimings();
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadRemoteTimings();
+    }
+  }
+
+  Future<bool> _loadRemoteTimings() async {
+    final success = await JamaatTimesService.instance.fetchRemoteGistTimings();
     if (mounted) setState(() {});
+    return success;
   }
 
   String _t(
@@ -68,6 +85,72 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
       }
     }
     return name;
+  }
+
+  Map<String, String> _getJamaatNoticeNote(String lang) {
+    switch (lang) {
+      case 'urdu':
+        return {
+          'prefix': 'نوٹ:',
+          'body':
+              'مسجد کی جانب سے جماعت کے اوقات کی بروقت اطلاع موصول نہ ہونے کی صورت میں درج شدہ اوقات اور اصل اوقاتِ جماعت میں فرق ہو سکتا ہے۔ جماعت کے اوقات کی تبدیلی کی صورت میں اس کے اطلاق کی تاریخ درج کی جاتی ہے۔',
+        };
+      case 'sindhi':
+        return {
+          'prefix': 'نوٽ:',
+          'body':
+              'مسجد طرفان جماعت جي وقتن جي بروقت اطلاع نه ملڻ جي صورت ۾ لکيل وقتن ۽ اصل جماعت جي وقتن ۾ فرق ٿي سگهي ٿو. جماعت جي وقتن جي تبديليءَ جي صورت ۾ ان جي لاڳو ٿيڻ جي تاريخ لکي ويندي آهي.',
+        };
+      case 'arabic':
+        return {
+          'prefix': 'ملاحظة:',
+          'body':
+              'في حال عدم استلام تحديثات في الوقت المناسب من المسجد بشأن أوقات صلاة الجماعة، قد تختلف الأوقات المنشورة عن أوقات الجماعة الفعلية. وكلما تغير جدول الجماعة، سيتم تحديد تاريخ سريان التغيير.',
+        };
+      case 'indonesian':
+        return {
+          'prefix': 'Catatan:',
+          'body':
+              'Jika pembaruan tepat waktu mengenai waktu salat berjamaah tidak diterima dari Masjid, waktu yang dipublikasikan mungkin berbeda dari waktu salat berjamaah sebenarnya. Setiap kali jadwal salat berjamaah diubah, tanggal berlakunya perubahan akan dicantumkan.',
+        };
+      case 'french':
+        return {
+          'prefix': 'Remarque :',
+          'body':
+              'Si des mises à jour opportunes concernant les horaires de prière en Jama\'at ne sont pas reçues de la mosquée, les horaires publiés peuvent différer des horaires réels de la Jama\'at. Chaque fois que l\'horaire de la Jama\'at est modifié, la date d\'effet du changement sera indiquée.',
+        };
+      case 'hindi':
+        return {
+          'prefix': 'नोट:',
+          'body':
+              'यदि मस्जिद से जमात की नमाज़ के समय के बारे में समय पर अपडेट प्राप्त नहीं होते हैं, तो प्रकाशित समय वास्तविक जमात के समय से भिन्न हो सकता है। जब भी जमात के समय में बदलाव होगा, बदलाव के प्रभावी होने की तारीख दर्शाई जाएगी।',
+        };
+      case 'persian':
+        return {
+          'prefix': 'یادداشت:',
+          'body':
+              'در صورتی که به‌روزرسانی‌های به‌موقع در مورد اوقات نماز جماعت از سوی مسجد دریافت نشود، ممکن است اوقات اعلام‌شده با اوقات واقعی جماعت متفاوت باشد. هر زمان که برنامه جماعت تغییر کند، تاریخ اعمال تغییر مشخص خواهد شد.',
+        };
+      case 'turkish':
+        return {
+          'prefix': 'Not:',
+          'body':
+              'Mescitten cemaatle namaz vakitlerine ilişkin zamanında güncelleme alınmaması durumunda, yayınlanan vakitler gerçek cemaat vakitlerinden farklı olabilir. Cemaat programı her değiştiğinde, değişikliğin geçerlilik tarihi belirtilecektir.',
+        };
+      case 'bengali':
+        return {
+          'prefix': 'নোট:',
+          'body':
+              'মসজিদ থেকে জামাতের নামাজের সময় সম্পর্কিত সময়োপযোগী আপডেট না পাওয়া গেলে, প্রকাশিত সময়সূচী প্রকৃত জামাতের সময় থেকে ভিন্ন হতে পারে। যখনই জামাতের সময়সূচী পরিবর্তিত হবে, পরিবর্তনের কার্যকরের তারিখ নির্দেশ করা হবে।',
+        };
+      case 'english':
+      default:
+        return {
+          'prefix': 'Note:',
+          'body':
+              'If timely updates regarding Jama\'at prayer times are not received from the Masjid, the published timings may differ from the actual Jama\'at times. Whenever the Jama\'at schedule is changed, the effective date of the change will be indicated.',
+        };
+    }
   }
 
   String _getIndividualTabTitle(SettingsProvider settings) {
@@ -194,6 +277,81 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
     return 9999;
   }
 
+  String _getJamaatTimesUpdatedMessage(SettingsProvider settings) {
+    switch (settings.language) {
+      case 'urdu':
+        return 'اوقاتِ جماعت تازہ ہو گئے';
+      case 'sindhi':
+        return 'جماعت جا وقت تازه ٿي ويا';
+      case 'arabic':
+        return 'تم تحديث مواقيت الجماعة';
+      case 'indonesian':
+        return 'Waktu jamaah telah diperbarui';
+      case 'turkish':
+        return 'Cemaat vakitleri güncellendi';
+      case 'bengali':
+        return 'জামাতের সময় আপডেট হয়েছে';
+      case 'persian':
+        return 'اوقات جماعت به‌روزرسانی شد';
+      case 'hindi':
+        return 'जमाअत का समय अपडेट हो गया';
+      case 'french':
+        return 'Horaires de la prière en groupe mis à jour';
+      default:
+        return "Jama'at times updated";
+    }
+  }
+
+  String _getJamaatTimesFailedMessage(SettingsProvider settings) {
+    switch (settings.language) {
+      case 'urdu':
+        return 'اوقاتِ جماعت تازہ نہ ہو سکے، انٹرنیٹ چیک کریں';
+      case 'sindhi':
+        return 'جماعت جا وقت تازه نه ٿي سگهيا، انٽرنيٽ چيڪ ڪريو';
+      case 'arabic':
+        return 'تعذر تحديث مواقيت الجماعة، تحقق من الاتصال';
+      case 'indonesian':
+        return 'Gagal memperbarui waktu jamaah, periksa koneksi';
+      case 'turkish':
+        return 'Cemaat vakitleri güncellenemedi, bağlantıyı kontrol edin';
+      case 'bengali':
+        return 'জামাতের সময় আপডেট করা যায়নি, ইন্টারনেট পরীক্ষা করুন';
+      case 'persian':
+        return 'به‌روزرسانی اوقات جماعت ناموفق بود، اینترنت را بررسی کنید';
+      case 'hindi':
+        return 'जमाअत का समय अपडेट नहीं हो सका, इंटरनेट जांचें';
+      case 'french':
+        return 'Échec de la mise à jour des horaires, vérifiez la connexion';
+      default:
+        return "Could not update Jama'at times. Check connection";
+    }
+  }
+
+  String _getRefreshTimingsTooltip(SettingsProvider settings) {
+    switch (settings.language) {
+      case 'urdu':
+        return 'اوقات تازہ کریں';
+      case 'sindhi':
+        return 'وقت تازه ڪريو';
+      case 'arabic':
+        return 'تحديث المواقيت';
+      case 'indonesian':
+        return 'Perbarui Waktu';
+      case 'turkish':
+        return 'Vakitleri Güncelle';
+      case 'bengali':
+        return 'সময় আপডেট করুন';
+      case 'persian':
+        return 'به‌روزرسانی اوقات';
+      case 'hindi':
+        return 'समय अपडेट करें';
+      case 'french':
+        return 'Actualiser les horaires';
+      default:
+        return 'Refresh Timings';
+    }
+  }
+
   void _showJamaatTableModal(
     BuildContext context,
     JamaatMasjidInfo masjid,
@@ -201,47 +359,145 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lang = settings.language;
-    final timing = JamaatTimesService.instance.getTimingFor(masjid);
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      enableDrag: false,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1A2224) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, -6),
-              ),
-            ],
-          ),
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).padding.bottom + 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ── Drag Handle ──────────────────────────────────────
-              const SizedBox(height: 12),
-              Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white30 : Colors.black26,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 16),
+        bool isRefreshing = false;
+        bool isPopping = false;
+        final modalScrollController = ScrollController();
+        double dragStartX = 0.0;
+        double dragStartY = 0.0;
+        bool canDismissFromTop = false;
 
-              // ── Header Card ──────────────────────────────────────
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.all(20),
+        void safePop() {
+          if (!isPopping && ctx.mounted) {
+            isPopping = true;
+            Navigator.of(ctx).pop();
+          }
+        }
+
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            final timing = JamaatTimesService.instance.getTimingFor(masjid);
+            return Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (event) {
+                dragStartX = event.position.dx;
+                dragStartY = event.position.dy;
+                // If modal is at the very top (Screenshot 2 state), allow downward swipe to dismiss.
+                // If modal is scrolled down (Screenshot 1 state: offset > 1.0), do NOT allow dismiss;
+                // downward swipe will only scroll the content back up to the top!
+                if (modalScrollController.hasClients) {
+                  canDismissFromTop = modalScrollController.offset <= 1.0;
+                } else {
+                  canDismissFromTop = true;
+                }
+              },
+              onPointerMove: (event) {
+                if (isPopping) return;
+                final deltaX = (event.position.dx - dragStartX).abs();
+                final deltaY = event.position.dy - dragStartY;
+
+                // When user scrolls down the list (swiping finger up), cancel top dismiss
+                if (modalScrollController.hasClients && modalScrollController.offset > 1.0) {
+                  canDismissFromTop = false;
+                }
+
+                // Only close if started at the top (Screenshot 2) and dragging downwards vertically
+                if (canDismissFromTop && deltaY > 40 && deltaY > deltaX) {
+                  final currentOffset = modalScrollController.hasClients ? modalScrollController.offset : 0.0;
+                  if (currentOffset <= 1.0) {
+                    safePop();
+                  } else {
+                    canDismissFromTop = false;
+                  }
+                }
+              },
+              onPointerUp: (event) {
+                if (isPopping) return;
+                final deltaX = (event.position.dx - dragStartX).abs();
+                final deltaY = event.position.dy - dragStartY;
+                if (canDismissFromTop && deltaY > 25 && deltaY > deltaX) {
+                  final currentOffset = modalScrollController.hasClients ? modalScrollController.offset : 0.0;
+                  if (currentOffset <= 1.0) {
+                    safePop();
+                  }
+                }
+                canDismissFromTop = false;
+              },
+              onPointerCancel: (_) {
+                canDismissFromTop = false;
+              },
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(ctx).size.height * 0.9,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1A2224) : Colors.white,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, -6),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // ── Drag Handle Area ─────────────────────────
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onVerticalDragUpdate: (details) {
+                          if (details.primaryDelta != null && details.primaryDelta! > 4) {
+                            if (modalScrollController.hasClients && modalScrollController.offset > 1.0) {
+                              modalScrollController.animateTo(
+                                0,
+                                duration: const Duration(milliseconds: 250),
+                                curve: Curves.easeOut,
+                              );
+                            } else {
+                              safePop();
+                            }
+                          }
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.only(top: 12, bottom: 14),
+                          alignment: Alignment.center,
+                          child: Container(
+                            width: 44,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white30 : Colors.black26,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // ── Scrollable Content Area ──────────────────
+                      Flexible(
+                        child: SingleChildScrollView(
+                          controller: modalScrollController,
+                          physics: const ClampingScrollPhysics(),
+                          padding: EdgeInsets.only(
+                            bottom: MediaQuery.of(ctx).padding.bottom + 16,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                                // ── Header Card ──────────────────────────────────────
+                                Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: isDark
@@ -302,6 +558,57 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
                       ),
                     ),
                     IconButton(
+                      icon: isRefreshing
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.refresh_rounded,
+                              color: Colors.white,
+                              size: 26,
+                            ),
+                      tooltip: _getRefreshTimingsTooltip(settings),
+                      onPressed: isRefreshing
+                          ? null
+                          : () async {
+                              setModalState(() => isRefreshing = true);
+                              final success = await JamaatTimesService.instance.fetchRemoteGistTimings();
+                              if (context.mounted) {
+                                setState(() {});
+                              }
+                              if (modalCtx.mounted) {
+                                setModalState(() => isRefreshing = false);
+                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    behavior: SnackBarBehavior.floating,
+                                    backgroundColor: success
+                                        ? const Color(0xFF1B4332)
+                                        : const Color(0xFFB00020),
+                                    content: Text(
+                                      success
+                                          ? _getJamaatTimesUpdatedMessage(settings)
+                                          : _getJamaatTimesFailedMessage(settings),
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontFamily: AppTheme.getFontForLanguage(
+                                          context,
+                                          settings.language,
+                                        ),
+                                      ),
+                                    ),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            },
+                    ),
+                    IconButton(
                       icon: Icon(
                         settings.favoriteMasjidId == masjid.id
                             ? Icons.star_rounded
@@ -350,7 +657,170 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
+
+              // ── Report Timing Difference Bar ──────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _reportTimingUpdate(context, settings, masjid, timing),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1E282A)
+                            : const Color(0xFFF0FDF4),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF2E7D32).withValues(alpha: 0.4)
+                              : const Color(0xFF1B4332).withValues(alpha: 0.25),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1B4332).withValues(alpha: isDark ? 0.4 : 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_outlined,
+                              size: 18,
+                              color: Color(0xFF2E7D32),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _t(
+                                    settings,
+                                    'Timing difference? Report to developer',
+                                    'اوقات میں فرق ہے؟ تصویر/اطلاع بھیجیں',
+                                    'وقتن ۾ فرق آهي؟ تصوير/اطلاع موڪليو',
+                                    'اختلاف في المواقيت؟ أبلغ المطور',
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: AppTheme.getFontForLanguage(context, lang),
+                                    color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _t(
+                                    settings,
+                                    'Tap to email clock photo or updated time',
+                                    'گھڑی کی تصویر یا نیا وقت ای میل کرنے کے لیے ٹیپ کریں',
+                                    'ڪلاڪ جي تصوير يا نئون وقت اي ميل ڪرڻ لاءِ ٽيپ ڪريو',
+                                    'انقر لإرسال صورة الساعة أو الوقت الجديد',
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontFamily: AppTheme.getFontForLanguage(context, lang),
+                                    color: isDark ? Colors.white60 : Colors.black54,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.mail_outline_rounded,
+                            size: 18,
+                            color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // ── Jama'at Timing Notice ─────────────────────────────
+              Builder(
+                builder: (context) {
+                  final notice = _getJamaatNoticeNote(lang);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1E282A).withValues(alpha: 0.7)
+                            : const Color(0xFFF4F8F5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF81C784).withValues(alpha: 0.25)
+                              : const Color(0xFF1B4332).withValues(alpha: 0.18),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Icon(
+                              Icons.info_outline_rounded,
+                              size: 16,
+                              color: isDark
+                                  ? const Color(0xFF81C784)
+                                  : const Color(0xFF1B4332),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: '${notice['prefix']} ',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark
+                                          ? const Color(0xFF81C784)
+                                          : const Color(0xFF1B4332),
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: notice['body'],
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w400,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                height: 1.45,
+                                fontFamily: AppTheme.getFontForLanguage(context, lang),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 14),
 
               // ── Prayer Timings Table ──────────────────────────────
               Padding(
@@ -431,12 +901,12 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
                         context,
                         settings,
                         nameKey: 'Zuhar',
-                        subNoteKey: 'Fixed',
+                        subNoteKey: timing.zuharUpdated.trim().isEmpty ? 'Fixed' : null,
                         customNote: timing.getNoteFor('Zuhar', lang).isNotEmpty
                             ? timing.getNoteFor('Zuhar', lang)
                             : null,
                         time: timing.zuhar,
-                        lastUpdated: '',
+                        lastUpdated: timing.zuharUpdated,
                         icon: Icons.wb_sunny_rounded,
                         isDark: isDark,
                       ),
@@ -485,12 +955,12 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
                         context,
                         settings,
                         nameKey: 'Jummah',
-                        subNoteKey: 'Fixed',
+                        subNoteKey: timing.jummahUpdated.trim().isEmpty ? 'Fixed' : null,
                         customNote: timing.getNoteFor('Jummah', lang).isNotEmpty
                             ? timing.getNoteFor('Jummah', lang)
                             : null,
                         time: timing.jummah,
-                        lastUpdated: '',
+                        lastUpdated: timing.jummahUpdated,
                         icon: Icons.star_rounded,
                         isDark: isDark,
                         isLast: true,
@@ -500,12 +970,97 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
                 ),
               ),
 
-              const SizedBox(height: 16),
-            ],
+                                const SizedBox(height: 16),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+  }
+
+  Future<void> _reportTimingUpdate(
+    BuildContext context,
+    SettingsProvider settings,
+    JamaatMasjidInfo masjid,
+    JamaatTiming timing,
+  ) async {
+    final masjidName = _t(settings, masjid.nameKey);
+    final masjidAddress = _t(settings, masjid.addressKey);
+    final subject = '[Jama\'at Time Update] $masjidName, Sukkur';
+    final body = '''Assalam-o-Alaikum,
+
+Masjid: $masjidName
+Address: $masjidAddress
+
+Current App Timings:
+- Fajr: ${timing.fajr}
+- Zuhar: ${timing.zuhar}
+- Asar: ${timing.asar}
+- Maghrib: ${timing.maghrib}
+- Isha: ${timing.isha}
+- Jummah: ${timing.jummah}
+
+Correct / Updated Timings:
+- Fajr: 
+- Zuhar: 
+- Asar: 
+- Maghrib: 
+- Isha: 
+- Jummah: 
+
+(Please attach a photo of the Masjid clock/board if possible)
+
+JazakAllah Khair
+''';
+
+    const email = 'mmsafiullah@yahoo.com';
+    final emailUri = Uri(
+      scheme: 'mailto',
+      path: email,
+      query: 'subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}',
+    );
+
+    try {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        final gmailUri = Uri.parse(
+          'intent://compose?to=$email&subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}#Intent;scheme=mailto;package=com.google.android.gm;end',
+        );
+        if (await canLaunchUrl(gmailUri)) {
+          await launchUrl(gmailUri, mode: LaunchMode.externalApplication);
+          return;
+        }
+      }
+      if (await canLaunchUrl(emailUri)) {
+        await launchUrl(emailUri, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(emailUri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      debugPrint('Could not launch email: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _t(
+                settings,
+                'Please email update to mmsafiullah@yahoo.com',
+                'براہ کرم نیا وقت mmsafiullah@yahoo.com پر ای میل کریں',
+                'مهرباني ڪري نئون وقت mmsafiullah@yahoo.com تي اي ميل ڪريو',
+                'يرجى إرسال التحديث إلى mmsafiullah@yahoo.com',
+              ),
+            ),
           ),
         );
-      },
-    );
+      }
+    }
   }
 
   Widget _buildPrayerTableRow(
@@ -634,6 +1189,8 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
       backgroundColor: isDark ? const Color(0xFF121619) : const Color(0xFFF4F6F8),
       appBar: AppBar(
         centerTitle: true,
+        leading: const SizedBox(width: 56),
+        leadingWidth: 56,
         iconTheme: IconThemeData(
           color: isDark ? Colors.white70 : Colors.black87,
         ),
@@ -654,12 +1211,49 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
             ),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: _getRefreshTimingsTooltip(settings),
+            onPressed: () async {
+              final success = await _loadRemoteTimings();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: success
+                        ? const Color(0xFF1B4332)
+                        : const Color(0xFFB00020),
+                    content: Text(
+                      success
+                          ? _getJamaatTimesUpdatedMessage(settings)
+                          : _getJamaatTimesFailedMessage(settings),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: AppTheme.getFontForLanguage(
+                          context,
+                          settings.language,
+                        ),
+                      ),
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+          ),
+        ],
         elevation: 0,
         backgroundColor: Colors.transparent,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+      body: RefreshIndicator(
+        color: const Color(0xFF1B4332),
+        onRefresh: _loadRemoteTimings,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
           children: [
             // ── Main Header Card ──────────────────────────────────────
             Container(
@@ -857,6 +1451,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> {
               ..._buildCombinedChartView(context, settings, isDark, lang),
           ],
         ),
+      ),
       ),
     );
   }

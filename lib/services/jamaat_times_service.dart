@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../data/timings_data.dart';
 
 class JamaatTiming {
@@ -8,6 +10,7 @@ class JamaatTiming {
   final String fajrNoteUr;
   final String fajrNoteEn;
   final String zuhar;
+  final String zuharUpdated;
   final String zuharNoteUr;
   final String zuharNoteEn;
   final String asar;
@@ -22,6 +25,7 @@ class JamaatTiming {
   final String ishaNoteUr;
   final String ishaNoteEn;
   final String jummah;
+  final String jummahUpdated;
   final String jummahNoteUr;
   final String jummahNoteEn;
 
@@ -31,6 +35,7 @@ class JamaatTiming {
     this.fajrNoteUr = '',
     this.fajrNoteEn = '',
     required this.zuhar,
+    this.zuharUpdated = '',
     this.zuharNoteUr = '',
     this.zuharNoteEn = '',
     required this.asar,
@@ -45,6 +50,7 @@ class JamaatTiming {
     this.ishaNoteUr = '',
     this.ishaNoteEn = '',
     required this.jummah,
+    this.jummahUpdated = '',
     this.jummahNoteUr = '',
     this.jummahNoteEn = '',
   });
@@ -149,6 +155,9 @@ class JamaatTiming {
       fajrNoteUr: json['fajr_note_ur']?.toString() ?? json['fajrNoteUr']?.toString() ?? json['fajr_note']?.toString() ?? '',
       fajrNoteEn: json['fajr_note_en']?.toString() ?? json['fajrNoteEn']?.toString() ?? '',
       zuhar: json['zuhar'] ?? '01:15 PM',
+      zuharUpdated: json['zuhar_updated'] != null
+          ? normalizeDate(json['zuhar_updated'].toString())
+          : (json['zuharUpdated'] != null ? normalizeDate(json['zuharUpdated'].toString()) : ''),
       zuharNoteUr: json['zuhar_note_ur']?.toString() ?? json['zuharNoteUr']?.toString() ?? json['zuhar_note']?.toString() ?? '',
       zuharNoteEn: json['zuhar_note_en']?.toString() ?? json['zuharNoteEn']?.toString() ?? '',
       asar: json['asar'] ?? '04:45 PM',
@@ -163,6 +172,9 @@ class JamaatTiming {
       ishaNoteUr: json['isha_note_ur']?.toString() ?? json['ishaNoteUr']?.toString() ?? json['isha_note']?.toString() ?? '',
       ishaNoteEn: json['isha_note_en']?.toString() ?? json['ishaNoteEn']?.toString() ?? '',
       jummah: json['jummah'] ?? '01:15 PM',
+      jummahUpdated: json['jummah_updated'] != null
+          ? normalizeDate(json['jummah_updated'].toString())
+          : (json['jummahUpdated'] != null ? normalizeDate(json['jummahUpdated'].toString()) : ''),
       jummahNoteUr: json['jummah_note_ur']?.toString() ?? json['jummahNoteUr']?.toString() ?? json['jummah_note']?.toString() ?? '',
       jummahNoteEn: json['jummah_note_en']?.toString() ?? json['jummahNoteEn']?.toString() ?? '',
     );
@@ -172,6 +184,7 @@ class JamaatTiming {
         'fajr': fajr,
         'fajr_updated': fajrUpdated,
         'zuhar': zuhar,
+        if (zuharUpdated.isNotEmpty) 'zuhar_updated': zuharUpdated,
         'asar': asar,
         'asar_updated': asarUpdated,
         'maghrib': maghrib,
@@ -180,6 +193,7 @@ class JamaatTiming {
         'isha': isha,
         'isha_updated': ishaUpdated,
         'jummah': jummah,
+        if (jummahUpdated.isNotEmpty) 'jummah_updated': jummahUpdated,
       };
 }
 
@@ -477,6 +491,22 @@ class JamaatTimesService {
         jummah: '01:15 PM',
       ),
     ),
+    JamaatMasjidInfo(
+      id: 'masjid_dr_hafeezullah',
+      nameKey: 'Masjid Hazrat Dr Hafeezullah Sahib Rahimahullah',
+      addressKey: 'Professor Society, Kheer Thar Canal Road, near Darul Uloom Sukkur',
+      defaultTimings: JamaatTiming(
+        fajr: '05:15 AM',
+        fajrUpdated: '14 Oct 2026',
+        zuhar: '01:15 PM',
+        asar: '04:45 PM',
+        asarUpdated: '14 Oct 2026',
+        maghrib: 'Sunset',
+        isha: '08:00 PM',
+        ishaUpdated: '14 Oct 2026',
+        jummah: '01:15 PM',
+      ),
+    ),
   ];
 
   final Map<String, JamaatTiming> _remoteCache = {};
@@ -587,6 +617,7 @@ class JamaatTimesService {
       fajrNoteUr: base.fajrNoteUr,
       fajrNoteEn: base.fajrNoteEn,
       zuhar: format12HourEnglish(base.zuhar, defaultPm: true),
+      zuharUpdated: base.zuharUpdated,
       zuharNoteUr: base.zuharNoteUr,
       zuharNoteEn: base.zuharNoteEn,
       asar: format12HourEnglish(base.asar, defaultPm: true),
@@ -601,47 +632,104 @@ class JamaatTimesService {
       ishaNoteUr: base.ishaNoteUr,
       ishaNoteEn: base.ishaNoteEn,
       jummah: format12HourEnglish(base.jummah, defaultPm: true),
+      jummahUpdated: base.jummahUpdated,
       jummahNoteUr: base.jummahNoteUr,
       jummahNoteEn: base.jummahNoteEn,
     );
   }
 
-  /// Fetches updated timings from GitHub Gist if available
-  Future<void> fetchRemoteGistTimings() async {
-    if (_gistRawUrl.isEmpty) return;
+  static const String prefKeyJamaatCache = 'cached_jamaat_times_json';
+
+  /// Loads cached timings from SharedPreferences so updated times are available
+  /// immediately even if the device is offline or on slow network.
+  Future<void> loadLocalCache() async {
     try {
-      final response = await http.get(Uri.parse(_gistRawUrl)).timeout(
-            const Duration(seconds: 8),
-          );
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data is Map<String, dynamic> && data.containsKey('masjids')) {
-          final masjids = data['masjids'] as List;
-          final List<JamaatMasjidInfo> fetchedList = [];
-          for (final item in masjids) {
-            if (item is Map<String, dynamic> && item.containsKey('id')) {
-              final id = item['id'].toString();
-              final name = item['name'] ?? item['nameKey'] ?? id;
-              final address = item['address'] ?? item['addressKey'] ?? 'Sukkur';
-              final isHidden = item['hidden'] == true || item['enabled'] == false || item['removed'] == true;
-              final timing = JamaatTiming.fromJson(item);
-              _remoteCache[id] = timing;
-              fetchedList.add(JamaatMasjidInfo(
-                id: id,
-                nameKey: name,
-                addressKey: address,
-                defaultTimings: timing,
-                isHidden: isHidden,
-              ));
-            }
-          }
-          if (fetchedList.isNotEmpty) {
-            _dynamicMasjids = fetchedList;
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getString(prefKeyJamaatCache);
+      if (cached != null && cached.isNotEmpty) {
+        _parseAndApplyJson(cached);
+      }
+    } catch (e) {
+      debugPrint('Failed to load local cached Jamaat times: $e');
+    }
+  }
+
+  bool _parseAndApplyJson(String jsonStr) {
+    try {
+      final data = json.decode(jsonStr);
+      if (data is Map<String, dynamic> && data.containsKey('masjids')) {
+        final masjids = data['masjids'] as List;
+        final List<JamaatMasjidInfo> fetchedList = [];
+        for (final item in masjids) {
+          if (item is Map<String, dynamic> && item.containsKey('id')) {
+            final id = item['id'].toString();
+            final name = item['name'] ?? item['nameKey'] ?? id;
+            final address = item['address'] ?? item['addressKey'] ?? 'Sukkur';
+            final isHidden = item['hidden'] == true || item['enabled'] == false || item['removed'] == true;
+            final timing = JamaatTiming.fromJson(item);
+            _remoteCache[id] = timing;
+            fetchedList.add(JamaatMasjidInfo(
+              id: id,
+              nameKey: name,
+              addressKey: address,
+              defaultTimings: timing,
+              isHidden: isHidden,
+            ));
           }
         }
+        if (fetchedList.isNotEmpty) {
+          _dynamicMasjids = fetchedList;
+          return true;
+        }
       }
-    } catch (_) {
-      // Retain fallback timings silently on network failure
+    } catch (e) {
+      debugPrint('Error parsing Jamaat JSON: $e');
     }
+    return false;
+  }
+
+  /// Fetches updated timings from GitHub Gist immediately with cache-busting
+  /// headers and query parameters to bypass CDN/ISP caches.
+  Future<bool> fetchRemoteGistTimings() async {
+    if (_gistRawUrl.isEmpty) return false;
+    try {
+      final separator = _gistRawUrl.contains('?') ? '&' : '?';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final freshUrl = '$_gistRawUrl${separator}t=$timestamp';
+
+      // On Web (Chrome), do NOT pass custom headers (Cache-Control, Pragma, User-Agent)
+      // because GitHub Gist rejects CORS preflight OPTIONS requests with 403.
+      // A clean GET with ?t=timestamp bypasses Fastly CDN cache (X-Cache: MISS)
+      // and satisfies browser CORS with Access-Control-Allow-Origin: *.
+      final response = await (kIsWeb
+              ? http.get(Uri.parse(freshUrl))
+              : http.get(
+                  Uri.parse(freshUrl),
+                  headers: const {
+                    'Accept': 'application/json',
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0',
+                  },
+                ))
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final applied = _parseAndApplyJson(response.body);
+        if (applied) {
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString(prefKeyJamaatCache, response.body);
+          } catch (_) {}
+          return true;
+        }
+      }
+    } catch (e) {
+      debugPrint('Network error fetching Jamaat times: $e');
+      if (_remoteCache.isEmpty) {
+        await loadLocalCache();
+      }
+    }
+    return false;
   }
 }
