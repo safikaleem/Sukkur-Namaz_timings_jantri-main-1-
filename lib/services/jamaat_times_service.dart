@@ -203,6 +203,8 @@ class JamaatMasjidInfo {
   final String addressKey;
   final JamaatTiming defaultTimings;
   final bool isHidden;
+  final Map<String, String> localizedNames;
+  final Map<String, String> localizedAddresses;
 
   const JamaatMasjidInfo({
     required this.id,
@@ -210,7 +212,35 @@ class JamaatMasjidInfo {
     required this.addressKey,
     required this.defaultTimings,
     this.isHidden = false,
+    this.localizedNames = const {},
+    this.localizedAddresses = const {},
   });
+
+  String getNameFor(String language) {
+    final lang = language.toLowerCase();
+    if (localizedNames.containsKey(lang) && localizedNames[lang]!.isNotEmpty) {
+      return localizedNames[lang]!;
+    }
+    if (lang == 'sindhi' || lang == 'arabic') {
+      if (localizedNames.containsKey('urdu') && localizedNames['urdu']!.isNotEmpty) {
+        return localizedNames['urdu']!;
+      }
+    }
+    return nameKey;
+  }
+
+  String getAddressFor(String language) {
+    final lang = language.toLowerCase();
+    if (localizedAddresses.containsKey(lang) && localizedAddresses[lang]!.isNotEmpty) {
+      return localizedAddresses[lang]!;
+    }
+    if (lang == 'sindhi' || lang == 'arabic') {
+      if (localizedAddresses.containsKey('urdu') && localizedAddresses['urdu']!.isNotEmpty) {
+        return localizedAddresses['urdu']!;
+      }
+    }
+    return addressKey;
+  }
 }
 
 class JamaatTimesService {
@@ -507,6 +537,82 @@ class JamaatTimesService {
         jummah: '01:15 PM',
       ),
     ),
+    JamaatMasjidInfo(
+      id: 'shahi_jamia_masjid',
+      nameKey: 'Shahi Jamia Masjid',
+      addressKey: 'Purana Sukkur',
+      localizedNames: {
+        'urdu': 'شاہی جامع مسجد',
+        'sindhi': 'شاهي جامع مسجد',
+        'arabic': 'مسجد شاهي جامع',
+        'hindi': 'शाही जामिया मस्जिद',
+        'bengali': 'শাহী জামিয়া মসজিদ',
+        'persian': 'مسجد شاهی جامع',
+        'turkish': 'Şahi Camii',
+        'french': 'Mosquée Shahi Jamia',
+        'indonesian': 'Masjid Shahi Jamia',
+      },
+      localizedAddresses: {
+        'urdu': 'پرانا سکھر',
+        'sindhi': 'پراڻو سکر',
+        'arabic': 'سَكَر القديمة',
+        'hindi': 'पुराना सुक्कुर',
+        'bengali': 'পুরানো সুক্কুর',
+        'persian': 'سکر قدیم',
+        'turkish': 'Eski Sukkur',
+        'french': 'Vieux Sukkur',
+        'indonesian': 'Sukkur Lama',
+      },
+      defaultTimings: JamaatTiming(
+        fajr: '06:00 AM',
+        fajrUpdated: '15 Oct 2026',
+        zuhar: '01:30 PM',
+        asar: '04:45 PM',
+        asarUpdated: '15 Oct 2026',
+        maghrib: 'Sunset',
+        isha: '08:00 PM',
+        ishaUpdated: '15 Oct 2026',
+        jummah: '02:00 PM',
+      ),
+    ),
+    JamaatMasjidInfo(
+      id: 'jamia_masjid_bait_ul_hamd',
+      nameKey: 'Jamia Masjid Bait ul Hamd',
+      addressKey: 'Green City near NICVD Hospital Sukkur',
+      localizedNames: {
+        'urdu': 'جامع مسجد بیت الحمد',
+        'sindhi': 'جامع مسجد بيت الحمد',
+        'arabic': 'جامع مسجد بيت الحمد',
+        'hindi': 'जामिया मस्जिद बैत-उल-हम्द',
+        'bengali': 'জামিয়া মসজিদ বাইতুল হামদ',
+        'persian': 'جامع مسجد بیت الحمد',
+        'turkish': 'Beyt-ül Hamd Camii',
+        'french': 'Grande Mosquée Bait-ul-Hamd',
+        'indonesian': 'Masjid Agung Baitul Hamd',
+      },
+      localizedAddresses: {
+        'urdu': 'گرین سٹی، نزد این آئی سی وی ڈی ہسپتال سکھر',
+        'sindhi': 'گرين سٽي، ويجهو اين آءِ سي وي ڊي اسپتال سکر',
+        'arabic': 'جرين سيتي، بالقرب من مستشفى NICVD، سَكَر',
+        'hindi': 'ग्रीन सिटी, एनआईसीवीडी अस्पताल के पास, सुक्कुर',
+        'bengali': 'গ্রিন সিটি, এনআইসিভিডি হাসপাতালের কাছে, সুক্কুর',
+        'persian': 'گرین سیتی، نزدیک شفاخانه NICVD، سکر',
+        'turkish': 'Green City, NICVD Hastanesi Yakını, Sukkur',
+        'french': 'Green City, près de l\'hôpital NICVD, Sukkur',
+        'indonesian': 'Green City, dekat Rumah Sakit NICVD, Sukkur',
+      },
+      defaultTimings: JamaatTiming(
+        fajr: '05:15 AM',
+        fajrUpdated: '16 Oct 2026',
+        zuhar: '01:15 PM',
+        asar: '04:45 PM',
+        asarUpdated: '16 Oct 2026',
+        maghrib: 'Sunset',
+        isha: '08:00 PM',
+        ishaUpdated: '16 Oct 2026',
+        jummah: '01:15 PM',
+      ),
+    ),
   ];
 
   final Map<String, JamaatTiming> _remoteCache = {};
@@ -538,6 +644,8 @@ class JamaatTimesService {
             addressKey: remote.addressKey.isNotEmpty ? remote.addressKey : local.addressKey,
             defaultTimings: local.defaultTimings,
             isHidden: false,
+            localizedNames: remote.localizedNames.isNotEmpty ? remote.localizedNames : local.localizedNames,
+            localizedAddresses: remote.localizedAddresses.isNotEmpty ? remote.localizedAddresses : local.localizedAddresses,
           );
         } else {
           list.add(remote);
@@ -654,6 +762,48 @@ class JamaatTimesService {
     }
   }
 
+  static Map<String, String> _extractLocalizedStrings(Map<String, dynamic> item, String baseKey) {
+    final Map<String, String> result = {};
+
+    // 1. Check nested maps (e.g. item['names'] or item['addresses'])
+    final pluralKey = baseKey == 'name' ? 'names' : '${baseKey}es';
+    if (item[pluralKey] is Map) {
+      final map = item[pluralKey] as Map;
+      map.forEach((k, v) {
+        if (v != null && v.toString().trim().isNotEmpty) {
+          result[k.toString().toLowerCase()] = v.toString().trim();
+        }
+      });
+    }
+
+    // 2. Check flat keys (e.g. name_ur, name_urdu, name_sd, etc.)
+    const langKeyMappings = {
+      'urdu': ['urdu', 'ur'],
+      'sindhi': ['sindhi', 'sd'],
+      'arabic': ['arabic', 'ar'],
+      'hindi': ['hindi', 'hi'],
+      'bengali': ['bengali', 'bn'],
+      'persian': ['persian', 'fa'],
+      'turkish': ['turkish', 'tr'],
+      'french': ['french', 'fr'],
+      'indonesian': ['indonesian', 'id'],
+      'english': ['english', 'en'],
+    };
+
+    for (final entry in langKeyMappings.entries) {
+      final langName = entry.key;
+      for (final suffix in entry.value) {
+        final key = '${baseKey}_$suffix';
+        if (item[key] != null && item[key].toString().trim().isNotEmpty) {
+          result[langName] = item[key].toString().trim();
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
   bool _parseAndApplyJson(String jsonStr) {
     try {
       final data = json.decode(jsonStr);
@@ -667,6 +817,8 @@ class JamaatTimesService {
             final address = item['address'] ?? item['addressKey'] ?? 'Sukkur';
             final isHidden = item['hidden'] == true || item['enabled'] == false || item['removed'] == true;
             final timing = JamaatTiming.fromJson(item);
+            final localizedNames = _extractLocalizedStrings(item, 'name');
+            final localizedAddresses = _extractLocalizedStrings(item, 'address');
             _remoteCache[id] = timing;
             fetchedList.add(JamaatMasjidInfo(
               id: id,
@@ -674,6 +826,8 @@ class JamaatTimesService {
               addressKey: address,
               defaultTimings: timing,
               isHidden: isHidden,
+              localizedNames: localizedNames,
+              localizedAddresses: localizedAddresses,
             ));
           }
         }

@@ -57,6 +57,13 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
+                  ValueListenableBuilder<bool>(
+                    valueListenable: UpdateService.hasPendingUpdateNotifier,
+                    builder: (context, hasUpdate, _) {
+                      if (!hasUpdate) return const SizedBox.shrink();
+                      return _buildUpdateBanner(context, settings);
+                    },
+                  ),
                   // ── Sukkur ─────────────────────────────────
                   _DrawerItem(
                     icon: Icons.push_pin_rounded,
@@ -169,19 +176,24 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   const _Divider(),
 
                   // ── Check for Update ──────────────────────────
-                  _DrawerItem(
-                    icon: Icons.system_update_rounded,
-                    label: worldTranslations[settings.language]?['Check for Update'] ??
-                        settings.translate(
-                          'Check for Update',
-                          'اپڈیٹ چیک کریں',
-                          'اپڊيٽ چيڪ ڪريو',
-                          'التحقق من التحديثات',
-                        ),
-                    trailing: UpdateService.hasPendingUpdate
-                        ? _buildUpdateBadge(context, settings)
-                        : null,
-                    onTap: () => UpdateService.manualCheckForUpdate(context),
+                  ValueListenableBuilder<bool>(
+                    valueListenable: UpdateService.hasPendingUpdateNotifier,
+                    builder: (context, hasUpdate, _) {
+                      return _DrawerItem(
+                        icon: Icons.system_update_rounded,
+                        label: worldTranslations[settings.language]?['Check for Update'] ??
+                            settings.translate(
+                              'Check for Update',
+                              'اپڈیٹ چیک کریں',
+                              'اپڊيٽ چيڪ ڪريو',
+                              'التحقق من التحديثات',
+                            ),
+                        trailing: hasUpdate
+                            ? _buildUpdateBadge(context, settings)
+                            : null,
+                        onTap: () => UpdateService.manualCheckForUpdate(context),
+                      );
+                    },
                   ),
 
                   if (!settings.usesCalculatedTimings) ...[
@@ -247,7 +259,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Current Version ───────────────────────────
                   _DrawerItem(
                     icon: Icons.new_releases_rounded,
-                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.4.0'}',
+                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.4.1'}',
                     onTap: () => _showWhatsNewDialog(context),
                   ),
 
@@ -256,6 +268,95 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUpdateBanner(BuildContext context, SettingsProvider settings) {
+    final lang = settings.language;
+    final isUrdu = settings.isUrdu;
+    final font = AppTheme.getFontForLanguage(context, lang);
+    final title = UpdateService.tr('drawerBannerTitle', lang);
+    final sub = UpdateService.tr('drawerBannerSub', lang);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE53935), Color(0xFFC62828)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE53935).withValues(alpha: 0.35),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () {
+            Navigator.pop(context);
+            UpdateService.openPendingUpdateDialog(context);
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.system_update_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isUrdu ? 15 : 14,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: font,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        sub,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: isUrdu ? 12 : 11.5,
+                          fontFamily: font,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.white70,
+                  size: 14,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -407,7 +508,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.4.0';
+    final versionStr = _version.isNotEmpty ? _version : '1.4.1';
 
     showDialog(
       context: context,

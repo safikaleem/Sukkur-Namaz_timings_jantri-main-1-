@@ -374,7 +374,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                     const SizedBox(height: 2),
                     Text(
                       hasFavorite && favMasjid != null
-                          ? '⭐ ${settings.translate(favMasjid.nameKey, favMasjid.nameKey, favMasjid.nameKey)}'
+                          ? '⭐ ${settings.translate(favMasjid.nameKey, favMasjid.getNameFor('urdu'), favMasjid.getNameFor('sindhi'), favMasjid.getNameFor('arabic'))}'
                           : '⭐ ${settings.translate(
                               'Tap star on Jama\'at screen to select favorite masjid',
                               'پسندیدہ مسجد کے لیے جماعت اسکرین پر ستارے پر ٹیپ کریں',

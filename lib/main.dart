@@ -27,13 +27,10 @@ import 'screens/onboarding_screen.dart';
 import 'widgets/translation_reader.dart' show purgeLegacySurahCache;
 import 'widgets/tasbeeh_icon.dart';
 import 'utils/app_theme.dart';
-import 'utils/custom_upgrader_messages.dart';
 import 'widgets/settings_drawer.dart';
 import 'package:workmanager/workmanager.dart';
-import 'package:upgrader/upgrader.dart';
 import 'services/announcement_service.dart';
 import 'services/update_service.dart';
-// import 'services/update_service.dart';
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -68,9 +65,7 @@ void main() {
   runZonedGuarded<Future<void>>(() async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    // Clear saved upgrader settings on launch so the prompt appears once per session
-    // instead of repeatedly on every button press.
-    await Upgrader.clearSavedSettings();
+
 
     FlutterError.onError = (FlutterErrorDetails details) {
       FlutterError.presentError(details);
@@ -367,18 +362,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
           if (mounted) setState(() => _currentIndex = 0);
         },
       ),
-      // Wraps the whole body so the "update available" prompt can appear over
-      // any tab. upgrader reads the published Play Store listing itself, so
-      // nothing has to be hosted or bumped by hand after a release.
-      body: UpgradeAlert(
-        upgrader: Upgrader(
-          messages: CustomUpgraderMessages(settings),
-        ),
-        showIgnore: false,
-        child: SafeArea(
-          bottom: false,
-          child: Stack(
-            children: [
+      body: SafeArea(
+        bottom: false,
+        child: Stack(
+          children: [
               // All screens
               IndexedStack(
                 index: safeIndex,
@@ -412,23 +399,31 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                             color: isDark ? Colors.white : Colors.black87,
                           ),
                         ),
-                        if (UpdateService.hasPendingUpdate)
-                          Positioned(
-                            top: -2,
-                            right: -2,
-                            child: Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE53935),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
-                                  width: 1.5,
+                        ValueListenableBuilder<bool>(
+                          valueListenable:
+                              UpdateService.hasPendingUpdateNotifier,
+                          builder: (context, hasUpdate, _) {
+                            if (!hasUpdate) return const SizedBox.shrink();
+                            return Positioned(
+                              top: -2,
+                              right: -2,
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE53935),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isDark
+                                        ? const Color(0xFF1E1E2E)
+                                        : Colors.white,
+                                    width: 1.5,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -460,7 +455,6 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
             ],
           ),
         ),
-      ),
       bottomNavigationBar: _SukkurNavBar(
         currentIndex: safeIndex,
         onTap: (i) => setState(() => _currentIndex = i),

@@ -64,6 +64,50 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     return settings.translate(key, ur ?? key, sd ?? ur ?? key, ar);
   }
 
+  String _getMasjidName(SettingsProvider settings, JamaatMasjidInfo masjid) {
+    final lang = settings.language;
+    final extraMap = additionalTranslations[lang];
+    if (extraMap != null && extraMap.containsKey(masjid.nameKey)) {
+      return extraMap[masjid.nameKey]!;
+    }
+    final map = worldTranslations[lang];
+    if (map != null && map.containsKey(masjid.nameKey)) {
+      return map[masjid.nameKey]!;
+    }
+    final dynamicName = masjid.getNameFor(lang);
+    if (dynamicName.isNotEmpty && dynamicName != masjid.nameKey) {
+      return dynamicName;
+    }
+    return settings.translate(
+      masjid.nameKey,
+      masjid.getNameFor('urdu'),
+      masjid.getNameFor('sindhi'),
+      masjid.getNameFor('arabic'),
+    );
+  }
+
+  String _getMasjidAddress(SettingsProvider settings, JamaatMasjidInfo masjid) {
+    final lang = settings.language;
+    final extraMap = additionalTranslations[lang];
+    if (extraMap != null && extraMap.containsKey(masjid.addressKey)) {
+      return extraMap[masjid.addressKey]!;
+    }
+    final map = worldTranslations[lang];
+    if (map != null && map.containsKey(masjid.addressKey)) {
+      return map[masjid.addressKey]!;
+    }
+    final dynamicAddress = masjid.getAddressFor(lang);
+    if (dynamicAddress.isNotEmpty && dynamicAddress != masjid.addressKey) {
+      return dynamicAddress;
+    }
+    return settings.translate(
+      masjid.addressKey,
+      masjid.getAddressFor('urdu'),
+      masjid.getAddressFor('sindhi'),
+      masjid.getAddressFor('arabic'),
+    );
+  }
+
   String _getPrayerDisplayName(SettingsProvider settings, String nameKey) {
     final lang = settings.language;
     final name = _t(settings, nameKey);
@@ -536,7 +580,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _t(settings, masjid.nameKey),
+                            _getMasjidName(settings, masjid),
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -547,7 +591,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _t(settings, masjid.addressKey),
+                            _getMasjidAddress(settings, masjid),
                             style: const TextStyle(
                               fontSize: 13,
                               color: Colors.white70,
@@ -992,8 +1036,8 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     JamaatMasjidInfo masjid,
     JamaatTiming timing,
   ) async {
-    final masjidName = _t(settings, masjid.nameKey);
-    final masjidAddress = _t(settings, masjid.addressKey);
+    final masjidName = _getMasjidName(settings, masjid);
+    final masjidAddress = _getMasjidAddress(settings, masjid);
     final subject = '[Jama\'at Time Update] $masjidName, Sukkur';
     final body = '''Assalam-o-Alaikum,
 
@@ -1868,7 +1912,7 @@ JazakAllah Khair
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              _t(settings, masjid.nameKey),
+                                              _getMasjidName(settings, masjid),
                                               style: TextStyle(
                                                 fontSize: 13.5,
                                                 fontWeight: FontWeight.w600,
@@ -1881,7 +1925,7 @@ JazakAllah Khair
                                               ),
                                             ),
                                             Text(
-                                              _t(settings, masjid.addressKey),
+                                              _getMasjidAddress(settings, masjid),
                                               style: TextStyle(
                                                 fontSize: 11,
                                                 color: isDark
@@ -1982,7 +2026,7 @@ JazakAllah Khair
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _t(settings, masjid.nameKey),
+                    _getMasjidName(settings, masjid),
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -1992,7 +2036,7 @@ JazakAllah Khair
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    _t(settings, masjid.addressKey),
+                    _getMasjidAddress(settings, masjid),
                     style: TextStyle(
                       fontSize: 12,
                       fontFamily: AppTheme.getFontForLanguage(context, lang),

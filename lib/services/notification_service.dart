@@ -1502,7 +1502,16 @@ class NotificationService {
       if (masjid == null) return;
 
       final timing = JamaatTimesService.instance.getTimingFor(masjid);
-      final masjidName = translateFor(language, masjid.nameKey, masjid.nameKey, masjid.nameKey);
+      final dynamicName = masjid.getNameFor(language);
+      final masjidName = (dynamicName.isNotEmpty && dynamicName != masjid.nameKey)
+          ? dynamicName
+          : translateFor(
+              language,
+              masjid.nameKey,
+              masjid.getNameFor('urdu'),
+              masjid.getNameFor('sindhi'),
+              masjid.getNameFor('arabic'),
+            );
 
       final now = DateTime.now();
 

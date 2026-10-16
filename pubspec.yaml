@@ -1,7 +1,7 @@
 name: sukkur_prayer_timings
 description: Sukkur Prayer Timings - Offline Islamic Namaz Timing App for Sukkur, Sindh
 publish_to: 'none'
-version: 1.4.0+50
+version: 1.4.1+51
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -36,6 +36,7 @@ dependencies:
   geocoding: ^3.0.0
   lat_lng_to_timezone: ^0.2.0
   upgrader: ^13.6.0
+  in_app_update: ^5.0.0
 
 dev_dependencies:
   flutter_test:
