@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
 import '../l10n/world_translations.dart';
@@ -58,7 +59,19 @@ class AnnouncementService {
           ? 'Sukkur'
           : settings.cityName!.trim();
 
-      final announcement = selectAnnouncementForUser(fetchedData, userCity);
+      String? currentVersion;
+      try {
+        final pkg = await PackageInfo.fromPlatform();
+        currentVersion = pkg.version;
+      } catch (e) {
+        debugPrint('Could not retrieve package version for announcement check: $e');
+      }
+
+      final announcement = selectAnnouncementForUser(
+        fetchedData,
+        userCity,
+        currentVersion: currentVersion,
+      );
       if (announcement != null) {
         final bool enabled = announcement['enabled'] as bool? ?? false;
         final String? id = announcement['id'] as String?;
@@ -74,15 +87,16 @@ class AnnouncementService {
     }
   }
 
-  /// Selects the best announcement matching the user's city.
+  /// Selects the best announcement matching the user's city and version criteria.
   /// Priority:
-  /// 1. An enabled announcement explicitly targeting userCity.
-  /// 2. An enabled announcement targeting "all" or everyone (fallback).
+  /// 1. An enabled announcement explicitly targeting userCity and matching version.
+  /// 2. An enabled announcement targeting "all" or everyone (fallback) and matching version.
   @visibleForTesting
   static Map<String, dynamic>? selectAnnouncementForUser(
     dynamic fetchedData,
-    String userCity,
-  ) {
+    String userCity, {
+    String? currentVersion,
+  }) {
     final candidates = <Map<String, dynamic>>[];
 
     if (fetchedData is Map<String, dynamic>) {
@@ -113,6 +127,10 @@ class AnnouncementService {
       final String? id = candidate['id'] as String?;
       if (!enabled || id == null || id.isEmpty) continue;
 
+      if (!matchesVersionCriteria(candidate, currentVersion)) {
+        continue;
+      }
+
       final dynamic citiesRaw = candidate['cities'] ??
           candidate['city'] ??
           candidate['targetCities'] ??
@@ -127,6 +145,88 @@ class AnnouncementService {
     }
 
     return citySpecificMatch ?? generalMatch;
+  }
+
+  /// Compares two semver-style version strings (e.g. "1.4.1" and "1.4.0").
+  /// Returns:
+  ///   < 0 if v1 < v2
+  ///     0 if v1 == v2
+  ///   > 0 if v1 > v2
+  @visibleForTesting
+  static int compareVersions(String v1, String v2) {
+    final clean1 = v1.split('+').first.split('-').first.trim();
+    final clean2 = v2.split('+').first.split('-').first.trim();
+
+    final parts1 = clean1.split('.').map((p) => int.tryParse(p) ?? 0).toList();
+    final parts2 = clean2.split('.').map((p) => int.tryParse(p) ?? 0).toList();
+
+    final maxLen = parts1.length > parts2.length ? parts1.length : parts2.length;
+    for (int i = 0; i < maxLen; i++) {
+      final p1 = i < parts1.length ? parts1[i] : 0;
+      final p2 = i < parts2.length ? parts2[i] : 0;
+      if (p1 != p2) {
+        return p1.compareTo(p2);
+      }
+    }
+    return 0;
+  }
+
+  /// Evaluates whether an announcement candidate matches the current app version.
+  /// Supported JSON fields:
+  /// - `max_version`: Shows only if currentVersion <= max_version.
+  /// - `min_version`: Shows only if currentVersion >= min_version.
+  /// - `target_version`: Shows only if currentVersion == target_version.
+  /// - `target_versions`: List of versions; shows only if currentVersion is in the list.
+  @visibleForTesting
+  static bool matchesVersionCriteria(
+    Map<String, dynamic> candidate,
+    String? currentVersion,
+  ) {
+    if (currentVersion == null || currentVersion.trim().isEmpty) {
+      // If version cannot be determined (e.g. platform error or untracked), do not filter out.
+      return true;
+    }
+
+    // 1. Single exact target_version check
+    final dynamic targetRaw = candidate['target_version'] ?? candidate['targetVersion'];
+    if (targetRaw != null && targetRaw.toString().trim().isNotEmpty) {
+      final targetStr = targetRaw.toString().trim();
+      if (compareVersions(currentVersion, targetStr) != 0) {
+        return false;
+      }
+    }
+
+    // 2. target_versions list check
+    final dynamic targetListRaw = candidate['target_versions'] ?? candidate['targetVersions'];
+    if (targetListRaw is List && targetListRaw.isNotEmpty) {
+      final matchedAny = targetListRaw.any((v) =>
+          v != null &&
+          v.toString().trim().isNotEmpty &&
+          compareVersions(currentVersion, v.toString().trim()) == 0);
+      if (!matchedAny) {
+        return false;
+      }
+    }
+
+    // 3. max_version check (e.g. <= "1.4.0")
+    final dynamic maxRaw = candidate['max_version'] ?? candidate['maxVersion'];
+    if (maxRaw != null && maxRaw.toString().trim().isNotEmpty) {
+      final maxStr = maxRaw.toString().trim();
+      if (compareVersions(currentVersion, maxStr) > 0) {
+        return false;
+      }
+    }
+
+    // 4. min_version check (e.g. >= "1.4.0")
+    final dynamic minRaw = candidate['min_version'] ?? candidate['minVersion'];
+    if (minRaw != null && minRaw.toString().trim().isNotEmpty) {
+      final minStr = minRaw.toString().trim();
+      if (compareVersions(currentVersion, minStr) < 0) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /// Checks if the target cities configuration targets all users worldwide.
