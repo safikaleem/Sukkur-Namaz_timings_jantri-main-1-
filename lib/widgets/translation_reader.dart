@@ -419,12 +419,19 @@ class _TranslationReaderState extends State<TranslationReader> {
           ),
           if (surahNum != 1 && surahNum != 9) ...[
             const SizedBox(height: 16),
-            Text(
+            const Text(
               quran.basmala,
               textDirection: TextDirection.rtl,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontFamily: 'Amiri',
+                fontFamilyFallback: [
+                  'Noto Naskh Arabic',
+                  'Geeza Pro',
+                  'Traditional Arabic',
+                  'Arial',
+                  'sans-serif',
+                ],
                 color: AppTheme.accentGreen,
               ),
             ),
@@ -593,14 +600,21 @@ class _TranslationReaderState extends State<TranslationReader> {
                             padding: const EdgeInsets.symmetric(vertical: 8.0),
                             child: Text(
                               item.arabicText,
-                              textAlign: TextAlign.justify,
+                              textAlign: TextAlign.right,
                               textDirection: TextDirection.rtl,
                               softWrap: true,
                               overflow: TextOverflow.visible,
                               style: TextStyle(
                                 fontSize: 24,
-                                height: 2.0,
-                                letterSpacing: 0,
+                                height: 2.2,
+                                fontFamily: 'Amiri',
+                                fontFamilyFallback: const [
+                                  'Noto Naskh Arabic',
+                                  'Geeza Pro',
+                                  'Traditional Arabic',
+                                  'Arial',
+                                  'sans-serif',
+                                ],
                                 color: widget.isDark ? Colors.white : Colors.black87,
                               ),
                             ),

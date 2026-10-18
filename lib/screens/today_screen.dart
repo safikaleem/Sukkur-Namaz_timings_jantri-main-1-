@@ -411,10 +411,12 @@ class _TodayScreenState extends State<TodayScreen> {
                 const Spacer(),
                 Text(
                   '${isElapsed ? "+" : "−"}$timeStr',
+                  textDirection: TextDirection.ltr,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     color: accent,
+                    fontFamily: 'sans-serif',
                   ),
                 ),
               ],
