@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -137,62 +138,62 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
         return {
           'prefix': 'نوٹ:',
           'body':
-              'مسجد کی جانب سے جماعت کے اوقات کی بروقت اطلاع موصول نہ ہونے کی صورت میں درج شدہ اوقات اور اصل اوقاتِ جماعت میں فرق ہو سکتا ہے۔ جماعت کے اوقات کی تبدیلی کی صورت میں اس کے اطلاق کی تاریخ درج کی جاتی ہے۔',
+              'مسجد کی جانب سے جماعت کے اوقات کی بروقت اطلاع موصول نہ ہونے کی صورت میں درج شدہ اوقات اور اصل اوقاتِ جماعت میں فرق ہو سکتا ہے۔ جماعت کے اوقات کی تبدیلی کی صورت میں اس کے اطلاق کی تاریخ درج کی جاتی ہے۔ (تازہ ترین باجماعت اوقات دیکھنے کے لیے انٹرنیٹ کنکشن کا فعال ہونا ضروری ہے۔)',
         };
       case 'sindhi':
         return {
           'prefix': 'نوٽ:',
           'body':
-              'مسجد طرفان جماعت جي وقتن جي بروقت اطلاع نه ملڻ جي صورت ۾ لکيل وقتن ۽ اصل جماعت جي وقتن ۾ فرق ٿي سگهي ٿو. جماعت جي وقتن جي تبديليءَ جي صورت ۾ ان جي لاڳو ٿيڻ جي تاريخ لکي ويندي آهي.',
+              'مسجد طرفان جماعت جي وقتن جي بروقت اطلاع نه ملڻ جي صورت ۾ لکيل وقتن ۽ اصل جماعت جي وقتن ۾ فرق ٿي سگهي ٿو. جماعت جي وقتن جي تبديليءَ جي صورت ۾ ان جي لاڳو ٿيڻ جي تاريخ لکي ويندي آهي. (تازو ترين باجماعت وقت ڏسڻ لاءِ انٽرنيٽ ڪنيڪشن جو فعال هجڻ ضروري آهي.)',
         };
       case 'arabic':
         return {
           'prefix': 'ملاحظة:',
           'body':
-              'في حال عدم استلام تحديثات في الوقت المناسب من المسجد بشأن أوقات صلاة الجماعة، قد تختلف الأوقات المنشورة عن أوقات الجماعة الفعلية. وكلما تغير جدول الجماعة، سيتم تحديد تاريخ سريان التغيير.',
+              'في حال عدم استلام تحديثات في الوقت المناسب من المسجد بشأن أوقات صلاة الجماعة، قد تختلف الأوقات المنشورة عن أوقات الجماعة الفعلية. وكلما تغير جدول الجماعة، سيتم تحديد تاريخ سريان التغيير. (يرجى التأكد من اتصالك بالإنترنت لعرض أحدث مواقيت صلاة الجماعة المحدثة.)',
         };
       case 'indonesian':
         return {
           'prefix': 'Catatan:',
           'body':
-              'Jika pembaruan tepat waktu mengenai waktu salat berjamaah tidak diterima dari Masjid, waktu yang dipublikasikan mungkin berbeda dari waktu salat berjamaah sebenarnya. Setiap kali jadwal salat berjamaah diubah, tanggal berlakunya perubahan akan dicantumkan.',
+              'Jika pembaruan tepat waktu mengenai waktu salat berjamaah tidak diterima dari Masjid, waktu yang dipublikasikan mungkin berbeda dari waktu salat berjamaah sebenarnya. Setiap kali jadwal salat berjamaah diubah, tanggal berlakunya perubahan akan dicantumkan. (Pastikan koneksi internet Anda aktif untuk melihat waktu salat berjamaah terbaru.)',
         };
       case 'french':
         return {
           'prefix': 'Remarque :',
           'body':
-              'Si des mises à jour opportunes concernant les horaires de prière en Jama\'at ne sont pas reçues de la mosquée, les horaires publiés peuvent différer des horaires réels de la Jama\'at. Chaque fois que l\'horaire de la Jama\'at est modifié, la date d\'effet du changement sera indiquée.',
+              'Si des mises à jour opportunes concernant les horaires de prière en Jama\'at ne sont pas reçues de la mosquée, les horaires publiés peuvent différer des horaires réels de la Jama\'at. Chaque fois que l\'horaire de la Jama\'at est modifié, la date d\'effet du changement sera indiquée. (Veuillez vous assurer que votre connexion Internet est active pour voir les derniers horaires de Jama\'at mis à jour.)',
         };
       case 'hindi':
         return {
           'prefix': 'नोट:',
           'body':
-              'यदि मस्जिद से जमात की नमाज़ के समय के बारे में समय पर अपडेट प्राप्त नहीं होते हैं, तो प्रकाशित समय वास्तविक जमात के समय से भिन्न हो सकता है। जब भी जमात के समय में बदलाव होगा, बदलाव के प्रभावी होने की तारीख दर्शाई जाएगी।',
+              'यदि मस्जिद से जमात की नमाज़ के समय के बारे में समय पर अपडेट प्राप्त नहीं होते हैं, तो प्रकाशित समय वास्तविक जमात के समय से भिन्न हो सकता है। जब भी जमात के समय में बदलाव होगा, बदलाव के प्रभावी होने की तारीख दर्शाई जाएगी। (नवीनतम अपडेट किए गए जमात समय देखने के लिए कृपया सुनिश्चित करें कि आपका इंटरनेट कनेक्शन सक्रिय है।)',
         };
       case 'persian':
         return {
           'prefix': 'یادداشت:',
           'body':
-              'در صورتی که به‌روزرسانی‌های به‌موقع در مورد اوقات نماز جماعت از سوی مسجد دریافت نشود، ممکن است اوقات اعلام‌شده با اوقات واقعی جماعت متفاوت باشد. هر زمان که برنامه جماعت تغییر کند، تاریخ اعمال تغییر مشخص خواهد شد.',
+              'در صورتی که به‌روزرسانی‌های به‌موقع در مورد اوقات نماز جماعت از سوی مسجد دریافت نشود، ممکن است اوقات اعلام‌شده با اوقات واقعی جماعت متفاوت باشد. هر زمان که برنامه جماعت تغییر کند، تاریخ اعمال تغییر مشخص خواهد شد. (لطفاً برای مشاهده آخرین اوقات به‌روزشده جماعت، از فعال بودن اتصال اینترنت خود اطمینان حاصل کنید.)',
         };
       case 'turkish':
         return {
           'prefix': 'Not:',
           'body':
-              'Mescitten cemaatle namaz vakitlerine ilişkin zamanında güncelleme alınmaması durumunda, yayınlanan vakitler gerçek cemaat vakitlerinden farklı olabilir. Cemaat programı her değiştiğinde, değişikliğin geçerlilik tarihi belirtilecektir.',
+              'Mescitten cemaatle namaz vakitlerine ilişkin zamanında güncelleme alınmaması durumunda, yayınlanan vakitler gerçek cemaat vakitlerinden farklı olabilir. Cemaat programı her değiştiğinde, değişikliğin geçerlilik tarihi belirtilecektir. (En güncel cemaat vakitlerini görebilmek için lütfen internet bağlantınızın aktif olduğundan emin olun.)',
         };
       case 'bengali':
         return {
           'prefix': 'নোট:',
           'body':
-              'মসজিদ থেকে জামাতের নামাজের সময় সম্পর্কিত সময়োপযোগী আপডেট না পাওয়া গেলে, প্রকাশিত সময়সূচী প্রকৃত জামাতের সময় থেকে ভিন্ন হতে পারে। যখনই জামাতের সময়সূচী পরিবর্তিত হবে, পরিবর্তনের কার্যকরের তারিখ নির্দেশ করা হবে।',
+              'মসজিদ থেকে জামাতের নামাজের সময় সম্পর্কিত সময়োপযোগী আপডেট না পাওয়া গেলে, প্রকাশিত সময়সূচী প্রকৃত জামাতের সময় থেকে ভিন্ন হতে পারে। যখনই জামাতের সময়সূচী পরিবর্তিত হবে, পরিবর্তনের কার্যকরের তারিখ নির্দেশ করা হবে। (সর্বশেষ আপডেট করা জামাতের সময় দেখতে আপনার ইন্টারনেট সংযোগ চালু আছে তা নিশ্চিত করুন।)',
         };
       case 'english':
       default:
         return {
           'prefix': 'Note:',
           'body':
-              'If timely updates regarding Jama\'at prayer times are not received from the Masjid, the published timings may differ from the actual Jama\'at times. Whenever the Jama\'at schedule is changed, the effective date of the change will be indicated.',
+              'If timely updates regarding Jama\'at prayer times are not received from the Masjid, the published timings may differ from the actual Jama\'at times. Whenever the Jama\'at schedule is changed, the effective date of the change will be indicated. (Please ensure your internet connection is active to view the latest updated Jama\'at times.)',
         };
     }
   }
@@ -294,6 +295,56 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
         return 'Mosquées';
       default:
         return 'Masajid';
+    }
+  }
+
+  String _getNotSetLabel(SettingsProvider settings) {
+    switch (settings.language) {
+      case 'urdu':
+        return 'طے نہیں';
+      case 'sindhi':
+        return 'مقرر ناهي';
+      case 'arabic':
+        return 'غير محدد';
+      case 'hindi':
+        return 'सेट नहीं है';
+      case 'indonesian':
+        return 'Belum Diatur';
+      case 'turkish':
+        return 'Ayarlanmadı';
+      case 'bengali':
+        return 'সেট করা নেই';
+      case 'persian':
+        return 'تنظیم نشده';
+      case 'french':
+        return 'Non défini';
+      default:
+        return 'Not Set';
+    }
+  }
+
+  String _getTurnOffPrayerTooltip(SettingsProvider settings) {
+    switch (settings.language) {
+      case 'urdu':
+        return 'جماعت کا وقت بند کریں / ختم کریں';
+      case 'sindhi':
+        return 'جماعت جو وقت بند ڪريو / ختم ڪريو';
+      case 'arabic':
+        return 'إيقاف وقت الجماعة / إزالة';
+      case 'hindi':
+        return 'जमात का समय बंद करें / हटाएं';
+      case 'indonesian':
+        return 'Matikan waktu Jamaah / Hapus';
+      case 'turkish':
+        return 'Cemaat vaktini kapat / Kaldır';
+      case 'bengali':
+        return 'জামায়াতের সময় বন্ধ করুন / মুছুন';
+      case 'persian':
+        return 'خاموش کردن وقت جماعت / حذف';
+      case 'french':
+        return 'Désactiver l\'heure de prière / Supprimer';
+      default:
+        return 'Turn Off / Clear Jama\'at Time';
     }
   }
 
@@ -1014,20 +1065,898 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                 ),
               ),
 
-                                const SizedBox(height: 16),
+              const SizedBox(height: 14),
+
+              // ── Masjid Committee Login / Edit Timings Button ─────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showMasjidAdminLoginDialog(
+                      context,
+                      masjid,
+                      settings,
+                      onUpdated: () {
+                        setModalState(() {});
+                        if (mounted) setState(() {});
+                      },
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1B382B).withValues(alpha: 0.6)
+                            : const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF81C784).withValues(alpha: 0.5)
+                              : const Color(0xFF2E7D32).withValues(alpha: 0.35),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1B4332).withValues(alpha: isDark ? 0.5 : 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.admin_panel_settings_rounded,
+                              size: 20,
+                              color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _t(settings, 'Masjid Committee Login'),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: AppTheme.getFontForLanguage(context, lang),
+                                    color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _t(settings, 'Authorized mosque representative login'),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontFamily: AppTheme.getFontForLanguage(context, lang),
+                                    color: isDark ? Colors.white60 : Colors.black54,
+                                  ),
+                                ),
                               ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.lock_open_rounded,
+                            size: 18,
+                            color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    ],
+  ),
+),
+),
+);
+},
+);
+},
+);
+}
+
+  TimeOfDay _parseTimeOfDay(String timeStr, {TimeOfDay fallback = const TimeOfDay(hour: 12, minute: 0)}) {
+    try {
+      final clean = timeStr.trim().toUpperCase();
+      if (clean == 'SUNSET' || clean.isEmpty) return fallback;
+      final parts = clean.split(' ');
+      final timeParts = parts[0].split(':');
+      int h = int.parse(timeParts[0]);
+      int m = int.parse(timeParts[1]);
+      if (parts.length > 1) {
+        if (parts[1] == 'PM' && h < 12) h += 12;
+        if (parts[1] == 'AM' && h == 12) h = 0;
+      }
+      return TimeOfDay(hour: h, minute: m);
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  String _formatTimeOfDay(TimeOfDay tod) {
+    final hour = tod.hourOfPeriod == 0 ? 12 : tod.hourOfPeriod;
+    final minute = tod.minute.toString().padLeft(2, '0');
+    final period = tod.period == DayPeriod.am ? 'AM' : 'PM';
+    return '${hour.toString().padLeft(2, '0')}:$minute $period';
+  }
+
+  void _showMasjidAdminLoginDialog(
+    BuildContext context,
+    JamaatMasjidInfo masjid,
+    SettingsProvider settings, {
+    required VoidCallback onUpdated,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = settings.language;
+    final pinController = TextEditingController();
+    final focusNode = FocusNode();
+    String? errorText;
+    bool obscurePin = true;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (dCtx, setDialogState) {
+            void submitPin() {
+              final pin = pinController.text.trim();
+              if (JamaatTimesService.instance.verifyMasjidPin(masjid.id, pin)) {
+                Navigator.of(dialogCtx).pop();
+                _showEditJamaatTimesSheet(
+                  context,
+                  masjid,
+                  settings,
+                  onUpdated: onUpdated,
+                );
+              } else {
+                setDialogState(() {
+                  errorText = _t(settings, 'Invalid PIN. Contact admin if forgotten.');
+                });
+              }
+            }
+
+            return AlertDialog(
+              backgroundColor: isDark ? const Color(0xFF222C2E) : Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1B4332).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.security_rounded,
+                      color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _t(settings, 'Enter Masjid PIN'),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppTheme.getFontForLanguage(context, lang),
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _getEnterPinSubtitle(settings),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _getMasjidName(settings, masjid),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+                      color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  InkWell(
+                    onTap: () => focusNode.requestFocus(),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1A2224) : const Color(0xFFF4F6F6),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: errorText != null
+                                  ? Colors.redAccent
+                                  : (focusNode.hasFocus
+                                      ? (isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332))
+                                      : (isDark ? Colors.white24 : Colors.black12)),
+                              width: (errorText != null || focusNode.hasFocus) ? 1.5 : 1.0,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.key_rounded,
+                                size: 20,
+                                color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Directionality(
+                                  textDirection: TextDirection.ltr,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    children: List.generate(8, (index) {
+                                      final text = pinController.text;
+                                      final isFilled = index < text.length;
+                                      if (isFilled) {
+                                        return SizedBox(
+                                          width: 16,
+                                          child: Center(
+                                            child: Text(
+                                              obscurePin ? '●' : text[index],
+                                              style: TextStyle(
+                                                fontSize: obscurePin ? 13 : 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      return SizedBox(
+                                        width: 16,
+                                        child: Center(
+                                          child: Text(
+                                            '—',
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.bold,
+                                              color: isDark ? Colors.white30 : Colors.black26,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 36),
+                            ],
+                          ),
+                        ),
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          right: 44,
+                          child: Opacity(
+                            opacity: 0.0,
+                            child: TextField(
+                              controller: pinController,
+                              focusNode: focusNode,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(8),
+                              ],
+                              autofocus: true,
+                              cursorColor: Colors.transparent,
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                counterText: '',
+                              ),
+                              onChanged: (_) {
+                                if (errorText != null) {
+                                  setDialogState(() => errorText = null);
+                                } else {
+                                  setDialogState(() {});
+                                }
+                              },
+                              onSubmitted: (_) => submitPin(),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          right: 4,
+                          child: IconButton(
+                            splashRadius: 18,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                            icon: Icon(
+                              obscurePin ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                              size: 20,
+                              color: isDark ? Colors.white60 : Colors.black54,
+                            ),
+                            onPressed: () {
+                              setDialogState(() {
+                                obscurePin = !obscurePin;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (errorText != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      errorText!,
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogCtx).pop(),
+                  child: Text(
+                    _t(settings, 'Cancel'),
+                    style: TextStyle(
+                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+                      color: isDark ? Colors.white60 : Colors.black54,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1B4332),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: submitPin,
+                  child: Text(
+                    _t(settings, 'Login & Edit Times'),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showEditJamaatTimesSheet(
+    BuildContext context,
+    JamaatMasjidInfo masjid,
+    SettingsProvider settings, {
+    required VoidCallback onUpdated,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = settings.language;
+    final currentTiming = JamaatTimesService.instance.getTimingFor(masjid);
+
+    String fajr = currentTiming.fajr;
+    String zuhar = currentTiming.zuhar;
+    String asar = currentTiming.asar;
+    String isha = currentTiming.isha;
+    String jummah = currentTiming.jummah;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (sCtx, setSheetState) {
+            Future<void> pickTimeFor(String currentVal, Function(String) onPicked, {TimeOfDay? fallback}) async {
+              final initial = _parseTimeOfDay(currentVal, fallback: fallback ?? const TimeOfDay(hour: 12, minute: 0));
+              final picked = await showTimePicker(
+                context: sCtx,
+                initialTime: initial,
+                helpText: _getTimePickerHelpText(lang),
+                confirmText: _getTimePickerConfirmText(lang),
+                cancelText: _getTimePickerCancelText(lang),
+                hourLabelText: _getTimePickerHourLabel(lang),
+                minuteLabelText: _getTimePickerMinuteLabel(lang),
+                builder: (pickerCtx, child) {
+                  return Theme(
+                    data: Theme.of(pickerCtx).copyWith(
+                      colorScheme: ColorScheme.light(
+                        primary: const Color(0xFF1B4332),
+                        onPrimary: Colors.white,
+                        onSurface: isDark ? Colors.white : Colors.black87,
+                        surface: isDark ? const Color(0xFF222C2E) : Colors.white,
+                      ),
+                      textTheme: Theme.of(pickerCtx).textTheme.apply(
+                        fontFamily: AppTheme.getFontForLanguage(context, lang),
+                      ),
+                    ),
+                    child: Directionality(
+                      textDirection: settings.isRtl ? TextDirection.rtl : TextDirection.ltr,
+                      child: child!,
+                    ),
+                  );
+                },
+              );
+              if (picked != null) {
+                final formatted = _formatTimeOfDay(picked);
+                setSheetState(() {
+                  onPicked(formatted);
+                });
+              }
+            }
+
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sCtx).viewInsets.bottom + 20,
+                top: 16,
+                left: 18,
+                right: 18,
+              ),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1D2628) : Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white24 : Colors.black26,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1B4332).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.edit_calendar_rounded,
+                            color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _t(settings, 'Update Jama\'at Times'),
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: AppTheme.getFontForLanguage(context, lang),
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                              Text(
+                                _getMasjidName(settings, masjid),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontFamily: AppTheme.getFontForLanguage(context, lang),
+                                  color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(sCtx).pop(),
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: isDark ? Colors.white60 : Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Fajr
+                    _buildEditPrayerRow(
+                      context: context,
+                      settings: settings,
+                      isDark: isDark,
+                      prayerNameKey: 'Fajr',
+                      timeValue: fajr,
+                      icon: Icons.wb_twilight_rounded,
+                      onTap: () => pickTimeFor(fajr, (v) => fajr = v, fallback: const TimeOfDay(hour: 5, minute: 15)),
+                      onClear: () => setSheetState(() => fajr = ''),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Zuhar
+                    _buildEditPrayerRow(
+                      context: context,
+                      settings: settings,
+                      isDark: isDark,
+                      prayerNameKey: 'Zuhar',
+                      timeValue: zuhar,
+                      icon: Icons.wb_sunny_rounded,
+                      onTap: () => pickTimeFor(zuhar, (v) => zuhar = v, fallback: const TimeOfDay(hour: 13, minute: 15)),
+                      onClear: () => setSheetState(() => zuhar = ''),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Asar
+                    _buildEditPrayerRow(
+                      context: context,
+                      settings: settings,
+                      isDark: isDark,
+                      prayerNameKey: 'Asar',
+                      timeValue: asar,
+                      icon: Icons.brightness_5_rounded,
+                      onTap: () => pickTimeFor(asar, (v) => asar = v, fallback: const TimeOfDay(hour: 16, minute: 45)),
+                      onClear: () => setSheetState(() => asar = ''),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Maghrib (Locked - strictly follows Sukkur Jantri Sunset)
+                    _buildEditPrayerRow(
+                      context: context,
+                      settings: settings,
+                      isDark: isDark,
+                      prayerNameKey: 'Maghrib',
+                      timeValue: currentTiming.maghrib,
+                      icon: Icons.nights_stay_rounded,
+                      isLocked: true,
+                      subtitle: _t(settings, 'Fixed at Sunset (Sukkur Jantri)'),
+                      onTap: () {},
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Isha
+                    _buildEditPrayerRow(
+                      context: context,
+                      settings: settings,
+                      isDark: isDark,
+                      prayerNameKey: 'Isha',
+                      timeValue: isha,
+                      icon: Icons.bedtime_rounded,
+                      onTap: () => pickTimeFor(isha, (v) => isha = v, fallback: const TimeOfDay(hour: 20, minute: 0)),
+                      onClear: () => setSheetState(() => isha = ''),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Jummah
+                    _buildEditPrayerRow(
+                      context: context,
+                      settings: settings,
+                      isDark: isDark,
+                      prayerNameKey: 'Jummah',
+                      timeValue: jummah,
+                      icon: Icons.star_rounded,
+                      onTap: () => pickTimeFor(jummah, (v) => jummah = v, fallback: const TimeOfDay(hour: 13, minute: 15)),
+                      onClear: () => setSheetState(() => jummah = ''),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Action buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              side: BorderSide(
+                                color: isDark ? Colors.white24 : Colors.black12,
+                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () => Navigator.of(sCtx).pop(),
+                            child: Text(
+                              _t(settings, 'Cancel'),
+                              style: TextStyle(
+                                fontFamily: AppTheme.getFontForLanguage(context, lang),
+                                color: isDark ? Colors.white70 : Colors.black87,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              backgroundColor: const Color(0xFF1B4332),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.check_circle_outline_rounded, size: 20),
+                            label: Text(
+                              _t(settings, 'Save & Update'),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                fontFamily: AppTheme.getFontForLanguage(context, lang),
+                              ),
+                            ),
+                            onPressed: () {
+                              const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                              final now = DateTime.now();
+                              final todayStr = '${now.day.toString().padLeft(2, '0')} ${months[now.month - 1]} ${now.year}';
+                              final updatedTiming = JamaatTiming(
+                                fajr: fajr,
+                                fajrUpdated: fajr != currentTiming.fajr ? todayStr : currentTiming.fajrUpdated,
+                                fajrNoteUr: currentTiming.fajrNoteUr,
+                                fajrNoteEn: currentTiming.fajrNoteEn,
+                                zuhar: zuhar,
+                                zuharUpdated: zuhar != currentTiming.zuhar ? todayStr : currentTiming.zuharUpdated,
+                                zuharNoteUr: currentTiming.zuharNoteUr,
+                                zuharNoteEn: currentTiming.zuharNoteEn,
+                                asar: asar,
+                                asarUpdated: asar != currentTiming.asar ? todayStr : currentTiming.asarUpdated,
+                                asarNoteUr: currentTiming.asarNoteUr,
+                                asarNoteEn: currentTiming.asarNoteEn,
+                                maghrib: 'Sunset',
+                                maghribNoteUr: currentTiming.maghribNoteUr,
+                                maghribNoteEn: currentTiming.maghribNoteEn,
+                                isha: isha,
+                                ishaUpdated: isha != currentTiming.isha ? todayStr : currentTiming.ishaUpdated,
+                                ishaNoteUr: currentTiming.ishaNoteUr,
+                                ishaNoteEn: currentTiming.ishaNoteEn,
+                                jummah: jummah,
+                                jummahUpdated: jummah != currentTiming.jummah ? todayStr : currentTiming.jummahUpdated,
+                                jummahNoteUr: currentTiming.jummahNoteUr,
+                                jummahNoteEn: currentTiming.jummahNoteEn,
+                              );
+
+                              // 1. Immediately update cache & background persist
+                              JamaatTimesService.instance.updateTimingForMasjid(
+                                masjidId: masjid.id,
+                                newTiming: updatedTiming,
+                              );
+
+                              // 2. Immediately close sheet
+                              Navigator.of(sCtx).pop();
+
+                              // 3. Immediately refresh parent list & details
+                              onUpdated();
+
+                              // 4. Immediately show confirmation snackbar
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: const Color(0xFF1B4332),
+                                    behavior: SnackBarBehavior.floating,
+                                    content: Row(
+                                      children: [
+                                        const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            _t(settings, 'Jama\'at times updated successfully!'),
+                                            style: TextStyle(
+                                              fontFamily: AppTheme.getFontForLanguage(context, lang),
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildEditPrayerRow({
+    required BuildContext context,
+    required SettingsProvider settings,
+    required bool isDark,
+    required String prayerNameKey,
+    required String timeValue,
+    required IconData icon,
+    required VoidCallback onTap,
+    VoidCallback? onClear,
+    bool isLocked = false,
+    String? subtitle,
+  }) {
+    final lang = settings.language;
+    final bool hasValidTime = timeValue.trim().isNotEmpty &&
+        timeValue.trim() != '-' &&
+        timeValue.trim().toLowerCase() != 'off' &&
+        timeValue.trim() != '--:--';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isLocked
+            ? () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    duration: const Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: const Color(0xFF1B4332),
+                    content: Row(
+                      children: [
+                        const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _t(settings, 'Maghrib time is fixed according to Sukkur Jantri sunset time and cannot be changed.'),
+                            style: TextStyle(
+                              fontFamily: AppTheme.getFontForLanguage(context, lang),
+                              color: Colors.white,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
+                );
+              }
+            : onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF222C2E) : const Color(0xFFF7F9FA),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: const Color(0xFF2D6A4F)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _getPrayerDisplayName(settings, prayerNameKey),
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: AppTheme.getFontForLanguage(context, lang),
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: AppTheme.getFontForLanguage(context, lang),
+                          color: isDark ? const Color(0xFF81C784) : const Color(0xFF2D6A4F),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              );
-            },
-          );
-        },
-      );
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isLocked
+                      ? (isDark ? Colors.white12 : Colors.grey.withValues(alpha: 0.15))
+                      : const Color(0xFF1B4332).withValues(alpha: isDark ? 0.3 : 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isLocked
+                        ? (isDark ? Colors.white24 : Colors.grey.withValues(alpha: 0.3))
+                        : const Color(0xFF1B4332).withValues(alpha: isDark ? 0.4 : 0.2),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Directionality(
+                      textDirection: hasValidTime ? TextDirection.ltr : (settings.isRtl ? TextDirection.rtl : TextDirection.ltr),
+                      child: Text(
+                        hasValidTime ? '\u200E${timeValue.trim()}\u200E' : _getNotSetLabel(settings),
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: hasValidTime ? null : AppTheme.getFontForLanguage(context, lang),
+                          color: isLocked
+                              ? (isDark ? Colors.white70 : Colors.black87)
+                              : (hasValidTime
+                                  ? (isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332))
+                                  : (isDark ? Colors.white38 : Colors.black45)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      isLocked ? Icons.lock_outline_rounded : Icons.edit_rounded,
+                      size: 15,
+                      color: isLocked
+                          ? (isDark ? Colors.white60 : Colors.black54)
+                          : (isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332)),
+                    ),
+                  ],
+                ),
+              ),
+              if (!isLocked && onClear != null && hasValidTime) ...[
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: _getTurnOffPrayerTooltip(settings),
+                  child: InkWell(
+                    onTap: onClear,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.red.withValues(alpha: 0.25) : const Color(0xFFFFEBEE),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark ? Colors.red.withValues(alpha: 0.45) : const Color(0xFFEF9A9A),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: isDark ? Colors.redAccent[100] : const Color(0xFFC62828),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _reportTimingUpdate(
@@ -1124,7 +2053,16 @@ JazakAllah Khair
       return _getPrayerDisplayName(settings, nameKey);
     }
 
+    final cleanTime = time.trim();
+    final bool isTimeSet = cleanTime.isNotEmpty &&
+        cleanTime != '-' &&
+        cleanTime.toLowerCase() != 'off' &&
+        cleanTime.toLowerCase() != 'null' &&
+        cleanTime != '--:--';
+
     final bool hasCustomNote = customNote != null && customNote.isNotEmpty;
+    final String displayTime = isTimeSet ? cleanTime : '--:--';
+    final bool showLastUpdated = isTimeSet && !hasCustomNote && (subNoteKey != null || lastUpdated.trim().isNotEmpty);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
@@ -1138,7 +2076,7 @@ JazakAllah Khair
               Icon(
                 icon,
                 size: 20,
-                color: const Color(0xFF2D6A4F),
+                color: isTimeSet ? const Color(0xFF2D6A4F) : (isDark ? Colors.white38 : Colors.grey),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1162,25 +2100,31 @@ JazakAllah Khair
                     alignment: Alignment.center,
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1B4332).withValues(alpha: isDark ? 0.25 : 0.08),
+                      color: isTimeSet
+                          ? const Color(0xFF1B4332).withValues(alpha: isDark ? 0.25 : 0.08)
+                          : (isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: const Color(0xFF1B4332).withValues(alpha: 0.2),
+                        color: isTimeSet
+                            ? const Color(0xFF1B4332).withValues(alpha: 0.2)
+                            : (isDark ? Colors.white10 : Colors.black12),
                       ),
                     ),
                     child: Directionality(
                       textDirection: TextDirection.ltr,
                       child: Text(
-                        time,
+                        displayTime,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                          color: isTimeSet
+                              ? (isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332))
+                              : (isDark ? Colors.white38 : Colors.black38),
                         ),
                       ),
                     ),
                   ),
-                  if (!hasCustomNote) ...[
+                  if (showLastUpdated) ...[
                     const SizedBox(height: 3),
                     Text(
                       subNoteKey != null
@@ -1718,7 +2662,11 @@ JazakAllah Khair
           default:
             timeVal = '';
         }
-        timeMap.putIfAbsent(timeVal, () => []).add(masjid);
+        final clean = timeVal.trim();
+        final finalVal = (clean.isEmpty || clean == '-' || clean.toLowerCase() == 'off' || clean == '--:--')
+            ? '--:--'
+            : clean;
+        timeMap.putIfAbsent(finalVal, () => []).add(masjid);
       }
 
       // Sort time slots chronologically
@@ -2078,6 +3026,168 @@ JazakAllah Khair
         ),
       ),
     );
+  }
+
+  static String _getTimePickerHelpText(String language) {
+    switch (language.toLowerCase()) {
+      case 'urdu':
+        return 'وقت منتخب کریں';
+      case 'sindhi':
+        return 'وقت چونڊيو';
+      case 'arabic':
+        return 'اختر الوقت';
+      case 'persian':
+      case 'farsi':
+        return 'انتخاب زمان';
+      case 'hindi':
+        return 'समय चुनें';
+      case 'bengali':
+        return 'সময় নির্বাচন করুন';
+      case 'turkish':
+        return 'Zaman seçin';
+      case 'french':
+        return 'Sélectionner l\'heure';
+      case 'indonesian':
+        return 'Pilih Waktu';
+      case 'english':
+      default:
+        return 'Select Time';
+    }
+  }
+
+  static String _getTimePickerConfirmText(String language) {
+    switch (language.toLowerCase()) {
+      case 'urdu':
+        return 'ٹھیک ہے';
+      case 'sindhi':
+        return 'ٺيڪ';
+      case 'arabic':
+        return 'موافق';
+      case 'persian':
+      case 'farsi':
+        return 'تأیید';
+      case 'hindi':
+        return 'ठीक है';
+      case 'bengali':
+        return 'ठीक আছে';
+      case 'turkish':
+        return 'Tamam';
+      case 'french':
+        return 'OK';
+      case 'indonesian':
+        return 'OKE';
+      case 'english':
+      default:
+        return 'OK';
+    }
+  }
+
+  static String _getTimePickerCancelText(String language) {
+    switch (language.toLowerCase()) {
+      case 'urdu':
+        return 'منسوخ';
+      case 'sindhi':
+        return 'منسوخ';
+      case 'arabic':
+        return 'إلغاء';
+      case 'persian':
+      case 'farsi':
+        return 'لغو';
+      case 'hindi':
+        return 'رद्द करें';
+      case 'bengali':
+        return 'বাতিল';
+      case 'turkish':
+        return 'İptal';
+      case 'french':
+        return 'Annuler';
+      case 'indonesian':
+        return 'Batal';
+      case 'english':
+      default:
+        return 'Cancel';
+    }
+  }
+
+  static String _getTimePickerHourLabel(String language) {
+    switch (language.toLowerCase()) {
+      case 'urdu':
+        return 'گھنٹہ';
+      case 'sindhi':
+        return 'ڪلاڪ';
+      case 'arabic':
+        return 'ساعة';
+      case 'persian':
+      case 'farsi':
+        return 'ساعت';
+      case 'hindi':
+        return 'घंटा';
+      case 'bengali':
+        return 'ঘণ্টা';
+      case 'turkish':
+        return 'Saat';
+      case 'french':
+        return 'Heure';
+      case 'indonesian':
+        return 'Jam';
+      case 'english':
+      default:
+        return 'Hour';
+    }
+  }
+
+  static String _getTimePickerMinuteLabel(String language) {
+    switch (language.toLowerCase()) {
+      case 'urdu':
+        return 'منٹ';
+      case 'sindhi':
+        return 'منٽ';
+      case 'arabic':
+        return 'دقيقة';
+      case 'persian':
+      case 'farsi':
+        return 'دقیقه';
+      case 'hindi':
+        return 'मिनट';
+      case 'bengali':
+        return 'মিনিট';
+      case 'turkish':
+        return 'Dakika';
+      case 'french':
+        return 'Minute';
+      case 'indonesian':
+        return 'Menit';
+      case 'english':
+      default:
+        return 'Minute';
+    }
+  }
+
+  static String _getEnterPinSubtitle(SettingsProvider settings) {
+    switch (settings.language.toLowerCase()) {
+      case 'urdu':
+        return 'اس مسجد کا 8 ہندسوں کا پن درج کریں';
+      case 'sindhi':
+        return 'هن مسجد جو 8 انگن وارو پن داخل ڪريو';
+      case 'arabic':
+        return 'أدخل رمز المسجد المكون من 8 أرقام';
+      case 'persian':
+      case 'farsi':
+        return 'پین کد ۸ رقمی این مسجد را وارد کنید';
+      case 'hindi':
+        return 'इस मस्जिद का 8 अंकों का पिन दर्ज करें';
+      case 'bengali':
+        return 'এই মসজিদের ৮ অঙ্কের পিন দিন';
+      case 'turkish':
+        return 'Bu cami için 8 haneli PIN\'i girin';
+      case 'french':
+        return 'Entrez le code PIN à 8 chiffres de cette mosquée';
+      case 'indonesian':
+        return 'Masukkan 8 digit PIN untuk masjid ini';
+      case 'english':
+      default:
+        return 'Enter 8-digit PIN for this mosque';
+    }
   }
 }
 

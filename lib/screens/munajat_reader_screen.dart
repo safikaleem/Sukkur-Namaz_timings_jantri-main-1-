@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:provider/provider.dart';
@@ -46,15 +47,40 @@ class _MunajatReaderScreenState extends State<MunajatReaderScreen> {
   Future<void> _initPdf() async {
     try {
       Future<PdfDocument> docFuture;
-      final bytes = await MunajatDownloadService.instance.getPdfBytes();
-      if (bytes == null || bytes.isEmpty) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = 'Munajat PDF file not available.';
-        });
-        return;
+      if (!kIsWeb) {
+        final localFile = await MunajatDownloadService.instance.getExistingLocalFile();
+        if (localFile != null && await localFile.exists()) {
+          docFuture = PdfDocument.openFile(localFile.path);
+        } else {
+          try {
+            docFuture = PdfDocument.openAsset('assets/quran_pdfs/MUNAJAT_E_MAQBOOL.pdf');
+          } catch (_) {
+            final bytes = await MunajatDownloadService.instance.getPdfBytes();
+            if (bytes == null || bytes.isEmpty) {
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                  _errorMessage = 'Munajat PDF file not available.';
+                });
+              }
+              return;
+            }
+            docFuture = PdfDocument.openData(bytes);
+          }
+        }
+      } else {
+        final bytes = await MunajatDownloadService.instance.getPdfBytes();
+        if (bytes == null || bytes.isEmpty) {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _errorMessage = 'Munajat PDF file not available.';
+            });
+          }
+          return;
+        }
+        docFuture = PdfDocument.openData(bytes);
       }
-      docFuture = PdfDocument.openData(bytes);
 
       final initialPdfPage = _writtenToPdfPage(widget.initialPage);
       _pdfController = PdfController(
@@ -62,20 +88,23 @@ class _MunajatReaderScreenState extends State<MunajatReaderScreen> {
         initialPage: initialPdfPage,
       );
 
-      setState(() {
-        _isLoading = false;
-        _currentPage = widget.initialPage;
-      });
+      // Brief micro-delay to let the frame pump before heavy render starts
+      await Future<void>.delayed(const Duration(milliseconds: 32));
 
-      // Update position on open
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _currentPage = widget.initialPage;
+        });
         context.read<SettingsProvider>().updateMunajatReadingPosition(widget.initialPage);
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Error loading PDF: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Error loading PDF: $e';
+        });
+      }
     }
   }
 
@@ -200,15 +229,19 @@ class _MunajatReaderScreenState extends State<MunajatReaderScreen> {
                           physics: const BouncingScrollPhysics(),
                           onPageChanged: (page) {
                             final writtenPage = _pdfToWrittenPage(page);
-                            setState(() {
-                              _currentPage = writtenPage;
-                            });
-                            context.read<SettingsProvider>().updateMunajatReadingPosition(writtenPage);
+                            if (mounted) {
+                              setState(() {
+                                _currentPage = writtenPage;
+                              });
+                              context.read<SettingsProvider>().updateMunajatReadingPosition(writtenPage);
+                            }
                           },
                           onDocumentLoaded: (doc) {
-                            setState(() {
-                              _totalPages = doc.pagesCount;
-                            });
+                            if (mounted) {
+                              setState(() {
+                                _totalPages = doc.pagesCount;
+                              });
+                            }
                           },
                         ),
                       ),

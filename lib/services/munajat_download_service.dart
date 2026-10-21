@@ -28,49 +28,58 @@ class MunajatDownloadService {
       return true;
     }
 
-    // Try loading bundled asset first (0-second load on Chrome Web and Native)
+    if (!kIsWeb) {
+      final local = await getExistingLocalFile();
+      if (local != null) return true;
+    }
+
+    // Try loading bundled asset (Web and fallback)
     try {
       final assetData = await rootBundle.load('assets/quran_pdfs/MUNAJAT_E_MAQBOOL.pdf');
       if (assetData.lengthInBytes > 0) {
-        _cachedBytes = assetData.buffer.asUint8List(assetData.offsetInBytes, assetData.lengthInBytes);
+        if (kIsWeb) {
+          _cachedBytes = assetData.buffer.asUint8List(assetData.offsetInBytes, assetData.lengthInBytes);
+        }
         return true;
       }
     } catch (e) {
       debugPrint('Bundled asset load attempt: $e');
     }
 
-    if (!kIsWeb) {
-      // Check debug Downloads directory on Windows
-      final possiblePaths = [
-        'C:\\Users\\Lenovo\\Downloads\\MUNAJAT_E_MAQBOOL.pdf',
-        'C:\\Users\\Lenovo\\Downloads\\MUNAJAT_E_MAQBOOL (1).pdf',
-      ];
-      for (final p in possiblePaths) {
-        try {
-          final localFile = io.File(p);
-          if (await localFile.exists() && (await localFile.length()) > 0) {
-            _cachedBytes = await localFile.readAsBytes();
-            return true;
-          }
-        } catch (_) {}
-      }
-
-      // Check app support storage directory
-      try {
-        final file = await _getLocalFile();
-        if (await file.exists() && (await file.length()) > 0) {
-          _cachedBytes = await file.readAsBytes();
-          return true;
-        }
-      } catch (e) {
-        debugPrint('Error checking local file: $e');
-      }
-    }
     return false;
   }
 
+  /// Finds existing local File if downloaded (Native only)
+  Future<io.File?> getExistingLocalFile() async {
+    if (kIsWeb) return null;
+
+    // Check debug Downloads directory on Windows
+    final possiblePaths = [
+      'C:\\Users\\Lenovo\\Downloads\\MUNAJAT_E_MAQBOOL.pdf',
+      'C:\\Users\\Lenovo\\Downloads\\MUNAJAT_E_MAQBOOL (1).pdf',
+    ];
+    for (final p in possiblePaths) {
+      try {
+        final localFile = io.File(p);
+        if (await localFile.exists() && (await localFile.length()) > 0) {
+          return localFile;
+        }
+      } catch (_) {}
+    }
+
+    try {
+      final file = await getLocalFile();
+      if (await file.exists() && (await file.length()) > 0) {
+        return file;
+      }
+    } catch (e) {
+      debugPrint('Error checking local file: $e');
+    }
+    return null;
+  }
+
   /// Gets local File object (Native only)
-  Future<io.File> _getLocalFile() async {
+  Future<io.File> getLocalFile() async {
     final support = await getApplicationSupportDirectory();
     final dir = io.Directory('${support.path}/munajat_pdfs');
     if (!await dir.exists()) {
@@ -79,10 +88,16 @@ class MunajatDownloadService {
     return io.File('${dir.path}/$munajatFileName');
   }
 
-  /// Returns PDF bytes for PDF Viewer (Web and Native)
+  /// Returns PDF bytes for PDF Viewer (Web and Native fallback)
   Future<Uint8List?> getPdfBytes() async {
     if (_cachedBytes != null && _cachedBytes!.isNotEmpty) {
       return _cachedBytes;
+    }
+    if (!kIsWeb) {
+      final local = await getExistingLocalFile();
+      if (local != null) {
+        return await local.readAsBytes();
+      }
     }
     if (await isMunajatAvailable()) {
       return _cachedBytes;
@@ -174,7 +189,7 @@ class MunajatDownloadService {
 
           if (!kIsWeb) {
             try {
-              final file = await _getLocalFile();
+              final file = await getLocalFile();
               await file.writeAsBytes(bytes);
             } catch (e) {
               debugPrint('Error saving file to disk: $e');

@@ -259,7 +259,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Current Version ───────────────────────────
                   _DrawerItem(
                     icon: Icons.new_releases_rounded,
-                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.4.1'}',
+                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.4.4'}',
                     onTap: () => _showWhatsNewDialog(context),
                   ),
 
@@ -508,7 +508,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.4.1';
+    final versionStr = _version.isNotEmpty ? _version : '1.4.4';
 
     showDialog(
       context: context,
@@ -603,7 +603,38 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Item: Bug Fixes & Improvements ─────────────
+                  // ── Item 1: Live Masjid Jama'at Timings ─────────────
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    _getLocalizedText(settings, {
+                      'english': '🕌 Live Masjid Jama\'at Timings',
+                      'urdu': '🕌 لائیو مسجد باجماعت اوقات',
+                      'sindhi': '🕌 لائيو مسجد باجماعت وقت',
+                      'arabic': '🕌 مواقيت صلاة الجماعة المباشرة',
+                      'bengali': '🕌 লাইভ মসজিদ জামায়াত সময়সূচি',
+                      'hindi': '🕌 लाइव मस्जिद जमात समय',
+                      'turkish': '🕌 Canlı Cami Cemaat Vakitleri',
+                      'indonesian': '🕌 Waktu Shalat Berjamaah Terkini',
+                      'french': '🕌 Horaires de Jama\'at de la mosquée en direct',
+                      'persian': '🕌 اوقات زنده نماز جماعت مساجد',
+                    }),
+                    _getLocalizedText(settings, {
+                      'english': 'Masjid committees and authorized representatives can now securely log in with an 8-digit PIN to update daily prayer times.',
+                      'urdu': 'مسجد کی انتظامیہ اور مجاز نمائندگان اب روزانہ نماز کے اوقات اپ ڈیٹ کرنے کے لیے 8 ہندسوں کے پن کوڈ کے ساتھ محفوظ لاگ ان کر سکتے ہیں۔',
+                      'sindhi': 'مسجد انتظاميه ۽ بااختيار نمائندا هاڻي روزاني نماز جا وقت اپڊيٽ ڪرڻ لاءِ 8 انگن واري پن ڪوڊ سان محفوظ طريقي سان لاگ ان ٿي سگهن ٿا.',
+                      'arabic': 'يمكن الآن للجان المساجد والممثلين المعتمدين تسجيل الدخول بأمان باستخدام رمز PIN مكون من 8 أرقام لتحديث مواقيت الصلاة اليومية.',
+                      'bengali': 'মসজিদ কমিটি এবং অনুমোদিত প্রতিনিধিরা এখন দৈনিক নামাজের সময় আপডেট করতে ৮ অঙ্কের পিন দিয়ে নিরাপদে লগইন করতে পারবেন।',
+                      'hindi': 'मस्जिद समितियां और अधिकृत प्रतिनिधि अब दैनिक नमाज़ के समय को अपडेट करने के लिए 8 अंकों के पिन के साथ सुरक्षित रूप से लॉग इन कर सकते हैं।',
+                      'turkish': 'Cami heyetleri ve yetkili temsilciler, günlük namaz vakitlerini güncellemek için 8 haneli bir PIN ile artık güvenli bir şekilde giriş yapabilirler.',
+                      'indonesian': 'Pengurus masjid dan perwakilan resmi kini dapat masuk dengan aman menggunakan PIN 8 digit untuk memperbarui waktu salat harian.',
+                      'french': 'Les comités de mosquée et représentants autorisés peuvent désormais se connecter en toute sécurité avec un code PIN à 8 chiffres pour mettre à jour les horaires de prière quotidiens.',
+                      'persian': 'هیئت‌امنا و نمایندگان مجاز مساجد اکنون می‌توانند برای به‌روزرسانی اوقات روزانه نماز با پین‌کد ۸ رقمی به‌صورت امن وارد شوند.',
+                    }),
+                    icon: Icons.mosque_outlined,
+                    iconColor: AppTheme.accent,
+                  ),
+                  // ── Item 2: Bug Fixes & Improvements ─────────────
                   _buildNewFeatureItem(
                     context,
                     settings,
@@ -620,16 +651,16 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                       'persian': '🛠️ رفع باگ‌ها و بهبود عملکرد',
                     }),
                     _getLocalizedText(settings, {
-                      'english': 'General bug fixes, announcement version filtering, and overall stability enhancements.',
-                      'urdu': 'عام خرابیوں کا خاتمہ، اعلانات کے نظام میں بہتری، اور ایپ کی کارکردگی اور استحکام میں اضافہ۔',
-                      'sindhi': 'عام خرابين جو خاتمو، اعلانات جي نظام ۾ سڌارو ۽ ايپ جي ڪارڪردگيءَ ۾ اضافو.',
-                      'arabic': 'إصلاح الأخطاء العامة، ودعم نظام تحديث الإعلانات، وتحسين استقرار وأداء التطبيق.',
-                      'bengali': 'সাধারণ সমস্যা সমাধান, নোটিশ সিস্টেমে উন্নতি এবং অ্যাপের সামগ্রিক স্থিতিশীলতা বৃদ্ধি।',
-                      'hindi': 'सामान्य समस्याओं का समाधान, घोषणा प्रणाली में सुधार और ऐप की स्थिरता में वृद्धि।',
-                      'turkish': 'Genel hata düzeltmeleri, duyuru sistemi güncellemeleri ve uygulama kararlılık geliştirmeleri.',
-                      'indonesian': 'Perbaikan bug umum, peningkatan sistem pengumuman, dan stabilitas aplikasi secara menyeluruh.',
-                      'french': 'Corrections de bugs généraux, amélioration du système d\'annonces et optimisation de la stabilité.',
-                      'persian': 'رفع باگ‌های عمومی، ارتقای سیستم اعلان‌ها و بهبود پایداری و عملکرد کلی برنامه.',
+                      'english': 'General bug fixes, performance improvements, and stability enhancements.',
+                      'urdu': 'عام خرابیوں کا خاتمہ، کارکردگی میں بہتری اور ایپ کے استحکام میں اضافہ۔',
+                      'sindhi': 'عام خرابين جو خاتمو، ڪارڪردگيءَ ۾ سڌارو ۽ ايپ جي بهتري.',
+                      'arabic': 'إصلاح الأخطاء العامة، وتحسينات في الأداء والاستقرار العام للتطبيق.',
+                      'bengali': 'সাধারণ সমস্যা সমাধান, কর্মক্ষমতা বৃদ্ধি এবং অ্যাপের সামগ্রিক স্থিতিশীলতা বৃদ্ধি।',
+                      'hindi': 'सामान्य बग समाधान, प्रदर्शन में सुधार और समग्र ऐप स्थिरता में वृद्धि।',
+                      'turkish': 'Genel hata düzeltmeleri, performans iyileştirmeleri ve uygulama kararlılık geliştirmeleri.',
+                      'indonesian': 'Perbaikan bug umum, peningkatan performa, dan stabilitas aplikasi secara menyeluruh.',
+                      'french': 'Corrections de bugs généraux, amélioration des performances et optimisation de la stabilité.',
+                      'persian': 'رفع باگ‌های عمومی، ارتقای سیستم و بهبود عملکرد و پایداری برنامه.',
                     }),
                     icon: Icons.bug_report_outlined,
                     iconColor: AppTheme.accent,

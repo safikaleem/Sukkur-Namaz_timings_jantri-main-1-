@@ -3,11 +3,11 @@ $env:ANDROID_HOME = "D:\Sukkur Salah\Android\sdk"
 $env:ANDROID_SDK_ROOT = "D:\Sukkur Salah\Android\sdk"
 $env:JAVA_HOME = "D:\Sukkur Salah\jdk17\jdk-17.0.11+9"
 $env:PATH = "$env:JAVA_HOME\bin;" + $env:PATH
-$version = "v1.4.2"
+$version = "v1.4.4"
 $destFolder = "D:\Sukkur Salah"
 $flutter = "D:\Sukkur Salah\flutter\bin\flutter.bat"
 
-Write-Host "=== Starting AAB Build (Release v1.4.2) ===" -ForegroundColor Cyan
+Write-Host "=== Starting AAB Build (Release v1.4.4) ===" -ForegroundColor Cyan
 & $flutter build appbundle --release
 
 if (Test-Path "D:\build-sukkur\app\outputs\bundle\release\app-release.aab") {

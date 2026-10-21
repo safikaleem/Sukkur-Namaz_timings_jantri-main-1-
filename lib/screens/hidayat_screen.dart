@@ -87,11 +87,14 @@ class HidayatScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     IconButton(
-                      icon: Icon(
-                        settings.isRtl
-                            ? Icons.arrow_forward_rounded
-                            : Icons.arrow_back_rounded,
-                        color: isDark ? Colors.white70 : Colors.black87,
+                      icon: Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Icon(
+                          settings.isRtl
+                              ? Icons.arrow_forward_rounded
+                              : Icons.arrow_back_rounded,
+                          color: isDark ? Colors.white70 : Colors.black87,
+                        ),
                       ),
                       onPressed: () => Navigator.maybePop(context),
                       tooltip: settings.translate('Back', 'واپس', 'واپس', 'رجوع'),
