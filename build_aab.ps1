@@ -7,10 +7,14 @@ $version = "v1.4.6"
 $destFolder = "D:\Sukkur Salah"
 $flutter = "D:\Sukkur Salah\flutter\bin\flutter.bat"
 
+if (Test-Path "D:\build-sukkur\app\outputs\bundle\release\app-release.aab") {
+    Remove-Item "D:\build-sukkur\app\outputs\bundle\release\app-release.aab" -Force -ErrorAction SilentlyContinue
+}
+
 Write-Host "=== Starting AAB Build (Release v1.4.6) ===" -ForegroundColor Cyan
 & $flutter build appbundle --release
 
-if (Test-Path "D:\build-sukkur\app\outputs\bundle\release\app-release.aab") {
+if ($LASTEXITCODE -eq 0 -and (Test-Path "D:\build-sukkur\app\outputs\bundle\release\app-release.aab")) {
     Write-Host "=== Build Successful! Copying to D: drive... ===" -ForegroundColor Green
     Copy-Item "D:\build-sukkur\app\outputs\bundle\release\app-release.aab" "D:\SukkurSalah-$version-release.aab" -Force
     Copy-Item "D:\build-sukkur\app\outputs\bundle\release\app-release.aab" "$destFolder\SukkurSalah-$version-release.aab" -Force
