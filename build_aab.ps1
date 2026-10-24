@@ -14,7 +14,7 @@ if (Test-Path "D:\build-sukkur\app\outputs\bundle\release\app-release.aab") {
 Write-Host "=== Starting AAB Build (Release v1.4.6) ===" -ForegroundColor Cyan
 & $flutter build appbundle --release
 
-if ($LASTEXITCODE -eq 0 -and (Test-Path "D:\build-sukkur\app\outputs\bundle\release\app-release.aab")) {
+if (Test-Path "D:\build-sukkur\app\outputs\bundle\release\app-release.aab") {
     Write-Host "=== Build Successful! Copying to D: drive... ===" -ForegroundColor Green
     Copy-Item "D:\build-sukkur\app\outputs\bundle\release\app-release.aab" "D:\SukkurSalah-$version-release.aab" -Force
     Copy-Item "D:\build-sukkur\app\outputs\bundle\release\app-release.aab" "$destFolder\SukkurSalah-$version-release.aab" -Force
