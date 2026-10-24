@@ -48,7 +48,7 @@ class S {
   static const cityLabel         = 'شہر';
   static const yearLabel         = 'سال';
   static const footerNote        = 'تمام اوقات سکھر کی مقامی جنتری سے لیے گئے ہیں';
-  static const versionValue      = '1.0.0';
+  static const versionValue      = '1.4.6';
   static const cityValue         = 'سکھر، سندھ، پاکستان';
   static const notifSuffix       = 'کی اطلاع';
 

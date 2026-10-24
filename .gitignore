@@ -127,6 +127,8 @@ translate_whats_new.py
 update_pbxproj.py
 update_translations.dart
 update_widget_lang.dart
+scratch/
+test_output.png
 
 # ============================================================
 # Third-party tools bundled locally

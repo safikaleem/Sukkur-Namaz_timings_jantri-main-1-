@@ -152,28 +152,128 @@ class _QuranScreenState extends State<QuranScreen> {
     super.dispose();
   }
 
+  // ── Search text normalizer ───────────────────────────────────────────────────
+  static String _normalizeForSearch(String input) {
+    if (input.isEmpty) return '';
+    var s = input.trim().toLowerCase();
+
+    // Convert Eastern Arabic and Perso-Arabic digits to Western 0-9
+    const easternDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    const persoUrduDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    for (int i = 0; i < 10; i++) {
+      s = s.replaceAll(easternDigits[i], '$i');
+      s = s.replaceAll(persoUrduDigits[i], '$i');
+    }
+
+    // Remove Arabic/Urdu harakat / diacritics
+    s = s.replaceAll(RegExp(r'[\u064B-\u065F\u0670\u06D6-\u06ED]'), '');
+
+    // Normalize Arabic / Urdu / Persian / Sindhi letters to common base
+    s = s.replaceAll(RegExp(r'[يىیئ]'), 'ی');
+    s = s.replaceAll(RegExp(r'[كکڪ]'), 'ک');
+    s = s.replaceAll(RegExp(r'[ہھهة]'), 'ہ');
+    s = s.replaceAll(RegExp(r'[أإآٱا]'), 'ا');
+    s = s.replaceAll('ؤ', 'و');
+
+    return s;
+  }
+
   // ── Filtered lists ────────────────────────────────────────────────────────────
   List<Surah> get _filteredSurahs {
     if (_surahQuery.isEmpty) return QuranData.surahs;
-    final q = _surahQuery.toLowerCase();
-    return QuranData.surahs.where((s) =>
-      s.english.toLowerCase().contains(q) ||
-      s.arabic.contains(q) ||
-      s.urdu.contains(q) ||
-      s.sindhi.contains(q) ||
-      s.number.toString() == q
-    ).toList();
+    final qClean = _normalizeForSearch(_surahQuery);
+    if (qClean.isEmpty) return QuranData.surahs;
+
+    var strippedQ = qClean
+        .replaceAll(RegExp(r'^(surah|sura|chapter)\s*'), '')
+        .replaceAll(RegExp(r'^(سورہ|سورة|سورۃ|سورت)\s*'), '')
+        .trim();
+    if (strippedQ.isEmpty) strippedQ = qClean;
+
+    final strippedQNoSpaces = strippedQ.replaceAll(RegExp(r'[\s\-_]'), '');
+    final phoneticQ = strippedQNoSpaces
+        .replaceAll('ee', 'i')
+        .replaceAll('oo', 'u')
+        .replaceAll(RegExp(r'ah$'), 'a');
+
+    return QuranData.surahs.where((s) {
+      if (s.number.toString() == qClean || s.number.toString() == strippedQ) {
+        return true;
+      }
+
+      final candidates = [
+        s.english.toLowerCase(),
+        _normalizeForSearch(s.arabic),
+        _normalizeForSearch(s.urdu),
+        _normalizeForSearch(s.sindhi),
+        _normalizeForSearch(s.arabicOnly),
+      ];
+
+      for (final c in candidates) {
+        if (c.contains(strippedQ) || c.contains(qClean)) return true;
+      }
+
+      for (final c in candidates) {
+        final strippedC = c.replaceAll(RegExp(r'[\s\-_]'), '');
+        if (strippedC.contains(strippedQNoSpaces)) return true;
+
+        final phoneticC = strippedC
+            .replaceAll('ee', 'i')
+            .replaceAll('oo', 'u')
+            .replaceAll(RegExp(r'ah$'), 'a');
+        if (phoneticC.contains(phoneticQ)) return true;
+      }
+
+      return false;
+    }).toList();
   }
 
   List<Parah> get _filteredParahs {
     if (_parahQuery.isEmpty) return QuranData.parahs;
-    final q = _parahQuery.toLowerCase();
-    return QuranData.parahs.where((p) =>
-      p.english.toLowerCase().contains(q) ||
-      p.arabic.contains(q) ||
-      p.urdu.contains(q) ||
-      p.number.toString() == q
-    ).toList();
+    final qClean = _normalizeForSearch(_parahQuery);
+    if (qClean.isEmpty) return QuranData.parahs;
+
+    var strippedQ = qClean
+        .replaceAll(RegExp(r'^(parah|para|juz|part)\s*'), '')
+        .replaceAll(RegExp(r'^(پارہ|پاره|سیپارہ|پارو|جزء)\s*'), '')
+        .trim();
+    if (strippedQ.isEmpty) strippedQ = qClean;
+
+    final strippedQNoSpaces = strippedQ.replaceAll(RegExp(r'[\s\-_]'), '');
+    final phoneticQ = strippedQNoSpaces
+        .replaceAll('ee', 'i')
+        .replaceAll('oo', 'u')
+        .replaceAll(RegExp(r'ah$'), 'a');
+
+    return QuranData.parahs.where((p) {
+      if (p.number.toString() == qClean || p.number.toString() == strippedQ) {
+        return true;
+      }
+
+      final candidates = [
+        p.english.toLowerCase(),
+        _normalizeForSearch(p.arabic),
+        _normalizeForSearch(p.urdu),
+        _normalizeForSearch(p.sindhi),
+      ];
+
+      for (final c in candidates) {
+        if (c.contains(strippedQ) || c.contains(qClean)) return true;
+      }
+
+      for (final c in candidates) {
+        final strippedC = c.replaceAll(RegExp(r'[\s\-_]'), '');
+        if (strippedC.contains(strippedQNoSpaces)) return true;
+
+        final phoneticC = strippedC
+            .replaceAll('ee', 'i')
+            .replaceAll('oo', 'u')
+            .replaceAll(RegExp(r'ah$'), 'a');
+        if (phoneticC.contains(phoneticQ)) return true;
+      }
+
+      return false;
+    }).toList();
   }
 
   // ── Navigation ────────────────────────────────────────────────────────────────

@@ -259,7 +259,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Current Version ───────────────────────────
                   _DrawerItem(
                     icon: Icons.new_releases_rounded,
-                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.4.4'}',
+                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.4.6'}',
                     onTap: () => _showWhatsNewDialog(context),
                   ),
 
@@ -508,7 +508,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.4.4';
+    final versionStr = _version.isNotEmpty ? _version : '1.4.6';
 
     showDialog(
       context: context,
@@ -603,7 +603,69 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Item 1: Live Masjid Jama'at Timings ─────────────
+                  // ── Item 1: Multi-Language Masjid Search Bar ─────────────
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    _getLocalizedText(settings, {
+                      'english': '🔍 Multi-Language Masjid Search Bar',
+                      'urdu': '🔍 مساجد ملٹی لینگویج سرچ بار',
+                      'sindhi': '🔍 مساجد ملٽي لئنگويج سرچ بار',
+                      'arabic': '🔍 شريط البحث عن المساجد متعدد اللغات',
+                      'bengali': '🔍 বহুভাষিক মসজিদ অনুসন্ধান বার',
+                      'hindi': '🔍 बहुभाषी मस्जिद सर्च बार',
+                      'turkish': '🔍 Çok Dilli Cami Arama Çubuğu',
+                      'indonesian': '🔍 Bilah Pencarian Masjid Multibahasa',
+                      'french': '🔍 Barre de recherche de mosquées multilingue',
+                      'persian': '🔍 نوار جستجوی چندزبانه مساجد',
+                    }),
+                    _getLocalizedText(settings, {
+                      'english': 'Search any mosque across Sukkur by name, area, or street in all 10 languages with instant smart script search.',
+                      'urdu': 'سکھر کی کسی بھی مسجد یا علاقے کو تمام ۱۰ زبانوں میں فوری اور آسان ملٹی لینگویج سرچ کے ذریعے تلاش کریں۔',
+                      'sindhi': 'سکر جي ڪنهن به مسجد يا علائقي کي سڀني ۱۰ ٻولين ۾ فوري ۽ آسان ڳولا ذريعي ڳوليو.',
+                      'arabic': 'ابحث عن أي مسجد أو منطقة في سَكَر بجميع اللغات العشر بسهولة وسرعة فائقة.',
+                      'bengali': 'সুক্কুরের যেকোনো মসজিদ বা এলাকা ১০টি ভাষায় স্মার্ট সার্চের মাধ্যমে সহজেই খুঁজুন।',
+                      'hindi': 'सुक्कुर की किसी भी मस्जिद या क्षेत्र को सभी 10 भाषाओं में त्वरित और आसान खोज से खोजें।',
+                      'turkish': 'Sukkur\'daki herhangi bir camiyi veya bölgeyi 10 dilde akıllı arama ile kolayca bulun.',
+                      'indonesian': 'Cari masjid atau wilayah mana pun di Sukkur dalam 10 bahasa dengan pencarian cerdas yang mudah.',
+                      'french': 'Recherchez n\'importe quelle mosquée ou quartier à Sukkur dans les 10 langues grâce à la recherche intelligente.',
+                      'persian': 'هر مسجد یا منطقه‌ای در سکر را در تمام ۱۰ زبان با جستجوی هوشمند و سریع پیدا کنید.',
+                    }),
+                    icon: Icons.search_rounded,
+                    iconColor: AppTheme.accent,
+                  ),
+                  // ── Item: Prayer & Jama'at Sharing Cards ─────────────
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    _getLocalizedText(settings, {
+                      'english': '🎴 Prayer & Jama\'at Sharing Cards',
+                      'urdu': '🎴 اوقاتِ نماز اور باجماعت شیئرنگ کارڈز',
+                      'sindhi': '🎴 نماز ۽ باجماعت شيئرنگ ڪارڊ',
+                      'arabic': '🎴 بطاقات مشاركة أوقات الصلاة والجماعة',
+                      'bengali': '🎴 নামাজ ও জামায়াত শেয়ারিং কার্ড',
+                      'hindi': '🎴 नमाज़ और जमात शेयरिंग कार्ड',
+                      'turkish': '🎴 Namaz ve Cemaat Vakitleri Paylaşım Kartları',
+                      'indonesian': '🎴 Kartu Berbagi Jadwal Sholat & Jamaah',
+                      'french': '🎴 Cartes de partage des prières et de Jama\'at',
+                      'persian': '🎴 کارت‌های اشتراک‌گذاری اوقات نماز و جماعت',
+                    }),
+                    _getLocalizedText(settings, {
+                      'english': 'Easily save and share elegantly designed Islamic cards for daily prayer timings (Sukkur & worldwide cities) and local mosque Jama\'at schedules directly to WhatsApp or as PNG images.',
+                      'urdu': 'روزمرہ کے اوقاتِ نماز (سکھر اور تمام شہروں کے لیے) اور مساجد کے اوقاتِ باجماعت کے دلکش اسلامی کارڈز براہِ راست واٹس ایپ پر شیئر کریں یا تصویر (PNG) محفوظ کریں۔',
+                      'sindhi': 'روزاني نماز جا وقت (سکر ۽ دنيا جي سمورن شهرن لاءِ) ۽ مسجدن جا باجماعت وقت خوبصورت اسلامي ڪارڊن ذريعي سڌو واٽس ايپ تي شيئر ڪريو يا تصوير (PNG) محفوظ ڪريو.',
+                      'arabic': 'احفظ وشارك بطاقات إسلامية مصممة بأناقة لمواقيت الصلاة اليومية (لسكر وجميع مدن العالم) ومواقيت صلاة الجماعة للمساجد مباشرة عبر واتساب أو كصورة PNG.',
+                      'bengali': 'দৈনিক নামাজের সময়সূচি (সুক্কুর ও বিশ্বব্যাপী শহরের জন্য) এবং মসজিদের জামায়াতের সময়সূচি আকর্ষণীয় ইসলামিক কার্ড হিসেবে সরাসরি হোয়াটসঅ্যাপে শেয়ার করুন বা PNG ছবি হিসেবে সংরক্ষণ করুন।',
+                      'hindi': 'दैनिक नमाज़ के समय (सुक्कुर और दुनिया भर के शहरों के लिए) और मस्जिदों के जमात کے समय के आकर्षक इस्लामिक कार्ड सीधे व्हाट्सएप पर शेयर करें या PNG छवि के रूप में सुरक्षित करें।',
+                      'turkish': 'Günlük namaz vakitleri (Sukkur ve dünya şehirleri için) ve cami cemaat vakitleri için zarif İslami kartları doğrudan WhatsApp üzerinden paylaşın veya PNG resmi olarak kaydedin.',
+                      'indonesian': 'Simpan dan bagikan kartu Islami berdesain elegan untuk jadwal sholat harian (Sukkur & kota dunia) serta jadwal jamaah masjid langsung ke WhatsApp atau simpan sebagai gambar PNG.',
+                      'french': 'Enregistrez et partagez d\'élégantes cartes islamiques pour les horaires de prière quotidiens (Sukkur et villes du monde) et les horaires de Jama\'at directement sur WhatsApp ou au format image PNG.',
+                      'persian': 'کارت‌های اسلامی با طراحی زیبا برای اوقات روزانه نماز (سکر و تمام شهرهای جهان) و اوقات نماز جماعت مساجد را مستقیماً در واتس‌اپ به اشتراک بگذارید یا به عنوان تصویر PNG ذخیره کنید.',
+                    }),
+                    icon: Icons.share_rounded,
+                    iconColor: AppTheme.accent,
+                  ),
+                  // ── Item 2: Live Masjid Jama'at Timings ─────────────
                   _buildNewFeatureItem(
                     context,
                     settings,

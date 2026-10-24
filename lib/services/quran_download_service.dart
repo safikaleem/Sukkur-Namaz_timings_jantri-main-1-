@@ -314,9 +314,10 @@ class _QuranDownloadDialogState extends State<QuranDownloadDialog> {
       },
     );
 
+    final exists = file != null && await file.exists();
     if (!mounted) return;
 
-    if (file != null && await file.exists()) {
+    if (exists) {
       Navigator.of(context).pop(true);
     } else {
       setState(() {

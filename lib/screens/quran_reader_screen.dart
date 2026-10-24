@@ -87,7 +87,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isRtl = settings.isRtl;
     final is15Line = settings.quranType == '15_line';
     final quranAccentColor = is15Line ? const Color(0xFF4C6A75) : AppTheme.accentGreen;
 

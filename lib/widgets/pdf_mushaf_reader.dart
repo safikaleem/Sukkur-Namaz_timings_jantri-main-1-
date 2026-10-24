@@ -398,7 +398,14 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
 
   void _onPageSubmitted(String value) {
     final maxPages = widget.settings.quranType == '15_line' ? kQuran15LinePageCount : kQuranPageCount;
-    final page = int.tryParse(value);
+    var cleanValue = value.trim();
+    const easternDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    const persoUrduDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    for (int i = 0; i < 10; i++) {
+      cleanValue = cleanValue.replaceAll(easternDigits[i], '$i');
+      cleanValue = cleanValue.replaceAll(persoUrduDigits[i], '$i');
+    }
+    final page = int.tryParse(cleanValue);
     if (page == null || page < 1 || page > maxPages) return;
     FocusScope.of(context).unfocus();
     _pageSearchController.clear();

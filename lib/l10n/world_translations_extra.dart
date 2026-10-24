@@ -832,6 +832,8 @@ const Map<String, Map<String, String>> additionalTranslations = {
     "Qadeemi Jamia Masjid Hazrat Imam Zain ul Abidin (Bhusa Line Chowk, Sukkur)": "قدیمی جامع مسجد حضرت امام زین العابدین (بھوسہ لائن چوک، سکھر)",
     "Masjid e Quba": "مسجد قباء",
     "Military Road Sukkur": "ملٹری روڈ سکھر",
+    "Madina Masjid": "مدینہ مسجد",
+    "Cloth Market, Sukkur": "کپڑا مارکیٹ، سکھر",
     "Prayer Name": "نماز کا نام",
     "Fixed": "مقررہ",
     "According to daily Maghrib time": "روزانہ وقتِ مغرب کے مطابق",

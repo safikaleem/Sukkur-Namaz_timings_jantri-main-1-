@@ -8,6 +8,7 @@ import '../l10n/world_translations_extra.dart';
 import '../providers/settings_provider.dart';
 import '../services/jamaat_times_service.dart';
 import '../utils/app_theme.dart';
+import '../widgets/timings_share_card.dart';
 
 class JamaatTimesScreen extends StatefulWidget {
   const JamaatTimesScreen({super.key});
@@ -19,6 +20,8 @@ class JamaatTimesScreen extends StatefulWidget {
 class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindingObserver {
   int _selectedTabIndex = 0; // 0 = Individual Masajid, 1 = Combined Chart
   String _selectedPrayerFilter = 'All'; // 'All', 'Fajr', 'Zuhar', 'Asar', 'Maghrib', 'Isha', 'Jummah'
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -29,6 +32,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
 
   @override
   void dispose() {
+    _searchController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -245,6 +249,32 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
         return 'Tableau combiné';
       default:
         return 'Combined Chart';
+    }
+  }
+
+  String _getIndividualSubtext(SettingsProvider settings) {
+    switch (settings.language) {
+      case 'urdu':
+        return 'تمام ۱۰ زبانوں میں نام یا علاقے سے مسجد تلاش کریں، یا باجماعت اوقات دیکھنے کے لیے نیچے ٹیپ کریں۔';
+      case 'sindhi':
+        return 'سڀني ۱۰ ٻولين ۾ نالي يا علائقي سان مسجد ڳوليو، يا باجماعت وقت ڏسڻ لاءِ هيٺ ٽيپ ڪريو.';
+      case 'arabic':
+        return 'ابحث عن أي مسجد بالاسم أو المنطقة بجميع اللغات الـ 10، أو انقر أدناه لعرض مواقيت صلاة الجماعة.';
+      case 'hindi':
+        return 'सभी 10 भाषाओं में नाम या क्षेत्र से मस्जिद खोजें, या समय देखने के लिए नीचे टैप करें।';
+      case 'bengali':
+        return '১০টি ভাষায় নাম বা এলাকা দিয়ে মসজিদ খুঁজুন, অথবা সময়সূচি দেখতে নিচে ট্যাপ করুন।';
+      case 'persian':
+        return 'در تمام ۱۰ زبان با نام یا منطقه مسجد را جستجو کنید، یا برای مشاهده اوقات در زیر ضربه بزنید.';
+      case 'turkish':
+        return 'Sukkur camilerini 10 dilde ad veya bölge ile arayın veya vakitleri görmek için dokunun.';
+      case 'french':
+        return 'Recherchez une mosquée dans les 10 langues par nom ou quartier, ou appuyez ci-dessous.';
+      case 'indonesian':
+        return 'Cari masjid dalam 10 bahasa berdasarkan nama atau wilayah, atau ketuk di bawah untuk jadwal.';
+      case 'english':
+      default:
+        return 'Search any Masjid by name or area in all 10 languages, or tap below to view complete congregational timings.';
     }
   }
 
@@ -745,6 +775,29 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                             ),
                             duration: const Duration(seconds: 2),
                           ),
+                        );
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.share_rounded,
+                        color: Colors.white70,
+                        size: 24,
+                      ),
+                      tooltip: _t(
+                        settings,
+                        'Share Masjid Jama\'at Times Card',
+                        'مسجد باجماعت کارڈ شیئر کریں',
+                        'مسجد باجماعت ڪارڊ شيئر ڪريو',
+                        'مشاركة بطاقة صلاة الجماعة للمسجد',
+                      ),
+                      onPressed: () {
+                        TimingsShareService.showMasjidShareModal(
+                          context: context,
+                          masjid: masjid,
+                          timing: timing,
+                          date: DateTime.now(),
+                          settings: settings,
                         );
                       },
                     ),
@@ -2308,13 +2361,7 @@ JazakAllah Khair
                   const SizedBox(height: 8),
                   Text(
                     _selectedTabIndex == 0
-                        ? _t(
-                            settings,
-                            'Tap any Masjid below to view complete congregational (Jama\'at) prayer timings.',
-                            'باجماعت نمازوں کے مکمل اوقات دیکھنے کے لیے ذیل میں کسی بھی مسجد پر ٹیپ کریں۔',
-                            'باجماعت نمازن جا مڪمل وقت ڏسڻ لاءِ هيٺ ڏنل ڪنهن به مسجد تي ٽيپ ڪريو.',
-                            'انقر على أي مسجد أعلاه لعرض مواقيت صلاة الجماعة الكاملة.',
-                          )
+                        ? _getIndividualSubtext(settings)
                         : _getCombinedSubtext(settings),
                     style: const TextStyle(
                       fontSize: 13,
@@ -2427,6 +2474,9 @@ JazakAllah Khair
 
             const SizedBox(height: 18),
 
+            // ── Search Bar (Multi-language across 10 languages) ───────
+            _buildSearchBar(context, settings, isDark, lang),
+
             // ── View Content: Individual List or Combined Chart ───────
             if (_selectedTabIndex == 1) ...[
               _buildPrayerFilterBar(context, settings, isDark, lang),
@@ -2440,6 +2490,302 @@ JazakAllah Khair
           ],
         ),
       ),
+      ),
+    );
+  }
+
+  /// Normalizes text across all 10 scripts (Arabic/Urdu/Sindhi/Persian/Latin/Indic)
+  String _normalizeForSearch(String input) {
+    if (input.isEmpty) return '';
+    var s = input.trim().toLowerCase();
+
+    // Remove Arabic/Urdu harakat / diacritics
+    s = s.replaceAll(RegExp(r'[\u064B-\u065F\u0670\u06D6-\u06ED]'), '');
+
+    // Normalize honorific symbols
+    s = s.replaceAll('ﷺ', '').replaceAll('ﷻ', '');
+
+    // Normalize Arabic / Urdu / Persian / Sindhi letters to common base
+    s = s.replaceAll(RegExp(r'[يىیئ]'), 'ی');
+    s = s.replaceAll(RegExp(r'[كکڪ]'), 'ک');
+    s = s.replaceAll(RegExp(r'[ہھهة]'), 'ہ');
+    s = s.replaceAll(RegExp(r'[أإآٱا]'), 'ا');
+    s = s.replaceAll('ؤ', 'و');
+
+    // Normalize European accents (Turkish / French)
+    s = s.replaceAll(RegExp(r'[éèêë]'), 'e')
+        .replaceAll(RegExp(r'[àâä]'), 'a')
+        .replaceAll(RegExp(r'[îï]'), 'i')
+        .replaceAll(RegExp(r'[ôö]'), 'o')
+        .replaceAll(RegExp(r'[ûü]'), 'u')
+        .replaceAll(RegExp(r'[ç]'), 'c')
+        .replaceAll('ş', 's')
+        .replaceAll('ğ', 'g')
+        .replaceAll('ı', 'i');
+
+    return s;
+  }
+
+  /// Checks if a masjid matches search query in ANY of the 10 languages
+  /// Checks if a masjid matches search query in ANY of the 10 languages, including translations.
+  bool _masjidMatchesSearch(JamaatMasjidInfo masjid, String query) {
+    final cleanQuery = _normalizeForSearch(query);
+    if (cleanQuery.isEmpty) return true;
+
+    // Base candidates: id, keys, localized overrides
+    final Set<String> candidates = {
+      masjid.id,
+      masjid.nameKey,
+      masjid.addressKey,
+      ...masjid.localizedNames.values,
+      ...masjid.localizedAddresses.values,
+    };
+
+    // Add translated strings from additionalTranslations for all 10 languages
+    for (final lang in additionalTranslations.keys) {
+      final map = additionalTranslations[lang];
+      if (map == null) continue;
+      final nameTrans = map[masjid.nameKey];
+      if (nameTrans != null && nameTrans.isNotEmpty) candidates.add(nameTrans);
+      final addrTrans = map[masjid.addressKey];
+      if (addrTrans != null && addrTrans.isNotEmpty) candidates.add(addrTrans);
+    }
+
+    // Add translated strings from worldTranslations for all supported languages
+    for (final lang in worldTranslations.keys) {
+      final map = worldTranslations[lang];
+      if (map == null) continue;
+      final nameTrans = map[masjid.nameKey];
+      if (nameTrans != null && nameTrans.isNotEmpty) candidates.add(nameTrans);
+      final addrTrans = map[masjid.addressKey];
+      if (addrTrans != null && addrTrans.isNotEmpty) candidates.add(addrTrans);
+    }
+
+    // Normalise each candidate using the same routine as the query
+    final normCandidates = candidates.map(_normalizeForSearch).toList();
+    final combined = normCandidates.join(' ');
+    final combinedNoSpaces = combined.replaceAll(' ', '');
+
+    // Direct substring match (with or without spaces)
+    if (combined.contains(cleanQuery) ||
+        combinedNoSpaces.contains(cleanQuery.replaceAll(' ', ''))) {
+      return true;
+    }
+
+    // Token‑based match – every token from the query must appear somewhere in the candidates
+    final tokens = cleanQuery.split(' ').where((t) => t.isNotEmpty).toList();
+    bool allTokensFound = true;
+    for (final token in tokens) {
+      if (!combined.contains(token) && !combinedNoSpaces.contains(token)) {
+        allTokensFound = false;
+        break;
+      }
+    }
+    if (allTokensFound) return true;
+
+    return false;
+  }
+
+  Widget _buildSearchBar(
+    BuildContext context,
+    SettingsProvider settings,
+    bool isDark,
+    String lang,
+  ) {
+    final isRtl = settings.isRtl;
+
+    String getPlaceholder() {
+      switch (lang) {
+        case 'urdu':
+          return 'مسجد کا نام یا علاقہ تلاش کریں...';
+        case 'sindhi':
+          return 'مسجد جو نالو يا علائقو ڳوليو...';
+        case 'arabic':
+          return 'ابحث باسم المسجد أو المنطقة...';
+        case 'hindi':
+          return 'मस्जिद का नाम या क्षेत्र खोजें...';
+        case 'bengali':
+          return 'মসজিদের নাম বা এলাকা অনুসন্ধান করুন...';
+        case 'persian':
+          return 'جستجوی نام مسجد یا منطقه...';
+        case 'turkish':
+          return 'Cami adı veya bölge ara...';
+        case 'french':
+          return 'Rechercher une mosquée ou un quartier...';
+        case 'indonesian':
+          return 'Cari nama masjid atau wilayah...';
+        case 'english':
+        default:
+          return 'Search masjid name or area...';
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E2628) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _searchQuery.isNotEmpty
+              ? const Color(0xFF1B4332)
+              : (isDark ? Colors.white12 : const Color(0xFFE0E0E0)),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+        onChanged: (val) => setState(() => _searchQuery = val),
+        style: TextStyle(
+          fontSize: 14,
+          color: isDark ? Colors.white : Colors.black87,
+          fontFamily: AppTheme.getFontForLanguage(context, lang),
+        ),
+        decoration: InputDecoration(
+          hintText: getPlaceholder(),
+          hintTextDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+          hintStyle: TextStyle(
+            fontSize: 13,
+            color: isDark ? Colors.white38 : Colors.black38,
+            fontFamily: AppTheme.getFontForLanguage(context, lang),
+          ),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            color: Color(0xFF1B4332),
+            size: 22,
+          ),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  tooltip: _t(settings, 'Clear', 'صاف کریں', 'صاف ڪريو', 'مسح'),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptySearchState(
+    BuildContext context,
+    SettingsProvider settings,
+    bool isDark,
+    String lang,
+  ) {
+    String getEmptyTitle() {
+      switch (lang) {
+        case 'urdu':
+          return 'کوئی مسجد نہیں ملی';
+        case 'sindhi':
+          return 'ڪابه مسجد نه ملي';
+        case 'arabic':
+          return 'لم يتم العثور على أي مسجد';
+        case 'hindi':
+          return 'कोई मस्जिद नहीं मिली';
+        case 'bengali':
+          return 'কোনো মসজিদ পাওয়া যায়নি';
+        case 'persian':
+          return 'هیچ مسجدی یافت نشد';
+        case 'turkish':
+          return 'Eşleşen cami bulunamadı';
+        case 'french':
+          return 'Aucune mosquée trouvée';
+        case 'indonesian':
+          return 'Tidak ada masjid yang ditemukan';
+        default:
+          return 'No Masajid Found';
+      }
+    }
+
+    String getEmptySubtitle() {
+      switch (lang) {
+        case 'urdu':
+          return 'براہ کرم کوئی دوسرا نام یا علاقہ تلاش کریں۔';
+        case 'sindhi':
+          return 'مهرباني ڪري ڪو ٻيو نالو يا علائقو ڳوليو.';
+        case 'arabic':
+          return 'يرجى محاولة البحث باسم آخر أو منطقة أخرى.';
+        case 'hindi':
+          return 'कृपया किसी अन्य नाम या क्षेत्र से खोजें।';
+        case 'bengali':
+          return 'অনুগ্রহ করে অন্য কোনো নাম বা এলাকা দিয়ে অনুসন্ধান করুন।';
+        case 'persian':
+          return 'لطفاً نام یا منطقه دیگری را جستجو کنید.';
+        case 'turkish':
+          return 'Lütfen başka bir ad veya bölge ile arayın.';
+        case 'french':
+          return 'Veuillez essayer un autre nom ou quartier.';
+        case 'indonesian':
+          return 'Silakan coba cari dengan nama atau wilayah lain.';
+        default:
+          return 'Please try searching with a different name or area.';
+      }
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+      margin: const EdgeInsets.only(top: 8, bottom: 20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E2628) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? Colors.white12 : const Color(0xFFE8ECEF),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1B4332)
+                  .withValues(alpha: isDark ? 0.25 : 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.search_off_rounded,
+              size: 40,
+              color:
+                  isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            getEmptyTitle(),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+              fontFamily: AppTheme.getFontForLanguage(context, lang),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            getEmptySubtitle(),
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? Colors.white60 : Colors.black54,
+              fontFamily: AppTheme.getFontForLanguage(context, lang),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -2565,7 +2911,13 @@ JazakAllah Khair
     bool isDark,
     String lang,
   ) {
-    final list = JamaatTimesService.instance.getMasjidList();
+    final all = JamaatTimesService.instance.getMasjidList();
+    final list = all.where((m) => _masjidMatchesSearch(m, _searchQuery)).toList();
+    if (list.isEmpty) {
+      return [
+        _buildEmptySearchState(context, settings, isDark, lang),
+      ];
+    }
     return [
       for (final masjid in list)
         Padding(
@@ -2592,7 +2944,15 @@ JazakAllah Khair
     bool isDark,
     String lang,
   ) {
-    final allMasajid = JamaatTimesService.instance.getMasjidList();
+    final allMasajid = JamaatTimesService.instance
+        .getMasjidList()
+        .where((m) => _masjidMatchesSearch(m, _searchQuery))
+        .toList();
+    if (allMasajid.isEmpty) {
+      return [
+        _buildEmptySearchState(context, settings, isDark, lang),
+      ];
+    }
     final prayers = [
       {
         'key': 'Fajr',

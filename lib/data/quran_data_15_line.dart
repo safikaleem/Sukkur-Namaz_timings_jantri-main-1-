@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:quran/quran.dart' as quran;
-import 'quran_data.dart';
 
 /// 15-Line Saudi/Madani Mushaf Page Constants & Mapping
 /// PDF has 3 index pages + 614 content pages = 617 total.

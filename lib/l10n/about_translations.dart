@@ -13,6 +13,8 @@ The **Sukkur Salah** mobile application has been developed to keep you informed 
 **Daily and Monthly Timing Schedule**: View your daily prayer timings or know the schedule in advance with the help of a full monthly calendar.
 **Sukkur Masajid Jama'at Times**: (In Sukkur Mode Only) Live, cloud-synchronized congregational (Jama'at) prayer timings for various Masajid across Sukkur, keeping you updated with your local mosque schedule.
 **Pre-Jama'at Reminder**: (In Sukkur Mode Only) Timely alerts and reminders before Jama'at begins for your favorite selected mosque so you never miss congregation.
+**🔍 Masjid Search Bar**: Easily search any mosque or area across Sukkur in all 10 languages with instant smart multi-language search.
+**🎴 Branded Prayer & Jama'at Sharing Cards**: Easily save and share beautifully styled Islamic cards for daily prayer timings (for Sukkur and worldwide cities) and local mosque Jama'at schedules via WhatsApp, social media, or high-res PNG images.
 
 **📖 The Holy Quran and Daily Supplications**
 
@@ -58,6 +60,8 @@ The primary purpose of **Sukkur Salah** is to make you punctual in your prayers 
 **روزانہ اور ماہانہ اوقات کا شیڈول**: اپنے روزانہ کے نماز کے اوقات دیکھیں یا مکمل ماہانہ کیلنڈر کی مدد سے پہلے سے شیڈول جان لیں۔
 **سکھر کی مساجد کے اوقاتِ جماعت**: (صرف سکھر موڈ میں) سکھر کی مختلف مساجد میں باجماعت نماز کے تازہ ترین، لائیو اور کلاؤڈ کے ذریعے ہمہ وقت اپ ڈیٹ رہنے والے درست اوقات۔
 **جماعت سے قبل یاددہانی**: (صرف سکھر موڈ میں) اپنی پسندیدہ مسجد کے لیے جماعت شروع ہونے سے قبل بروقت الرٹ اور یاددہانی، تاکہ باجماعت نماز اور تکبیر اولیٰ فوت نہ ہو۔
+**🔍 مساجد سرچ بار**: اب تمام ۱۰ زبانوں میں سکھر کی کسی بھی مسجد یا علاقے کو فوری اور آسان ملٹی لینگویج سرچ کے ذریعے تلاش کریں۔
+**🎴 اوقاتِ نماز اور باجماعت شیئرنگ کارڈز**: روزانہ کے اوقاتِ نماز (سکھر اور دنیا بھر کے تمام شہروں کے لیے) اور مساجد کے اوقاتِ باجماعت کے خوبصورت اسلامی کارڈز باآسانی واٹس ایپ، سوشل میڈیا پر شیئر کریں یا ہائی ریزولوشن تصویر (PNG) کے طور پر محفوظ کریں۔
 
 **📖 قرآن مجید اور روزمرہ کی دعائیں**
 
@@ -103,6 +107,8 @@ The primary purpose of **Sukkur Salah** is to make you punctual in your prayers 
 **روزاني ۽ ماهوار وقتن جو شيڊول**: پنهنجي روزاني نماز جا وقت ڏسو يا مڪمل ماهوار ڪيلينڊر جي مدد سان اڳواٽ شيڊول ڄاڻو.
 **سکر جي مسجدن جا باجماعت نماز جا وقت**: (صرف سکر موڊ ۾) سکر جي مختلف مسجدن ۾ باجماعت نماز جا تازا ترين، لائيو ۽ ڪلائوڊ ذريعي هر وقت اپڊيٽ ٿيندڙ وقت.
 **جماعت کان اڳ ياد ڏياريندڙ (الرٽ)**: (صرف سکر موڊ ۾) پنهنجي پسنديده مسجد لاءِ جماعت شروع ٿيڻ کان اڳ بروقت الرٽ ته جيئن باجماعت نماز ۽ تڪبير اوليٰ نه ڇڏائجي.
+**🔍 مساجد سرچ بار**: هاڻي سڀني ۱۰ ٻولين ۾ سکر جي ڪنهن به مسجد يا علائقي کي فوري ۽ آسان ملٽي لئنگويج سرچ ذريعي ڳوليو.
+**🎴 نماز ۽ باجماعت شيئرنگ ڪارڊ**: روزاني نماز جا وقت (سکر ۽ سڄي دنيا جي شهرن لاءِ) ۽ مسجدن جا باجماعت وقت خوبصورت اسلامي ڪارڊن ذريعي واٽس ايپ، سوشل ميڊيا تي آسانيءَ سان شيئر ڪريو يا اعليٰ معيار واري تصوير (PNG) محفوظ ڪريو.
 
 **📖 قرآن مجيد ۽ روزانيون دعائون**
 
@@ -148,6 +154,8 @@ The primary purpose of **Sukkur Salah** is to make you punctual in your prayers 
 **جدول الأوقات اليومي والشهري**: اعرض أوقات الصلاة اليومية أو تعرف على الجدول الزمني مسبقاً بمساعدة تقويم شهري كامل.
 **أوقات صلاة الجماعة في مساجد سكر**: (في وضع سكر فقط) أوقات صلاة الجماعة المحدثة والمزامنة سحابياً لمختلف مساجد سكر.
 **تذكير ما قبل صلاة الجماعة**: (في وضع سكر فقط) تنبيهات وتذكيرات في الوقت المناسب قبل بدء صلاة الجماعة لمسجدك المفضل حتى لا تفوتك صلاة الجماعة وتكبيرة الإحرام.
+**🔍 شريط البحث عن المساجد**: ابحث الآن بسهولة عن أي مسجد أو منطقة في سَكَر بجميع اللغات العشر مع ميزة البحث الفوري متعدد اللغات.
+**🎴 بطاقات مشاركة أوقات الصلاة والجماعة**: يمكنك بسهولة حفظ ومشاركة بطاقات إسلامية مصممة بأناقة لمواقيت الصلاة اليومية (لسكر وجميع مدن العالم) ومواقيت صلاة الجماعة للمساجد عبر واتساب أو وسائل التواصل أو كصورة عالية الدقة (PNG).
 
 **📖 القرآن الكريم والأدعية اليومية**
 
@@ -193,6 +201,8 @@ The primary purpose of **Sukkur Salah** is to make you punctual in your prayers 
 **جدول زمان‌بندی روزانه و ماهانه**: اوقات نماز روزانه خود را مشاهده کنید یا با کمک یک تقویم ماهانه کامل، برنامه را از قبل بدانید.
 **اوقات جماعت مساجد سکر**: (فقط در حالت سکر) اوقات نماز جماعت تازه، زنده و همگام‌سازی شده با ابر برای مساجد مختلف سکر.
 **یادآوری قبل از جماعت**: (فقط در حالت سکر) هشدارها و یادآوری‌های به موقع قبل از شروع جماعت برای مسجد مورد علاقه شما تا هرگز نماز با جماعت را از دست ندهید.
+**🔍 نوار جستجوی مساجد**: اکنون در تمام ۱۰ زبان، هر مسجد یا منطقه‌ای در سکر را به راحتی با جستجوی چندزبانه فوری پیدا کنید.
+**🎴 کارت‌های اشتراک‌گذاری اوقات نماز و جماعت**: اوقات روزانه نماز (سکر و شهرهای جهان) و اوقات نماز جماعت مساجد را در قالب کارت‌های اسلامی بسیار زیبا به‌راحتی در واتس‌اپ و شبکه‌های اجتماعی به اشتراک بگذارید یا به عنوان تصویر باکیفیت (PNG) ذخیره کنید.
 
 **📖 قرآن کریم و ادعیه روزانه**
 
@@ -238,6 +248,8 @@ The primary purpose of **Sukkur Salah** is to make you punctual in your prayers 
 **দৈনিক এবং মাসিক সময়ের সময়সূচী**: আপনার দৈনিক নামাজের সময় দেখুন অথবা সম্পূর্ণ মাসিক ক্যালেন্ডারের সাহায্যে আগে থেকেই সময়সূচী জেনে নিন।
 **সুক্কুরের মসজিদসমূহের জামাতের সময়**: (শুধুমাত্র সুক্কুর মোডে) সুক্কুরের বিভিন্ন মসজিদে জামাতে নামাজের তাজা, লাইভ এবং ক্লাউড-সিঙ্ক করা সঠিক সময়।
 **জামাতের পূর্বে রিমাইন্ডার**: (শুধুমাত্র সুক্কুর মোডে) আপনার পছন্দের মসজিদের জন্য জামাত শুরু হওয়ার পূর্বে সময়োপযোগী অ্যালার্ট ও রিমাইন্ডার, যাতে জামাত ও তাকবীরে উলা মিস না হয়।
+**🔍 মসজিদ অনুসন্ধান বার**: এখন সকল ১০টি ভাষায় সুক্কুরের যেকোনো মসজিদ বা এলাকা তাৎক্ষণিক বহুভাষিক অনুসন্ধানের মাধ্যমে সহজেই খুঁজুন।
+**🎴 নামাজ ও জামায়াত শেয়ারিং কার্ড**: দৈনিক নামাজের সময়সূচি (সুক্কুর ও বিশ্বব্যাপী শহরের জন্য) এবং স্থানীয় মসজিদের জামায়াত সময়সূচি সুন্দর ইসলামিক কার্ডের মাধ্যমে হোয়াটসঅ্যাপ বা সোশ্যাল মিডিয়ায় শেয়ার করুন অথবা হাই-রেজোলিউশন PNG ছবি সংরক্ষণ করুন।
 
 **📖 পবিত্র কুরআন এবং দৈনন্দিন দোয়া**
 
@@ -283,6 +295,8 @@ The primary purpose of **Sukkur Salah** is to make you punctual in your prayers 
 **दैनिक और मासिक समय सारिणी**: अपने दैनिक नमाज़ का समय देखें या संपूर्ण मासिक कैलेंडर की मदद से पहले से ही समय सारिणी जान लें।
 **सुक्कुर की मस्जिदों के जमात के समय**: (केवल सुक्कुर मोड में) सुक्कुर की विभिन्न मस्जिदों में बा-जमात नमाज़ के ताज़ा, लाइव और क्लाउड-सिंक्रनाइज़ किए गए सही समय।
 **जमात से पूर्व अनुस्मारक (रिमाइंडर)**: (केवल सुक्कुर मोड में) अपनी पसंदीदा मस्जिद के लिए जमात शुरू होने से पहले समय पर अलर्ट और रिमाइंडर, ताकि तकबीर-ए-ऊला न छूटे।
+**🔍 मस्जिद सर्च बार**: अब सभी 10 भाषाओं में सुक्कुर की किसी भी मस्जिद या क्षेत्र को त्वरित और आसान बहुभाषी खोज के साथ खोजें।
+**🎴 नमाज़ और जमात शेयरिंग कार्ड**: दैनिक नमाज़ के समय (सुक्कुर और दुनिया भर के शहरों के लिए) और मस्जिदों के जमात کے समय के आकर्षक इस्लामिक कार्ड आसानी से व्हाट्सएप, सोशल मीडिया पर शेयर करें या उच्च गुणवत्ता वाली PNG छवि के रूप में सुरक्षित करें।
 
 **📖 पवित्र कुरान और रोज़मर्रा की दुआएँ**
 
@@ -328,6 +342,8 @@ The primary purpose of **Sukkur Salah** is to make you punctual in your prayers 
 **Günlük ve Aylık Vakit Programı**: Günlük namaz vakitlerinizi görün veya tam aylık takvim yardımıyla programı önceden öğrenin.
 **Sukkur Camileri Cemaat Vakitleri**: (Yalnızca Sukkur Modunda) Sukkur'daki çeşitli camiler için canlı, bulut senkronizasyonlu cemaatle namaz vakitleri.
 **Cemaat Öncesi Hatırlatıcı**: (Yalnızca Sukkur Modunda) Cemaati ve ilk tekbiri kaçırmamanız için favori caminizde cemaat başlamadan önce zamanında uyarılar ve hatırlatıcılar.
+**🔍 Cami Arama Çubuğu**: Sukkur'daki herhangi bir camiyi veya bölgeyi 10 dilde anında ve kolay çok dilli arama ile bulun.
+**🎴 Namaz ve Cemaat Vakitleri Paylaşım Kartları**: Günlük namaz vakitleri (Sukkur ve dünya şehirleri için) ve cami cemaat vakitleri için zarif İslami kartları WhatsApp ve sosyal medyada kolayca paylaşın veya yüksek çözünürlüklü PNG resmi olarak kaydedin.
 
 **📖 Kur'an-ı Kerim ve Günlük Dualar**
 
@@ -373,6 +389,8 @@ L'application mobile **Sukkur Salah** a été développée pour vous tenir infor
 **Calendrier des horaires quotidiens et mensuels** : Consultez vos horaires de prière quotidiens ou connaissez le programme à l'avance à l'aide d'un calendrier mensuel complet.
 **Horaires de Jama'at des mosquées de Sukkur** : (En mode Sukkur uniquement) Horaires des prières en congrégation (Jama'at) en direct et synchronisés dans le cloud pour diverses mosquées de Sukkur.
 **Rappel avant la Jama'at** : (En mode Sukkur uniquement) Alertes et rappels opportuns avant le début de la Jama'at pour votre mosquée préférée afin de ne jamais manquer la prière en congrégation.
+**🔍 Barre de recherche de mosquées** : Recherchez désormais facilement n'importe quelle mosquée ou quartier à Sukkur dans les 10 langues grâce à la recherche multilingue instantanée.
+**🎴 Cartes de partage des prières et de Jama'at** : Enregistrez et partagez facilement d'élégantes cartes islamiques pour les horaires de prière quotidiens (Sukkur et villes du monde) et les horaires de Jama'at via WhatsApp, les réseaux sociaux ou sous forme d'image PNG haute résolution.
 
 **📖 Le Saint Coran et les supplications quotidiennes**
 
@@ -418,6 +436,8 @@ Aplikasi seluler **Sukkur Salah** telah dikembangkan untuk terus memberi Anda in
 **Jadwal Waktu Harian dan Bulanan**: Lihat waktu shalat harian Anda atau ketahui jadwal sebelumnya dengan bantuan kalender bulanan penuh.
 **Waktu Jamaah Masjid Sukkur**: (Hanya dalam Mode Sukkur) Waktu shalat berjamaah langsung dan tersinkronisasi awan untuk berbagai masjid di Sukkur.
 **Pengingat Pra-Jamaah**: (Hanya dalam Mode Sukkur) Peringatan dan pengingat tepat waktu sebelum shalat berjamaah dimulai di masjid favorit Anda agar tidak ketinggalan takbir pertama.
+**🔍 Bilah Pencarian Masjid**: Sekarang cari masjid atau wilayah mana pun di Sukkur dengan mudah dalam 10 bahasa melalui pencarian multibahasa instan.
+**🎴 Kartu Berbagi Jadwal Sholat & Jamaah**: Simpan dan bagikan kartu Islami berdesain elegan untuk jadwal sholat harian (Sukkur & kota dunia) serta jadwal jamaah masjid dengan mudah melalui WhatsApp, media sosial, atau gambar resolusi tinggi (PNG).
 
 **📖 Al-Qur'an Suci dan Doa Harian**
 

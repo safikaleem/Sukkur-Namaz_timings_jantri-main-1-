@@ -13,6 +13,7 @@ import '../providers/settings_provider.dart';
 import '../services/widget_service.dart';
 import '../widgets/suhoor_iftar_card.dart';
 import '../utils/urdu_strings.dart';
+import '../widgets/timings_share_card.dart';
 
 class TodayScreen extends StatefulWidget {
   const TodayScreen({super.key});
@@ -244,6 +245,29 @@ class _TodayScreenState extends State<TodayScreen> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      IconButton(
+                        icon: const Icon(Icons.share_rounded, size: 20),
+                        color: AppTheme.accent,
+                        tooltip: settings.translate(
+                          'Share Timings Card',
+                          'اوقاتِ نماز کارڈ شیئر کریں',
+                          'نماز جا وقت شيئر ڪريو',
+                          'مشاركة بطاقة مواقيت الصلاة',
+                        ),
+                        onPressed: _today == null
+                            ? null
+                            : () {
+                                TimingsShareService.showNamazShareModal(
+                                  context: context,
+                                  dayTiming: _today!,
+                                  date: _selectedDate,
+                                  settings: settings,
+                                );
+                              },
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                      ),
+                      const SizedBox(width: 4),
                       IconButton(
                         icon: const Icon(Icons.chevron_left_rounded, size: 26),
                         color: isDark ? Colors.white70 : Colors.black54,
