@@ -314,7 +314,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
       }
 
       // 2. Notification
-      await NotificationService.instance.requestPermissions();
+      await NotificationService.instance.requestNotificationsPermission();
+      final canExact = await NotificationService.instance.canScheduleExactAlarms();
+      if (!canExact && mounted) {
+        await NotificationService.instance.requestExactAlarms();
+        await _waitForResume();
+      }
       if (mounted) setState(() => _notifTicked = true);
 
       // 3. Battery / AutoStart

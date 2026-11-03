@@ -172,12 +172,48 @@ class NotificationService {
         AndroidFlutterLocalNotificationsPlugin>();
     await _createChannels(android);
     final prefs = await SharedPreferences.getInstance();
-    final bool liveEnabled = prefs.getBool('live_countdown_enabled') ?? false;
+    // One-time migration: enable the ongoing prayer countdown status bar by default
+    // (like other prayer apps) so aggressive OEMs (Infinix XOS, Tecno HiOS, Vivo,
+    // Xiaomi) recognize Sukkur Salah as an active foreground/visible service and
+    // never deep-freeze its background alarms. Users can still turn it off anytime.
+    if (!(prefs.getBool('live_countdown_default_v2') ?? false)) {
+      await prefs.setBool('live_countdown_default_v2', true);
+      if (!prefs.containsKey('live_countdown_enabled')) {
+        await prefs.setBool('live_countdown_enabled', true);
+      }
+    }
+    final bool liveEnabled = prefs.getBool('live_countdown_enabled') ?? true;
     if (liveEnabled) {
       startLiveCountdownTimer();
     } else {
       await cancelLiveCountdown();
     }
+    // Immediately cancel any past-due prayer alarm IDs from earlier today so
+    // opening the app never triggers a late burst of old notifications.
+    await _purgePastDueTodayAlarms();
+  }
+
+  /// Cancels any prayer notification IDs for today whose time has already passed
+  /// by more than 5 minutes, preventing OEM-deferred alarms from dumping in a
+  /// batch when the user opens the app hours later.
+  Future<void> _purgePastDueTodayAlarms() async {
+    if (kIsWeb || _plugin == null) return;
+    try {
+      final now = TimingsData.instance.nowForTimings();
+      final todayTiming = TimingsData.instance.timingFor(now);
+      if (todayTiming == null) return;
+      for (final prayer in todayTiming.allTimings) {
+        final prayerDt = prayer.toDateTime(date: now);
+        if (now.difference(prayerDt).inMinutes >= 5) {
+          final base = baseIds[prayer.name];
+          if (base != null) {
+            // Cancel both dayOffset 0 (scheduled today) and dayOffset 1 (scheduled yesterday for today)
+            await _plugin!.cancel(base);
+            await _plugin!.cancel(base + 1);
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> requestPermissions() async {
@@ -438,23 +474,28 @@ class NotificationService {
     final android = _plugin!.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     final canExact = await android?.canScheduleExactNotifications() ?? false;
-    // alarmClock mode uses AlarmManager.setAlarmClock() — the same API used
-    // by Samsung Clock, Google Clock, and all reliable alarm apps. Unlike
-    // setExactAndAllowWhileIdle(), it CANNOT be deferred or canceled by any
-    // OEM battery optimizer (Samsung, Vivo, Xiaomi, etc.), ensuring prayer
-    // notifications fire exactly on time on ALL Android devices including
-    // older ones (Android 9/10/11) that lack USE_EXACT_ALARM protection.
-    // Side effect: shows a small ⏰ icon in status bar for next prayer time.
-    final scheduleMode = canExact
+    // Tiered exact-alarm strategy:
+    // - Next 48 hours (dayOffset 0 & 1, ~20 alarms): use AlarmManager.setAlarmClock()
+    //   which has hardware RTC wake priority and cannot be deferred by OEM Doze/Phone Master.
+    // - Days 2..13: use setExactAndAllowWhileIdle() so we never register 150+ setAlarmClock()
+    //   calls in a single burst (which hits OEM/MediaTek/XOS alarm-clock rate limits and
+    //   causes silent fallback to batched inexactAllowWhileIdle!).
+    final nearScheduleMode = canExact
         ? AndroidScheduleMode.alarmClock
         : AndroidScheduleMode.inexactAllowWhileIdle;
-    debugPrint('Schedule Mode: ${canExact ? "EXACT" : "INEXACT (Fallback)"}');
+    final farScheduleMode = canExact
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+    debugPrint('Schedule Mode: ${canExact ? "EXACT (48h AlarmClock + 12d ExactIdle)" : "INEXACT (Fallback)"}');
 
-    final selectedAzanIndex = prefs.getInt('selected_azan_index') ?? prefs.getInt('selected_azan') ?? 0;
+    final selectedAzanIndex = prefs.getInt('selected_azan_index') ?? prefs.getInt('selected_azan') ?? 3;
     final timingsLocation = _timingsLocation(prefs);
 
     // Ensure TimingsData is loaded (crucial for background task)
     await TimingsData.instance.load();
+
+    // Purge any already-passed prayer alarms from earlier today before scheduling new ones.
+    await _purgePastDueTodayAlarms();
 
     // In the timings' own frame, so "has this prayer already passed?" is asked
     // against the same clock the times are written in.
@@ -468,6 +509,7 @@ class NotificationService {
       final date = now.add(Duration(days: dayOffset));
       final timing = TimingsData.instance.timingFor(date);
       if (timing == null) continue;
+      final dayScheduleMode = dayOffset < 7 ? nearScheduleMode : farScheduleMode;
 
       for (final prayer in timing.allTimings) {
         final prefKey = _prefKeys[prayer.name];
@@ -515,14 +557,14 @@ class NotificationService {
             body: body,
             scheduledDate: tzDateTime,
             notificationDetails: _detailsFor(mode, selectedAzanIndex, isRtl: rtlLanguages.contains(langCode)),
-            scheduleMode: scheduleMode,
+            scheduleMode: dayScheduleMode,
           );
           writtenIds.add(notifId);
           batchCounter++;
-          // Yield to event loop every 3 notifications to process pending touch
-          // and window dispatching events, preventing ANR (Input dispatching timed out).
+          // Yield to event loop every 3 notifications so Android Binder IPC
+          // and OEM AlarmManager queues are never flooded.
           if (batchCounter % 3 == 0) {
-            await Future.delayed(const Duration(milliseconds: 1));
+            await Future.delayed(const Duration(milliseconds: 5));
           }
         } catch (e) {
           debugPrint('Failed to schedule notification $notifId: $e');
@@ -531,9 +573,9 @@ class NotificationService {
     }
 
     writtenIds.addAll(
-        await _scheduleCustomReminders(prefs, now, scheduleMode));
+        await _scheduleCustomReminders(prefs, now, farScheduleMode));
     writtenIds.addAll(
-        await _scheduleWeeklyFridayNotification(prefs, now, scheduleMode));
+        await _scheduleWeeklyFridayNotification(prefs, now, farScheduleMode));
 
     // Only now, with every replacement safely in place, drop what this run no
     // longer needs - a prayer switched off, a deleted reminder, a day that has
@@ -542,8 +584,9 @@ class NotificationService {
 
     // Schedule Auto-Silent alarms
     final autoSilentEnabled = prefs.getBool('auto_silent_enabled') ?? false;
+    final customSilentEnabled = prefs.getBool('custom_silent_enabled') ?? false;
     const nativeChannel = MethodChannel('pk.sukkur.salah/native_helper');
-    if (autoSilentEnabled) {
+    if (autoSilentEnabled || customSilentEnabled) {
       final autoSilentMode = prefs.getString('auto_silent_mode') ?? 'vibrate';
       final List<Map<String, dynamic>> silentAlarms = [];
       final silentBases = {
@@ -555,40 +598,75 @@ class NotificationService {
         'Isha': 5000,
       };
 
-      for (int dayOffset = 0; dayOffset < 7; dayOffset++) {
-        final date = now.add(Duration(days: dayOffset));
-        final timing = TimingsData.instance.timingFor(date);
-        if (timing == null) continue;
+      if (autoSilentEnabled) {
+        for (int dayOffset = 0; dayOffset < 7; dayOffset++) {
+          final date = now.add(Duration(days: dayOffset));
+          final timing = TimingsData.instance.timingFor(date);
+          if (timing == null) continue;
 
-        for (final prayer in timing.allTimings) {
-          final base = silentBases[prayer.name];
-          if (base != null) {
-            final isPrayerAutoSilentEnabled = prefs.getBool('auto_silent_enabled_${prayer.name}') ?? true;
-            if (!isPrayerAutoSilentEnabled) continue;
+          for (final prayer in timing.allTimings) {
+            final base = silentBases[prayer.name];
+            if (base != null) {
+              final isPrayerAutoSilentEnabled = prefs.getBool('auto_silent_enabled_${prayer.name}') ?? false;
+              if (!isPrayerAutoSilentEnabled) continue;
 
-            final offset = prefs.getInt('auto_silent_offset_${prayer.name}') ?? (prayer.name == 'Maghrib' ? 5 : 15);
-            final duration = prefs.getInt('auto_silent_duration_${prayer.name}') ?? (prayer.name == 'Maghrib' ? 15 : 20);
+              final offset = prefs.getInt('auto_silent_offset_${prayer.name}') ?? (prayer.name == 'Maghrib' ? 5 : 15);
+              final duration = prefs.getInt('auto_silent_duration_${prayer.name}') ?? (prayer.name == 'Maghrib' ? 15 : 20);
 
-            final prayerDt = prayer.toDateTime(date: date);
-            final startDt = prayerDt.add(Duration(minutes: offset));
-            final endDt = startDt.add(Duration(minutes: duration));
+              final prayerDt = prayer.toDateTime(date: date);
+              final startDt = prayerDt.add(Duration(minutes: offset));
+              final endDt = startDt.add(Duration(minutes: duration));
 
-            if (startDt.isAfter(now)) {
-              silentAlarms.add({
-                'id': base + dayOffset,
-                'triggerTimeMillis': startDt.millisecondsSinceEpoch,
-                'type': 'start',
-                'mode': autoSilentMode,
-              });
+              if (startDt.isAfter(now)) {
+                silentAlarms.add({
+                  'id': base + dayOffset,
+                  'triggerTimeMillis': startDt.millisecondsSinceEpoch,
+                  'type': 'start',
+                  'mode': autoSilentMode,
+                });
+              }
+              if (endDt.isAfter(now)) {
+                silentAlarms.add({
+                  'id': base + 100 + dayOffset,
+                  'triggerTimeMillis': endDt.millisecondsSinceEpoch,
+                  'type': 'restore',
+                  'mode': autoSilentMode,
+                });
+              }
             }
-            if (endDt.isAfter(now)) {
-              silentAlarms.add({
-                'id': base + 100 + dayOffset,
-                'triggerTimeMillis': endDt.millisecondsSinceEpoch,
-                'type': 'restore',
-                'mode': autoSilentMode,
-              });
-            }
+          }
+        }
+      }
+
+      if (customSilentEnabled) {
+        final customSilentStartHour = prefs.getInt('custom_silent_start_hour') ?? 13;
+        final customSilentStartMinute = prefs.getInt('custom_silent_start_minute') ?? 30;
+        final customSilentEndHour = prefs.getInt('custom_silent_end_hour') ?? 14;
+        final customSilentEndMinute = prefs.getInt('custom_silent_end_minute') ?? 0;
+
+        for (int dayOffset = 0; dayOffset < 7; dayOffset++) {
+          final date = now.add(Duration(days: dayOffset));
+          final customStartDt = DateTime(date.year, date.month, date.day, customSilentStartHour, customSilentStartMinute);
+          var customEndDt = DateTime(date.year, date.month, date.day, customSilentEndHour, customSilentEndMinute);
+          if (customEndDt.isBefore(customStartDt)) {
+            customEndDt = customEndDt.add(const Duration(days: 1));
+          }
+
+          if (customStartDt.isAfter(now)) {
+            silentAlarms.add({
+              'id': 7000 + dayOffset,
+              'triggerTimeMillis': customStartDt.millisecondsSinceEpoch,
+              'type': 'start',
+              'mode': autoSilentMode,
+            });
+          }
+          if (customEndDt.isAfter(now)) {
+            silentAlarms.add({
+              'id': 7100 + dayOffset,
+              'triggerTimeMillis': customEndDt.millisecondsSinceEpoch,
+              'type': 'restore',
+              'mode': autoSilentMode,
+            });
           }
         }
       }
@@ -654,7 +732,7 @@ class NotificationService {
         final safeIndex =
             (selectedAzanIndex >= 0 && selectedAzanIndex < azanTracks.length)
                 ? selectedAzanIndex
-                : 0;
+                : 3;
         final track = azanTracks[safeIndex];
 
         channelId = _getAzanChannelId(safeIndex);
@@ -1264,7 +1342,7 @@ class NotificationService {
     await recreationChannels();
     
     final prefs = await SharedPreferences.getInstance();
-    final selectedAzanIndex = prefs.getInt('selected_azan_index') ?? prefs.getInt('selected_azan') ?? 0;
+    final selectedAzanIndex = prefs.getInt('selected_azan_index') ?? prefs.getInt('selected_azan') ?? 3;
     
     final modeStr = prefs.getString('alert_mode_zuhar') ?? 'loud';
     var mode = AlertMode.values.firstWhere(
@@ -1612,7 +1690,7 @@ class NotificationService {
               presentSound: true,
             );
 
-            final details = NotificationDetails(
+            const details = NotificationDetails(
               android: androidDetails,
               iOS: iosDetails,
             );

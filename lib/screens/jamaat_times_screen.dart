@@ -1,17 +1,21 @@
-import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/url_helper.dart';
 import '../l10n/world_translations.dart';
 import '../l10n/world_translations_extra.dart';
 import '../providers/settings_provider.dart';
 import '../services/jamaat_times_service.dart';
 import '../utils/app_theme.dart';
 import '../widgets/timings_share_card.dart';
+import 'developer_add_masjid_screen.dart';
+import 'developer_dashboard_screen.dart';
 
 class JamaatTimesScreen extends StatefulWidget {
-  const JamaatTimesScreen({super.key});
+  final bool isActive;
+  const JamaatTimesScreen({super.key, this.isActive = true});
 
   @override
   State<JamaatTimesScreen> createState() => _JamaatTimesScreenState();
@@ -22,16 +26,288 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
   String _selectedPrayerFilter = 'All'; // 'All', 'Fajr', 'Zuhar', 'Asar', 'Maghrib', 'Isha', 'Jummah'
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  Timer? _liveSyncTimer;
+
+  List<String> _pinnedMasjidIds = [];
+  static const String _pinnedPrefsKey = 'pinned_jamaat_masjid_ids';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    JamaatTimesService.instance.addListener(_onServiceUpdated);
+    _loadPinnedMasajid();
     _loadRemoteTimings();
+    if (widget.isActive) {
+      _startLiveSyncTimer();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant JamaatTimesScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _loadRemoteTimings(force: true);
+      _startLiveSyncTimer();
+    } else if (!widget.isActive && oldWidget.isActive) {
+      _stopLiveSyncTimer();
+    }
+  }
+
+  void _startLiveSyncTimer() {
+    _liveSyncTimer?.cancel();
+    _liveSyncTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted && widget.isActive) {
+        JamaatTimesService.instance.fetchFirestoreTimings();
+      }
+    });
+  }
+
+  void _stopLiveSyncTimer() {
+    _liveSyncTimer?.cancel();
+    _liveSyncTimer = null;
+  }
+
+  void _onServiceUpdated() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _loadPinnedMasajid() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getStringList(_pinnedPrefsKey) ?? [];
+      if (mounted) {
+        setState(() {
+          _pinnedMasjidIds = saved;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading pinned masajid: $e');
+    }
+  }
+
+  Future<void> _savePinnedMasajid() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_pinnedPrefsKey, _pinnedMasjidIds);
+    } catch (e) {
+      debugPrint('Error saving pinned masajid: $e');
+    }
+  }
+
+  Future<void> _togglePinMasjid(JamaatMasjidInfo masjid, SettingsProvider settings) async {
+    final id = masjid.id;
+    final isPinned = _pinnedMasjidIds.contains(id);
+
+    if (isPinned) {
+      setState(() {
+        _pinnedMasjidIds.remove(id);
+      });
+      _savePinnedMasajid();
+      if (mounted) {
+        _showPinFeedback(
+          context,
+          settings,
+          isPinned: false,
+          masjidName: _getMasjidName(settings, masjid),
+        );
+      }
+    } else {
+      if (_pinnedMasjidIds.length >= 3) {
+        if (mounted) {
+          _showMaxPinsReachedMessage(context, settings);
+        }
+        return;
+      }
+      setState(() {
+        _pinnedMasjidIds.add(id);
+      });
+      _savePinnedMasajid();
+      if (mounted) {
+        _showPinFeedback(
+          context,
+          settings,
+          isPinned: true,
+          masjidName: _getMasjidName(settings, masjid),
+        );
+      }
+    }
+  }
+
+  void _showMaxPinsReachedMessage(BuildContext context, SettingsProvider settings) {
+    final lang = settings.language;
+    String message;
+    switch (lang) {
+      case 'urdu':
+        message = 'آپ زیادہ سے زیادہ ۳ مساجد کو پن کر سکتے ہیں۔ پہلے کسی ایک کو ان پن کریں۔';
+        break;
+      case 'sindhi':
+        message = 'توهان وڌ ۾ وڌ ۳ مسجدن کي پن ڪري سگهو ٿا. مهرباني ڪري پهرين ڪنهن هڪ کي ان پن ڪريو.';
+        break;
+      case 'arabic':
+        message = 'يمكنك تثبيت ما يصل إلى 3 مساجد فقط. يرجى إلغاء تثبيت مسجد أولاً.';
+        break;
+      case 'bengali':
+        message = 'আপনি সর্বাধিক ৩টি মসজিদ পিন করতে পারেন। অনুগ্রহ করে প্রথমে একটি আনপিন করুন।';
+        break;
+      case 'hindi':
+        message = 'आप अधिकतम 3 मस्जिदें पिन कर सकते हैं। कृपया पहले एक को अनपिन करें।';
+        break;
+      case 'turkish':
+        message = 'En fazla 3 cami sabitleyebilirsiniz. Lütfen önce birinin sabitlemesini kaldırın.';
+        break;
+      case 'indonesian':
+        message = 'Anda dapat menyematkan hingga 3 masjid. Harap lepas sematan salah satu terlebih dahulu.';
+        break;
+      case 'french':
+        message = 'Vous pouvez épingler jusqu\'à 3 mosquées. Veuillez d\'abord en détacher une.';
+        break;
+      case 'persian':
+        message = 'حداکثر می‌توانید ۳ مسجد را پین کنید. لطفاً ابتدا یکی را از حالت پین خارج کنید.';
+        break;
+      case 'english':
+      default:
+        message = 'You can pin up to 3 masajid. Please unpin one first.';
+    }
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.info_outline_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  fontFamily: AppTheme.getFontForLanguage(context, lang),
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFFC05621),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  void _showPinFeedback(
+    BuildContext context,
+    SettingsProvider settings, {
+    required bool isPinned,
+    required String masjidName,
+  }) {
+    final lang = settings.language;
+    String actionText;
+    if (isPinned) {
+      switch (lang) {
+        case 'urdu':
+          actionText = 'سب سے اوپر پن کر دی گئی';
+          break;
+        case 'sindhi':
+          actionText = 'سڀ کان مٿي پن ڪئي وئي';
+          break;
+        case 'arabic':
+          actionText = 'تم التثبيت في الأعلى';
+          break;
+        case 'bengali':
+          actionText = 'শীর্ষে পিন করা হয়েছে';
+          break;
+        case 'hindi':
+          actionText = 'शीर्ष पर पिन किया गया';
+          break;
+        case 'turkish':
+          actionText = 'En üste sabitlendi';
+          break;
+        case 'indonesian':
+          actionText = 'Disematkan ke atas';
+          break;
+        case 'french':
+          actionText = 'Épinglée en haut';
+          break;
+        case 'persian':
+          actionText = 'در بالا پین شد';
+          break;
+        default:
+          actionText = 'Pinned to top';
+      }
+    } else {
+      switch (lang) {
+        case 'urdu':
+          actionText = 'سے پن ہٹا دیا گیا';
+          break;
+        case 'sindhi':
+          actionText = 'تان پن هٽايو ويو';
+          break;
+        case 'arabic':
+          actionText = 'تم إلغاء التثبيت';
+          break;
+        case 'bengali':
+          actionText = 'আনপিন করা হয়েছে';
+          break;
+        case 'hindi':
+          actionText = 'अनपिन किया गया';
+          break;
+        case 'turkish':
+          actionText = 'Sabitleme kaldırıldı';
+          break;
+        case 'indonesian':
+          actionText = 'Sematan dilepas';
+          break;
+        case 'french':
+          actionText = 'Détachée';
+          break;
+        case 'persian':
+          actionText = 'از پین خارج شد';
+          break;
+        default:
+          actionText = 'Unpinned';
+      }
+    }
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '$masjidName: $actionText',
+                style: TextStyle(
+                  fontFamily: AppTheme.getFontForLanguage(context, lang),
+                  fontSize: 13,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isPinned ? const Color(0xFF1B4332) : const Color(0xFF4A5568),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   @override
   void dispose() {
+    _stopLiveSyncTimer();
+    JamaatTimesService.instance.removeListener(_onServiceUpdated);
     _searchController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -40,12 +316,12 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _loadRemoteTimings();
+      _loadRemoteTimings(force: true);
     }
   }
 
-  Future<bool> _loadRemoteTimings() async {
-    final success = await JamaatTimesService.instance.fetchRemoteGistTimings();
+  Future<bool> _loadRemoteTimings({bool force = false}) async {
+    final success = await JamaatTimesService.instance.fetchRemoteGistTimings(force: force);
     if (mounted) setState(() {});
     return success;
   }
@@ -485,6 +761,9 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lang = settings.language;
 
+    // Trigger live background Firestore check whenever a user opens a Masjid card
+    JamaatTimesService.instance.fetchFirestoreTimings();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -505,7 +784,9 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
           }
         }
 
-        return StatefulBuilder(
+        return ListenableBuilder(
+          listenable: JamaatTimesService.instance,
+          builder: (listenCtx, _) => StatefulBuilder(
           builder: (modalCtx, setModalState) {
             final timing = JamaatTimesService.instance.getTimingFor(masjid);
             return Listener(
@@ -622,7 +903,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                                 // ── Header Card ──────────────────────────────────────
                                 Container(
                                   margin: const EdgeInsets.symmetric(horizontal: 16),
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: isDark
@@ -641,165 +922,266 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                     ),
                   ],
                 ),
-                child: Row(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.access_time_filled_rounded,
-                        size: 32,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _getMasjidName(settings, masjid),
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              fontFamily:
-                                  AppTheme.getFontForLanguage(context, lang),
-                            ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _getMasjidAddress(settings, masjid),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w400,
-                            ),
+                          child: const Icon(
+                            Icons.access_time_filled_rounded,
+                            size: 28,
+                            color: Colors.white,
                           ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: isRefreshing
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _getMasjidName(settings, masjid),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  fontFamily:
+                                      AppTheme.getFontForLanguage(context, lang),
+                                ),
                               ),
-                            )
-                          : const Icon(
-                              Icons.refresh_rounded,
-                              color: Colors.white,
-                              size: 26,
-                            ),
-                      tooltip: _getRefreshTimingsTooltip(settings),
-                      onPressed: isRefreshing
-                          ? null
-                          : () async {
-                              setModalState(() => isRefreshing = true);
-                              final success = await JamaatTimesService.instance.fetchRemoteGistTimings();
-                              if (context.mounted) {
-                                setState(() {});
-                              }
-                              if (modalCtx.mounted) {
-                                setModalState(() => isRefreshing = false);
-                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    behavior: SnackBarBehavior.floating,
-                                    backgroundColor: success
-                                        ? const Color(0xFF1B4332)
-                                        : const Color(0xFFB00020),
-                                    content: Text(
-                                      success
-                                          ? _getJamaatTimesUpdatedMessage(settings)
-                                          : _getJamaatTimesFailedMessage(settings),
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontFamily: AppTheme.getFontForLanguage(
-                                          context,
-                                          settings.language,
-                                        ),
-                                      ),
-                                    ),
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-                              }
-                            },
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        settings.favoriteMasjidId == masjid.id
-                            ? Icons.star_rounded
-                            : Icons.star_outline_rounded,
-                        color: settings.favoriteMasjidId == masjid.id
-                            ? const Color(0xFFE5C158)
-                            : Colors.white60,
-                        size: 28,
-                      ),
-                      tooltip: _t(
-                        settings,
-                        'Set as Favorite Masjid for Jama\'at Alarms',
-                        'باجماعت الارم کے لیے پسندیدہ مسجد مقرر کریں',
-                        'باجماعت الارم لاءِ پسنديده مسجد مقرر ڪريو',
-                        'تعيين كمسجد مفضل لمنبهات صلاة الجماعة',
-                      ),
-                      onPressed: () {
-                        final isRemoving = settings.favoriteMasjidId == masjid.id;
-                        settings.setFavoriteMasjidId(masjid.id);
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              isRemoving
-                                  ? _t(
-                                      settings,
-                                      'Removed from Favorite Masjids',
-                                      'پسندیدہ مساجد سے ہٹا دیا گیا',
-                                      'پسنديده مساجد مان هٽايو ويو',
-                                      'تمت الإزالة من المساجد المفضلة',
-                                    )
-                                  : _t(
-                                      settings,
-                                      'Saved as Favorite Masjid for Jama\'at Alarms',
-                                      'باجماعت نماز الارم کے لیے پسندیدہ مسجد منتخب ہو گئی',
-                                      'باجماعت نماز الارم لاءِ پسنديده مسجد محفوظ ٿي وئي',
-                                      'تم الحفظ كمسجد مفضل لمنبهات صلاة الجماعة',
-                                    ),
-                            ),
-                            duration: const Duration(seconds: 2),
+                              const SizedBox(height: 3),
+                              Text(
+                                _getMasjidAddress(settings, masjid),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
                           ),
-                        );
-                      },
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.share_rounded,
-                        color: Colors.white70,
-                        size: 24,
-                      ),
-                      tooltip: _t(
-                        settings,
-                        'Share Masjid Jama\'at Times Card',
-                        'مسجد باجماعت کارڈ شیئر کریں',
-                        'مسجد باجماعت ڪارڊ شيئر ڪريو',
-                        'مشاركة بطاقة صلاة الجماعة للمسجد',
-                      ),
-                      onPressed: () {
-                        TimingsShareService.showMasjidShareModal(
-                          context: context,
-                          masjid: masjid,
-                          timing: timing,
-                          date: DateTime.now(),
-                          settings: settings,
-                        );
-                      },
+                    const SizedBox(height: 10),
+                    Divider(
+                      height: 1,
+                      thickness: 0.7,
+                      color: Colors.white.withValues(alpha: 0.16),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        // 1. Pin to Top
+                        Expanded(
+                          child: Tooltip(
+                            message: _pinnedMasjidIds.contains(masjid.id)
+                                ? _t(settings, 'Unpin', 'ان پن کریں', 'ان پن ڪريو', 'إلغاء التثبيت')
+                                : _t(settings, 'Pin to top (max 3)', 'سب سے اوپر پن کریں (زیادہ سے زیادہ ۳)', 'سڀ کان مٿي پن ڪريو (وڌ ۾ وڌ ۳)', 'تثبيت في الأعلى (بحد أقصى 3)'),
+                            child: Material(
+                              color: _pinnedMasjidIds.contains(masjid.id)
+                                  ? const Color(0xFFFFD54F).withValues(alpha: 0.22)
+                                  : Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: () {
+                                  _togglePinMasjid(masjid, settings);
+                                  setModalState(() {});
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 7),
+                                  child: Center(
+                                    child: Icon(
+                                      _pinnedMasjidIds.contains(masjid.id)
+                                          ? Icons.push_pin_rounded
+                                          : Icons.push_pin_outlined,
+                                      color: _pinnedMasjidIds.contains(masjid.id)
+                                          ? const Color(0xFFFFD54F)
+                                          : Colors.white,
+                                      size: 21,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // 2. Refresh Timings
+                        Expanded(
+                          child: Tooltip(
+                            message: _getRefreshTimingsTooltip(settings),
+                            child: Material(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: isRefreshing
+                                    ? null
+                                    : () async {
+                                        setModalState(() => isRefreshing = true);
+                                        final success = await JamaatTimesService.instance.fetchRemoteGistTimings(force: true);
+                                        if (context.mounted) {
+                                          setState(() {});
+                                        }
+                                        if (modalCtx.mounted) {
+                                          setModalState(() => isRefreshing = false);
+                                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              behavior: SnackBarBehavior.floating,
+                                              backgroundColor: success
+                                                  ? const Color(0xFF1B4332)
+                                                  : const Color(0xFFB00020),
+                                              content: Text(
+                                                success
+                                                    ? _getJamaatTimesUpdatedMessage(settings)
+                                                    : _getJamaatTimesFailedMessage(settings),
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontFamily: AppTheme.getFontForLanguage(
+                                                    context,
+                                                    settings.language,
+                                                  ),
+                                                ),
+                                              ),
+                                              duration: const Duration(seconds: 2),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 7),
+                                  child: Center(
+                                    child: isRefreshing
+                                        ? const SizedBox(
+                                            width: 19,
+                                            height: 19,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            ),
+                                          )
+                                        : const Icon(
+                                            Icons.refresh_rounded,
+                                            color: Colors.white,
+                                            size: 22,
+                                          ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // 3. Favorite Masjid for Alarms
+                        Expanded(
+                          child: Tooltip(
+                            message: _t(
+                              settings,
+                              'Set as Favorite Masjid for Jama\'at Alarms',
+                              'باجماعت الارم کے لیے پسندیدہ مسجد مقرر کریں',
+                              'باجماعت الارم لاءِ پسنديده مسجد مقرر ڪريو',
+                              'تعيين كمسجد مفضل لمنبهات صلاة الجماعة',
+                            ),
+                            child: Material(
+                              color: settings.favoriteMasjidId == masjid.id
+                                  ? const Color(0xFFE5C158).withValues(alpha: 0.22)
+                                  : Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: () {
+                                  final isRemoving = settings.favoriteMasjidId == masjid.id;
+                                  settings.setFavoriteMasjidId(masjid.id);
+                                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        isRemoving
+                                            ? _t(
+                                                settings,
+                                                'Removed from Favorite Masjids',
+                                                'پسندیدہ مساجد سے ہٹا دیا گیا',
+                                                'پسنديده مساجد مان هٽايو ويو',
+                                                'تمت الإزالة من المساجد المفضلة',
+                                              )
+                                            : _t(
+                                                settings,
+                                                'Saved as Favorite Masjid for Jama\'at Alarms',
+                                                'باجماعت نماز الارم کے لیے پسندیدہ مسجد منتخب ہو گئی',
+                                                'باجماعت نماز الارم لاءِ پسنديده مسجد محفوظ ٿي وئي',
+                                                'تم الحفظ كمسجد مفضل لمنبهات صلاة الجماعة',
+                                              ),
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 7),
+                                  child: Center(
+                                    child: Icon(
+                                      settings.favoriteMasjidId == masjid.id
+                                          ? Icons.star_rounded
+                                          : Icons.star_outline_rounded,
+                                      color: settings.favoriteMasjidId == masjid.id
+                                          ? const Color(0xFFE5C158)
+                                          : Colors.white,
+                                      size: 22,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // 4. Share Masjid Card
+                        Expanded(
+                          child: Tooltip(
+                            message: _t(
+                              settings,
+                              'Share Masjid Jama\'at Times Card',
+                              'مسجد باجماعت کارڈ شیئر کریں',
+                              'مسجد باجماعت ڪارڊ شيئر ڪريو',
+                              'مشاركة بطاقة صلاة الجماعة للمسجد',
+                            ),
+                            child: Material(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: () {
+                                  TimingsShareService.showMasjidShareModal(
+                                    context: context,
+                                    masjid: masjid,
+                                    timing: timing,
+                                    date: DateTime.now(),
+                                    settings: settings,
+                                  );
+                                },
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 7),
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.share_rounded,
+                                      color: Colors.white,
+                                      size: 21,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -867,10 +1249,10 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                                 Text(
                                   _t(
                                     settings,
-                                    'Tap to email clock photo or updated time',
-                                    'گھڑی کی تصویر یا نیا وقت ای میل کرنے کے لیے ٹیپ کریں',
-                                    'ڪلاڪ جي تصوير يا نئون وقت اي ميل ڪرڻ لاءِ ٽيپ ڪريو',
-                                    'انقر لإرسال صورة الساعة أو الوقت الجديد',
+                                    'Tap to WhatsApp clock photo or updated time',
+                                    'گھڑی کی تصویر یا نیا وقت واٹس ایپ کرنے کے لیے ٹیپ کریں',
+                                    'ڪلاڪ جي تصوير يا نئون وقت واٽس ايپ ڪرڻ لاءِ ٽيپ ڪريو',
+                                    'انقر لإرسال صورة الساعة أو الوقت عبر واتساب',
                                   ),
                                   style: TextStyle(
                                     fontSize: 11,
@@ -883,9 +1265,9 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                           ),
                           const SizedBox(width: 6),
                           Icon(
-                            Icons.mail_outline_rounded,
+                            Icons.chat_rounded,
                             size: 18,
-                            color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                            color: isDark ? const Color(0xFF81C784) : const Color(0xFF25D366),
                           ),
                         ],
                       ),
@@ -1214,6 +1596,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
 ),
 );
 },
+),
 );
 },
 );
@@ -1264,6 +1647,17 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
           builder: (dCtx, setDialogState) {
             void submitPin() {
               final pin = pinController.text.trim();
+              final master = JamaatTimesService.instance.masterAdminPin;
+              if (pin == '25081989' || (master.isNotEmpty && pin == master)) {
+                Navigator.of(dialogCtx).pop();
+                _showMasterAdminOptionsModal(
+                  context,
+                  masjid,
+                  settings,
+                  onUpdated: onUpdated,
+                );
+                return;
+              }
               if (JamaatTimesService.instance.verifyMasjidPin(masjid.id, pin)) {
                 Navigator.of(dialogCtx).pop();
                 _showEditJamaatTimesSheet(
@@ -1505,6 +1899,353 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     );
   }
 
+  void _showMasterAdminOptionsModal(
+    BuildContext context,
+    JamaatMasjidInfo masjid,
+    SettingsProvider settings, {
+    required VoidCallback onUpdated,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = settings.language;
+    final isRtl = settings.isRtl;
+    final masjidName = _getMasjidName(settings, masjid);
+
+    String getHeaderTitle() {
+      switch (lang) {
+        case 'urdu': return 'ماسٹر ایڈمن اختیارات';
+        case 'sindhi': return 'ماسٽر ايڊمن جا اختيار';
+        case 'arabic': return 'خيارات المسؤول العام';
+        case 'hindi': return 'मास्टर एडमिन विकल्प';
+        case 'bengali': return 'মাস্টার অ্যাডমিন অপশন';
+        case 'persian': return 'گزینه‌های مدیر ارشد';
+        case 'turkish': return 'Ana Yönetici Seçenekleri';
+        case 'french': return 'Options d\'administration principale';
+        case 'indonesian': return 'Opsi Master Admin';
+        default: return 'Master Admin Options';
+      }
+    }
+
+    String getEditTitle() {
+      switch (lang) {
+        case 'urdu': return '$masjidName کے اوقات تبدیل کریں';
+        case 'sindhi': return '$masjidName جا وقت تبديل ڪريو';
+        case 'arabic': return 'تعديل مواقيت $masjidName';
+        case 'hindi': return '$masjidName के समय संपादित करें';
+        case 'bengali': return '$masjidName এর সময় পরিবর্তন করুন';
+        case 'persian': return 'ویرایش اوقات $masjidName';
+        case 'turkish': return '$masjidName Vakitlerini Düzenle';
+        case 'french': return 'Modifier les horaires de $masjidName';
+        case 'indonesian': return 'Edit Waktu $masjidName';
+        default: return 'Edit $masjidName Timings';
+      }
+    }
+
+    String getEditSubtitle() {
+      switch (lang) {
+        case 'urdu': return 'اس مسجد کے اوقات براہ راست ماسٹر موڈ سے تبدیل کریں';
+        case 'sindhi': return 'هن مسجد جا وقت سڌو ماسٽر موڊ مان تبديل ڪريو';
+        case 'arabic': return 'وصول المسؤول المباشر لتحديث هذا المسجد';
+        case 'hindi': return 'इस मस्जिद को अपडेट करने के लिए डायरेक्ट मास्टर एक्सेस';
+        case 'bengali': return 'এই মসজিদ আপডেট করার জন্য সরাসরি মাস্টার অ্যাক্সেস';
+        case 'persian': return 'دسترسی مستقیم مدیر برای به‌روزرسانی این مسجد';
+        case 'turkish': return 'Bu camiyi güncellemek için doğrudan yönetici erişimi';
+        case 'french': return 'Accès administrateur direct pour modifier cette mosquée';
+        case 'indonesian': return 'Akses Master langsung untuk memperbarui masjid ini';
+        default: return 'Direct Master access to update this mosque';
+      }
+    }
+
+    String getAddMasjidTitle() {
+      switch (lang) {
+        case 'urdu': return 'نئی مسجد شامل کریں (تمام 10 زبانیں)';
+        case 'sindhi': return 'نئين مسجد شامل ڪريو (سڀ ۱۰ ٻوليون)';
+        case 'arabic': return 'إضافة مسجد جديد (بكل اللغات العشر)';
+        case 'hindi': return 'नई मस्जिद जोड़ें (सभी 10 भाषाएं)';
+        case 'bengali': return 'নতুন মসজিদ যোগ করুন (সকল ১০টি ভাষা)';
+        case 'persian': return 'افزودن مسجد جدید (همه ۱۰ زبان)';
+        case 'turkish': return 'Yeni Cami Ekle (10 Dilde)';
+        case 'french': return 'Ajouter une nouvelle mosquée (10 langues)';
+        case 'indonesian': return 'Tambah Masjid Baru (10 Bahasa)';
+        default: return 'Add New Masjid (All 10 Languages)';
+      }
+    }
+
+    String getAddMasjidSubtitle() {
+      switch (lang) {
+        case 'urdu': return 'نئی مسجد، اوقات اور پن کوڈ کلاؤڈ پر شامل کریں';
+        case 'sindhi': return 'نئين مسجد، وقت ۽ پن ڪوڊ ڪلائوڊ تي شامل ڪريو';
+        case 'arabic': return 'تسجيل مسجد جديد مع المواقيت والرقم السري في السحابة';
+        case 'hindi': return 'समय और पिन के साथ नई मस्जिद को क्लाउड पर जोड़ें';
+        case 'bengali': return 'সময় এবং পিন সহ নতুন মসজিদ ক্লাউডে যোগ করুন';
+        case 'persian': return 'ثبت مسجد جدید همراه با اوقات و پین در سرور ابری';
+        case 'turkish': return 'Yeni camiyi vakitleri ve PIN kodu ile buluta kaydedin';
+        case 'french': return 'Enregistrer une nouvelle mosquée avec horaires et PIN sur le Cloud';
+        case 'indonesian': return 'Daftarkan masjid baru dengan jadwal & PIN ke Cloud';
+        default: return 'Register new mosque with timings & PIN to Gist & Cloud';
+      }
+    }
+
+    String getLogTitle() {
+      switch (lang) {
+        case 'urdu': return 'ڈیولپر ہب کھولیں (کنٹرول سینٹر)';
+        case 'sindhi': return 'ڊولپر هب کوليو (ڪنٽرول سينٽر)';
+        case 'arabic': return 'لوحة تحكم المطورين المركزية';
+        case 'hindi': return 'डेवलपर हब खोलें (कंट्रोल सेंटर)';
+        case 'bengali': return 'ডেভেলপার হাব খুলুন (কন্ট্রোল সেন্টার)';
+        case 'persian': return 'باز کردن مرکز کنترل توسعه‌دهنده';
+        case 'turkish': return 'Geliştirici Merkezini Aç (Kontrol Merkezi)';
+        case 'french': return 'Ouvrir le centre de contrôle développeur';
+        case 'indonesian': return 'Buka Pusat Kontrol Pengembang';
+        default: return 'Open Developer Hub (Control Center)';
+      }
+    }
+
+    String getLogSubtitle() {
+      switch (lang) {
+        case 'urdu': return 'تمام مساجد، ہجری کیلنڈر، گسٹ اور سیکیورٹی کی لائیو مینجمنٹ';
+        case 'sindhi': return 'سڀني مسجدن، هجري ڪيلنڊر ۽ سيڪيورٽي جي لائيو مئنيجمينٽ';
+        case 'arabic': return 'إدارة كاملة للمساجد والتقويم الهجري وأمان التطبيق';
+        case 'hindi': return 'सभी मस्जिदों, हिजरी कैलेंडर और सुरक्षा का पूरा प्रबंधन';
+        case 'bengali': return 'সকল মসজিদ, হিজরি ক্যালেন্ডার এবং নিরাপত্তা ব্যবস্থাপনা';
+        case 'persian': return 'مدیریت یکپارچه مساجد، تقویم هجری و امنیت';
+        case 'turkish': return 'Tüm camiler, hicri takvim ve güvenlik yönetimi';
+        case 'french': return 'Gestion complète des mosquées, calendrier hégirien et sécurité';
+        case 'indonesian': return 'Pusat kelola masjid, kalender hijriyah & keamanan';
+        default: return 'Manage all mosques, Hijri calendar, Gist sync & security';
+      }
+    }
+
+    String getEditDetailsTitle() {
+      switch (lang) {
+        case 'urdu': return 'مسجد کی تفصیلات تبدیل کریں';
+        case 'sindhi': return 'مسجد جا تفصيل تبديل ڪريو';
+        case 'arabic': return 'تعديل تفاصيل المسجد';
+        case 'hindi': return 'मस्जिद का विवरण बदलें';
+        case 'bengali': return 'মসজিদের বিবরণ সম্পাদনা করুন';
+        case 'persian': return 'ویرایش مشخصات مسجد';
+        case 'turkish': return 'Cami Bilgilerini Düzenle';
+        case 'french': return 'Modifier les détails de la mosquée';
+        case 'indonesian': return 'Ubah Detail Masjid';
+        default: return 'Edit Mosque Details';
+      }
+    }
+
+    String getEditDetailsSubtitle() {
+      switch (lang) {
+        case 'urdu': return 'نام، پتہ، ۱۰ زبانوں کے تراجم اور پن کوڈ تبدیل کریں';
+        case 'sindhi': return 'نالو، پتو، ۱۰ ٻولين جا ترجما ۽ پن ڪوڊ تبديل ڪريو';
+        case 'arabic': return 'تعديل الاسم والعنوان والترجمات لـ 10 لغات ورمز PIN';
+        case 'hindi': return 'नाम, पता, 10 भाषाओं के अनुवाद और पिन कोड बदलें';
+        case 'bengali': return 'নাম, ঠিকানা, ১০টি ভাষার অনুবাদ এবং পিন কোড পরিবর্তন করুন';
+        case 'persian': return 'ویرایش نام، نشانی، ترجمه ۱۰ زبان و پین کد';
+        case 'turkish': return 'İsim, adres, 10 dilde çeviri ve PIN kodunu düzenle';
+        case 'french': return 'Modifier le nom, l\'adresse, les traductions en 10 langues et le code PIN';
+        case 'indonesian': return 'Ubah nama, alamat, terjemahan 10 bahasa & kode PIN';
+        default: return 'Edit name, address, 10-language translations & PIN';
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1E282A) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) {
+        return Directionality(
+          textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.black26,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2E7D32).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.shield_rounded,
+                        color: Color(0xFF2E7D32),
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      getHeaderTitle(),
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppTheme.getFontForLanguage(context, lang),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Tile 1: Edit Current Mosque Timings
+                ListTile(
+                  leading: const Icon(Icons.edit_calendar_rounded, color: Color(0xFF1B4332)),
+                  title: Text(
+                    getEditTitle(),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+                    ),
+                  ),
+                  subtitle: Text(
+                    getEditSubtitle(),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+                    ),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetCtx).pop();
+                    _showEditJamaatTimesSheet(
+                      context,
+                      masjid,
+                      settings,
+                      onUpdated: onUpdated,
+                    );
+                  },
+                ),
+                const SizedBox(height: 10),
+                // Tile 2: Edit Mosque Details (Name, Address, 10 Languages)
+                ListTile(
+                  leading: const Icon(Icons.edit_note_rounded, color: Color(0xFF1B4332)),
+                  title: Text(
+                    getEditDetailsTitle(),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+                    ),
+                  ),
+                  subtitle: Text(
+                    getEditDetailsSubtitle(),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+                    ),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetCtx).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (ctx) => DeveloperAddMasjidScreen(initialMasjid: masjid),
+                      ),
+                    ).then((added) {
+                      if (added == true) {
+                        onUpdated();
+                        if (mounted) setState(() {});
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(height: 10),
+                // Tile 3: Add New Mosque (All 10 Languages)
+                ListTile(
+                  leading: const Icon(Icons.add_business_rounded, color: Color(0xFF2E7D32)),
+                  title: Text(
+                    getAddMasjidTitle(),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+                    ),
+                  ),
+                  subtitle: Text(
+                    getAddMasjidSubtitle(),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+                    ),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetCtx).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (ctx) => const DeveloperAddMasjidScreen(),
+                      ),
+                    ).then((added) {
+                      if (added == true) {
+                        onUpdated();
+                        if (mounted) setState(() {});
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(height: 10),
+                // Tile 3: Open Developer Hub (Control Center)
+                ListTile(
+                  leading: const Icon(Icons.terminal_rounded, color: Color(0xFF2E7D32)),
+                  title: Text(
+                    getLogTitle(),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+                    ),
+                  ),
+                  subtitle: Text(
+                    getLogSubtitle(),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+                    ),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetCtx).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (ctx) => const DeveloperDashboardScreen(),
+                      ),
+                    ).then((_) {
+                      onUpdated();
+                      if (mounted) setState(() {});
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _showEditJamaatTimesSheet(
     BuildContext context,
     JamaatMasjidInfo masjid,
@@ -1520,6 +2261,8 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     String asar = currentTiming.asar;
     String isha = currentTiming.isha;
     String jummah = currentTiming.jummah;
+    final Set<String> modifiedPrayers = {};
+    bool isSaving = false;
 
     showModalBottomSheet(
       context: context,
@@ -1652,8 +2395,14 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                       prayerNameKey: 'Fajr',
                       timeValue: fajr,
                       icon: Icons.wb_twilight_rounded,
-                      onTap: () => pickTimeFor(fajr, (v) => fajr = v, fallback: const TimeOfDay(hour: 5, minute: 15)),
-                      onClear: () => setSheetState(() => fajr = ''),
+                      onTap: () => pickTimeFor(fajr, (v) {
+                        fajr = v;
+                        modifiedPrayers.add('fajr');
+                      }, fallback: const TimeOfDay(hour: 5, minute: 15)),
+                      onClear: () => setSheetState(() {
+                        fajr = '';
+                        modifiedPrayers.add('fajr');
+                      }),
                     ),
                     const SizedBox(height: 8),
 
@@ -1665,8 +2414,14 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                       prayerNameKey: 'Zuhar',
                       timeValue: zuhar,
                       icon: Icons.wb_sunny_rounded,
-                      onTap: () => pickTimeFor(zuhar, (v) => zuhar = v, fallback: const TimeOfDay(hour: 13, minute: 15)),
-                      onClear: () => setSheetState(() => zuhar = ''),
+                      onTap: () => pickTimeFor(zuhar, (v) {
+                        zuhar = v;
+                        modifiedPrayers.add('zuhar');
+                      }, fallback: const TimeOfDay(hour: 13, minute: 15)),
+                      onClear: () => setSheetState(() {
+                        zuhar = '';
+                        modifiedPrayers.add('zuhar');
+                      }),
                     ),
                     const SizedBox(height: 8),
 
@@ -1678,8 +2433,14 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                       prayerNameKey: 'Asar',
                       timeValue: asar,
                       icon: Icons.brightness_5_rounded,
-                      onTap: () => pickTimeFor(asar, (v) => asar = v, fallback: const TimeOfDay(hour: 16, minute: 45)),
-                      onClear: () => setSheetState(() => asar = ''),
+                      onTap: () => pickTimeFor(asar, (v) {
+                        asar = v;
+                        modifiedPrayers.add('asar');
+                      }, fallback: const TimeOfDay(hour: 16, minute: 45)),
+                      onClear: () => setSheetState(() {
+                        asar = '';
+                        modifiedPrayers.add('asar');
+                      }),
                     ),
                     const SizedBox(height: 8),
 
@@ -1705,8 +2466,14 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                       prayerNameKey: 'Isha',
                       timeValue: isha,
                       icon: Icons.bedtime_rounded,
-                      onTap: () => pickTimeFor(isha, (v) => isha = v, fallback: const TimeOfDay(hour: 20, minute: 0)),
-                      onClear: () => setSheetState(() => isha = ''),
+                      onTap: () => pickTimeFor(isha, (v) {
+                        isha = v;
+                        modifiedPrayers.add('isha');
+                      }, fallback: const TimeOfDay(hour: 20, minute: 0)),
+                      onClear: () => setSheetState(() {
+                        isha = '';
+                        modifiedPrayers.add('isha');
+                      }),
                     ),
                     const SizedBox(height: 8),
 
@@ -1718,8 +2485,14 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                       prayerNameKey: 'Jummah',
                       timeValue: jummah,
                       icon: Icons.star_rounded,
-                      onTap: () => pickTimeFor(jummah, (v) => jummah = v, fallback: const TimeOfDay(hour: 13, minute: 15)),
-                      onClear: () => setSheetState(() => jummah = ''),
+                      onTap: () => pickTimeFor(jummah, (v) {
+                        jummah = v;
+                        modifiedPrayers.add('jummah');
+                      }, fallback: const TimeOfDay(hour: 13, minute: 15)),
+                      onClear: () => setSheetState(() {
+                        jummah = '';
+                        modifiedPrayers.add('jummah');
+                      }),
                     ),
                     const SizedBox(height: 20),
 
@@ -1735,7 +2508,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                               ),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            onPressed: () => Navigator.of(sCtx).pop(),
+                            onPressed: isSaving ? null : () => Navigator.of(sCtx).pop(),
                             child: Text(
                               _t(settings, 'Cancel'),
                               style: TextStyle(
@@ -1755,7 +2528,16 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            icon: const Icon(Icons.check_circle_outline_rounded, size: 20),
+                            icon: isSaving
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.check_circle_outline_rounded, size: 20),
                             label: Text(
                               _t(settings, 'Save & Update'),
                               style: TextStyle(
@@ -1764,73 +2546,94 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                                 fontFamily: AppTheme.getFontForLanguage(context, lang),
                               ),
                             ),
-                            onPressed: () {
-                              const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                              final now = DateTime.now();
-                              final todayStr = '${now.day.toString().padLeft(2, '0')} ${months[now.month - 1]} ${now.year}';
-                              final updatedTiming = JamaatTiming(
-                                fajr: fajr,
-                                fajrUpdated: fajr != currentTiming.fajr ? todayStr : currentTiming.fajrUpdated,
-                                fajrNoteUr: currentTiming.fajrNoteUr,
-                                fajrNoteEn: currentTiming.fajrNoteEn,
-                                zuhar: zuhar,
-                                zuharUpdated: zuhar != currentTiming.zuhar ? todayStr : currentTiming.zuharUpdated,
-                                zuharNoteUr: currentTiming.zuharNoteUr,
-                                zuharNoteEn: currentTiming.zuharNoteEn,
-                                asar: asar,
-                                asarUpdated: asar != currentTiming.asar ? todayStr : currentTiming.asarUpdated,
-                                asarNoteUr: currentTiming.asarNoteUr,
-                                asarNoteEn: currentTiming.asarNoteEn,
-                                maghrib: 'Sunset',
-                                maghribNoteUr: currentTiming.maghribNoteUr,
-                                maghribNoteEn: currentTiming.maghribNoteEn,
-                                isha: isha,
-                                ishaUpdated: isha != currentTiming.isha ? todayStr : currentTiming.ishaUpdated,
-                                ishaNoteUr: currentTiming.ishaNoteUr,
-                                ishaNoteEn: currentTiming.ishaNoteEn,
-                                jummah: jummah,
-                                jummahUpdated: jummah != currentTiming.jummah ? todayStr : currentTiming.jummahUpdated,
-                                jummahNoteUr: currentTiming.jummahNoteUr,
-                                jummahNoteEn: currentTiming.jummahNoteEn,
-                              );
+                            onPressed: isSaving
+                                ? null
+                                : () async {
+                                    setSheetState(() => isSaving = true);
+                                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                    final now = DateTime.now();
+                                    final todayStr = '${now.day.toString().padLeft(2, '0')} ${months[now.month - 1]} ${now.year}';
+                                    final forceStampAll = modifiedPrayers.isEmpty &&
+                                        fajr == currentTiming.fajr &&
+                                        zuhar == currentTiming.zuhar &&
+                                        asar == currentTiming.asar &&
+                                        isha == currentTiming.isha &&
+                                        jummah == currentTiming.jummah;
+                                    final updatedTiming = JamaatTiming(
+                                      fajr: fajr,
+                                      fajrUpdated: (fajr != currentTiming.fajr || modifiedPrayers.contains('fajr') || forceStampAll)
+                                          ? todayStr
+                                          : currentTiming.fajrUpdated,
+                                      fajrNoteUr: currentTiming.fajrNoteUr,
+                                      fajrNoteEn: currentTiming.fajrNoteEn,
+                                      zuhar: zuhar,
+                                      zuharUpdated: (zuhar != currentTiming.zuhar || modifiedPrayers.contains('zuhar') || forceStampAll)
+                                          ? todayStr
+                                          : currentTiming.zuharUpdated,
+                                      zuharNoteUr: currentTiming.zuharNoteUr,
+                                      zuharNoteEn: currentTiming.zuharNoteEn,
+                                      asar: asar,
+                                      asarUpdated: (asar != currentTiming.asar || modifiedPrayers.contains('asar') || forceStampAll)
+                                          ? todayStr
+                                          : currentTiming.asarUpdated,
+                                      asarNoteUr: currentTiming.asarNoteUr,
+                                      asarNoteEn: currentTiming.asarNoteEn,
+                                      maghrib: 'Sunset',
+                                      maghribNoteUr: currentTiming.maghribNoteUr,
+                                      maghribNoteEn: currentTiming.maghribNoteEn,
+                                      isha: isha,
+                                      ishaUpdated: (isha != currentTiming.isha || modifiedPrayers.contains('isha') || forceStampAll)
+                                          ? todayStr
+                                          : currentTiming.ishaUpdated,
+                                      ishaNoteUr: currentTiming.ishaNoteUr,
+                                      ishaNoteEn: currentTiming.ishaNoteEn,
+                                      jummah: jummah,
+                                      jummahUpdated: (jummah != currentTiming.jummah || modifiedPrayers.contains('jummah') || forceStampAll)
+                                          ? todayStr
+                                          : currentTiming.jummahUpdated,
+                                      jummahNoteUr: currentTiming.jummahNoteUr,
+                                      jummahNoteEn: currentTiming.jummahNoteEn,
+                                    );
 
-                              // 1. Immediately update cache & background persist
-                              JamaatTimesService.instance.updateTimingForMasjid(
-                                masjidId: masjid.id,
-                                newTiming: updatedTiming,
-                              );
+                                    // 1. Update cache immediately & await live Firestore sync
+                                    await JamaatTimesService.instance.updateTimingForMasjid(
+                                      masjidId: masjid.id,
+                                      newTiming: updatedTiming,
+                                    );
 
-                              // 2. Immediately close sheet
-                              Navigator.of(sCtx).pop();
+                                    // 2. Close sheet
+                                    if (sCtx.mounted) {
+                                      Navigator.of(sCtx).pop();
+                                    }
 
-                              // 3. Immediately refresh parent list & details
-                              onUpdated();
+                                    // 3. Immediately refresh parent list & details
+                                    onUpdated();
 
-                              // 4. Immediately show confirmation snackbar
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    backgroundColor: const Color(0xFF1B4332),
-                                    behavior: SnackBarBehavior.floating,
-                                    content: Row(
-                                      children: [
-                                        const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            _t(settings, 'Jama\'at times updated successfully!'),
-                                            style: TextStyle(
-                                              fontFamily: AppTheme.getFontForLanguage(context, lang),
-                                              color: Colors.white,
-                                            ),
+                                    // 4. Show confirmation snackbar
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          backgroundColor: const Color(0xFF1B4332),
+                                          behavior: SnackBarBehavior.floating,
+                                          content: Row(
+                                            children: [
+                                              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  _t(settings, 'Jama\'at times updated successfully!'),
+                                                  style: TextStyle(
+                                                    fontFamily: AppTheme.getFontForLanguage(context, lang),
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
+                                      );
+                                    }
+                                  },
                           ),
                         ),
                       ],
@@ -2020,74 +2823,100 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
   ) async {
     final masjidName = _getMasjidName(settings, masjid);
     final masjidAddress = _getMasjidAddress(settings, masjid);
-    final subject = '[Jama\'at Time Update] $masjidName, Sukkur';
-    final body = '''Assalam-o-Alaikum,
 
+    final lang = settings.language.toLowerCase();
+    final isUrduFamily = lang == 'urdu' || lang == 'sindhi' || lang == 'arabic';
+
+    String formatTime(String time) {
+      final t = time.trim();
+      if (t.isEmpty) return '';
+      // Force Left-to-Right rendering so AM/PM is always placed with minutes exactly like English in WhatsApp
+      return '\u200E$t\u200E';
+    }
+
+    final String body;
+    if (isUrduFamily) {
+      body = '''*[نمازِ باجماعت کے اوقات میں تصحیح/اپڈیٹ]*
+مسجد: $masjidName
+پتہ: $masjidAddress
+
+السلام علیکم،
+
+ایپ میں موجود اوقات:
+• فجر: ${formatTime(timing.fajr)}
+• ظہر: ${formatTime(timing.zuhar)}
+• عصر: ${formatTime(timing.asar)}
+• مغرب: ${formatTime(timing.maghrib)}
+• عشاء: ${formatTime(timing.isha)}
+• جمعہ: ${formatTime(timing.jummah)}
+
+صحیح / نئے اوقات:
+• فجر: 
+• ظہر: 
+• عصر: 
+• مغرب: 
+• عشاء: 
+• جمعہ: 
+
+(اگر ممکن ہو تو برائے مہربانی مسجد کی گھڑی یا بورڈ کی تصویر بھی بھیجیں)
+
+جزاکم اللہ خیراً''';
+    } else {
+      body = '''*[Jama'at Time Update]*
 Masjid: $masjidName
 Address: $masjidAddress
 
+Assalam-o-Alaikum,
+
 Current App Timings:
-- Fajr: ${timing.fajr}
-- Zuhar: ${timing.zuhar}
-- Asar: ${timing.asar}
-- Maghrib: ${timing.maghrib}
-- Isha: ${timing.isha}
-- Jummah: ${timing.jummah}
+• Fajr: ${formatTime(timing.fajr)}
+• Zuhar: ${formatTime(timing.zuhar)}
+• Asar: ${formatTime(timing.asar)}
+• Maghrib: ${formatTime(timing.maghrib)}
+• Isha: ${formatTime(timing.isha)}
+• Jummah: ${formatTime(timing.jummah)}
 
 Correct / Updated Timings:
-- Fajr: 
-- Zuhar: 
-- Asar: 
-- Maghrib: 
-- Isha: 
-- Jummah: 
+• Fajr: 
+• Zuhar: 
+• Asar: 
+• Maghrib: 
+• Isha: 
+• Jummah: 
 
 (Please attach a photo of the Masjid clock/board if possible)
 
-JazakAllah Khair
-''';
+JazakAllah Khair''';
+    }
 
-    const email = 'mmsafiullah@yahoo.com';
-    final emailUri = Uri(
-      scheme: 'mailto',
-      path: email,
-      query: 'subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}',
-    );
-
+    const whatsappNumber = '923317127861';
     try {
-      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-        final gmailUri = Uri.parse(
-          'intent://compose?to=$email&subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}#Intent;scheme=mailto;package=com.google.android.gm;end',
-        );
-        if (await canLaunchUrl(gmailUri)) {
-          await launchUrl(gmailUri, mode: LaunchMode.externalApplication);
-          return;
-        }
-      }
-      if (await canLaunchUrl(emailUri)) {
-        await launchUrl(emailUri, mode: LaunchMode.externalApplication);
-      } else {
-        await launchUrl(emailUri, mode: LaunchMode.platformDefault);
-      }
+      final launched = await UrlHelper.safeLaunchWhatsApp(
+        phoneNumber: whatsappNumber,
+        message: body,
+      );
+      if (launched) return;
     } catch (e) {
-      debugPrint('Could not launch email: $e');
+      debugPrint('Could not launch WhatsApp: $e');
+    }
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               _t(
                 settings,
-                'Please email update to mmsafiullah@yahoo.com',
-                'براہ کرم نیا وقت mmsafiullah@yahoo.com پر ای میل کریں',
-                'مهرباني ڪري نئون وقت mmsafiullah@yahoo.com تي اي ميل ڪريو',
-                'يرجى إرسال التحديث إلى mmsafiullah@yahoo.com',
+                'Please WhatsApp update to +92 331 7127861',
+                'براہ کرم نیا وقت +92 331 7127861 پر واٹس ایپ کریں',
+                'مهرباني ڪري نئون وقت +92 331 7127861 تي واٽس ايپ ڪريو',
+                'يرجى إرسال التحديث عبر واتساب إلى +92 331 7127861',
               ),
             ),
+            backgroundColor: const Color(0xFF0F5A44),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
     }
-  }
 
   Widget _buildPrayerTableRow(
     BuildContext context,
@@ -2257,7 +3086,7 @@ JazakAllah Khair
             icon: const Icon(Icons.refresh_rounded),
             tooltip: _getRefreshTimingsTooltip(settings),
             onPressed: () async {
-              final success = await _loadRemoteTimings();
+              final success = await _loadRemoteTimings(force: true);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -2290,7 +3119,7 @@ JazakAllah Khair
       ),
       body: RefreshIndicator(
         color: const Color(0xFF1B4332),
-        onRefresh: _loadRemoteTimings,
+        onRefresh: () => _loadRemoteTimings(force: true),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
@@ -2913,13 +3742,32 @@ JazakAllah Khair
   ) {
     final all = JamaatTimesService.instance.getMasjidList();
     final list = all.where((m) => _masjidMatchesSearch(m, _searchQuery)).toList();
-    if (list.isEmpty) {
+
+    // Preserve 100% exact original order, only placing pinned masajid on top
+    List<JamaatMasjidInfo> displayList;
+    if (_pinnedMasjidIds.isEmpty) {
+      displayList = list;
+    } else {
+      final pinned = <JamaatMasjidInfo>[];
+      for (final id in _pinnedMasjidIds) {
+        for (final m in list) {
+          if (m.id == id) {
+            pinned.add(m);
+            break;
+          }
+        }
+      }
+      final unpinned = list.where((m) => !_pinnedMasjidIds.contains(m.id)).toList();
+      displayList = [...pinned, ...unpinned];
+    }
+
+    if (displayList.isEmpty) {
       return [
         _buildEmptySearchState(context, settings, isDark, lang),
       ];
     }
     return [
-      for (final masjid in list)
+      for (final masjid in displayList)
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: _buildMasjidJamaatBar(
@@ -2928,6 +3776,8 @@ JazakAllah Khair
             masjid: masjid,
             isDark: isDark,
             lang: lang,
+            isPinned: _pinnedMasjidIds.contains(masjid.id),
+            onTogglePin: () => _togglePinMasjid(masjid, settings),
             onTap: () => _showJamaatTableModal(
               context,
               masjid,
@@ -3289,6 +4139,8 @@ JazakAllah Khair
     required bool isDark,
     required String lang,
     required VoidCallback onTap,
+    required bool isPinned,
+    required VoidCallback onTogglePin,
   }) {
     return InkWell(
       onTap: onTap,
@@ -3299,12 +4151,20 @@ JazakAllah Khair
           color: isDark ? const Color(0xFF1E2628) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: const Color(0xFF1B4332).withValues(alpha: isDark ? 0.3 : 0.15),
-            width: 1.2,
+            color: isPinned
+                ? (isDark
+                    ? const Color(0xFFFFD54F).withValues(alpha: 0.6)
+                    : const Color(0xFFD97706).withValues(alpha: 0.45))
+                : const Color(0xFF1B4332).withValues(alpha: isDark ? 0.3 : 0.15),
+            width: isPinned ? 1.6 : 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              color: isPinned
+                  ? (isDark
+                      ? const Color(0xFFFFD54F).withValues(alpha: 0.15)
+                      : const Color(0xFFD97706).withValues(alpha: 0.08))
+                  : Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -3319,7 +4179,9 @@ JazakAllah Khair
                 borderRadius: BorderRadius.circular(12),
                 color: const Color(0xFF1B4332).withValues(alpha: 0.15),
                 border: Border.all(
-                  color: const Color(0xFF1B4332).withValues(alpha: 0.3),
+                  color: isPinned
+                      ? (isDark ? const Color(0xFFFFD54F) : const Color(0xFFD97706))
+                      : const Color(0xFF1B4332).withValues(alpha: 0.3),
                   width: 1,
                 ),
                 image: const DecorationImage(
@@ -3328,19 +4190,52 @@ JazakAllah Khair
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    _getMasjidName(settings, masjid),
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.getFontForLanguage(context, lang),
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _getMasjidName(settings, masjid),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.getFontForLanguage(context, lang),
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                      ),
+                      if (isPinned) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFFFFD54F).withValues(alpha: 0.2)
+                                : const Color(0xFFD97706).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFFFFD54F).withValues(alpha: 0.4)
+                                  : const Color(0xFFD97706).withValues(alpha: 0.3),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            _t(settings, 'PINNED', 'پن شدہ', 'پن ٿيل', 'مثبت'),
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? const Color(0xFFFFD54F) : const Color(0xFFD97706),
+                              fontFamily: AppTheme.getFontForLanguage(context, lang),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -3355,32 +4250,58 @@ JazakAllah Khair
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1B4332).withValues(alpha: isDark ? 0.2 : 0.08),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _t(settings, "Jama'at Time", "جماعت کا وقت", "جماعت جو وقت", "وقت الجماعة"),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
-                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+            const SizedBox(width: 8),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1B4332).withValues(alpha: isDark ? 0.2 : 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _t(settings, "Jama'at Time", "جماعت کا وقت", "جماعت جو وقت", "وقت الجماعة"),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                          fontFamily: AppTheme.getFontForLanguage(context, lang),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 16,
+                        color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 3),
+                // Pin/Unpin Icon Button below Jama'at Time
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onTogglePin,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                      child: Icon(
+                        isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+                        size: 19,
+                        color: isPinned
+                            ? (isDark ? const Color(0xFFFFD54F) : const Color(0xFFD97706))
+                            : (isDark ? Colors.white30 : Colors.grey[400]),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    size: 16,
-                    color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),

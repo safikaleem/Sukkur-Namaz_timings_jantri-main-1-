@@ -1,10 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
+import '../utils/url_helper.dart';
 import '../providers/settings_provider.dart' show SettingsProvider, DarkModeOption;
 import '../l10n/world_translations.dart';
 import '../utils/alert_mode.dart';
@@ -16,6 +15,8 @@ import '../screens/world_prayers_screen.dart';
 import '../screens/hijri_calendar_screen.dart';
 import '../screens/hidayat_screen.dart';
 import '../screens/mosque_finder_screen.dart';
+import '../screens/developer_dashboard_screen.dart';
+import '../services/jamaat_times_service.dart';
 import '../services/update_service.dart';
 import 'widget_selection_sheet.dart';
 class SettingsDrawer extends StatefulWidget {
@@ -31,6 +32,8 @@ class SettingsDrawer extends StatefulWidget {
 
 class _SettingsDrawerState extends State<SettingsDrawer> {
   String _version = '';
+  int _devTapCount = 0;
+  DateTime? _lastDevTapTime;
 
   @override
   void initState() {
@@ -259,8 +262,9 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Current Version ───────────────────────────
                   _DrawerItem(
                     icon: Icons.new_releases_rounded,
-                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.4.6'}',
-                    onTap: () => _showWhatsNewDialog(context),
+                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.4.7'}',
+                    onTap: () => _handleVersionTap(context),
+                    onLongPress: () => _showDeveloperLoginDialog(context),
                   ),
 
                   const SizedBox(height: 24),
@@ -482,16 +486,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   }
 
   Future<void> _rateApp(BuildContext context) async {
-    final url = Uri.parse('https://play.google.com/store/apps/details?id=pk.sukkur.salah');
-    bool launched = false;
-    try {
-      launched = await launchUrl(url, mode: LaunchMode.externalApplication);
-      if (!launched) {
-        launched = await launchUrl(url, mode: LaunchMode.platformDefault);
-      }
-    } catch (_) {
-      launched = false;
-    }
+    final launched = await UrlHelper.safeLaunchPlayStore('pk.sukkur.salah');
     if (!launched && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -508,7 +503,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.4.6';
+    final versionStr = _version.isNotEmpty ? _version : '1.4.7';
 
     showDialog(
       context: context,
@@ -603,126 +598,129 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Item 1: Multi-Language Masjid Search Bar ─────────────
+                  // ── 1. Pin Masajid to Top (All 10 Languages) ──────────────
                   _buildNewFeatureItem(
                     context,
                     settings,
                     _getLocalizedText(settings, {
-                      'english': '🔍 Multi-Language Masjid Search Bar',
-                      'urdu': '🔍 مساجد ملٹی لینگویج سرچ بار',
-                      'sindhi': '🔍 مساجد ملٽي لئنگويج سرچ بار',
-                      'arabic': '🔍 شريط البحث عن المساجد متعدد اللغات',
-                      'bengali': '🔍 বহুভাষিক মসজিদ অনুসন্ধান বার',
-                      'hindi': '🔍 बहुभाषी मस्जिद सर्च बार',
-                      'turkish': '🔍 Çok Dilli Cami Arama Çubuğu',
-                      'indonesian': '🔍 Bilah Pencarian Masjid Multibahasa',
-                      'french': '🔍 Barre de recherche de mosquées multilingue',
-                      'persian': '🔍 نوار جستجوی چندزبانه مساجد',
+                      'english': '📌 Pin Favorite Masajid to Top',
+                      'urdu': '📌 پسندیدہ مساجد کو سب سے اوپر پن کریں',
+                      'sindhi': '📌 پسنديده مسجدون سڀ کان مٿي پن ڪريو',
+                      'arabic': '📌 تثبيت المساجد المفضلة في الأعلى',
+                      'bengali': '📌 পছন্দের মসজিদ শীর্ষে পিন করুন',
+                      'hindi': '📌 पसंदीदा मस्जिदों को सबसे ऊपर पिन करें',
+                      'turkish': '📌 Favori Camileri Başa Sabitle',
+                      'indonesian': '📌 Sematkan Masjid Favorit di Atas',
+                      'french': '📌 Épingler les mosquées favorites en haut',
+                      'persian': '📌 پین کردن مساجد برگزیده در بالا',
                     }),
                     _getLocalizedText(settings, {
-                      'english': 'Search any mosque across Sukkur by name, area, or street in all 10 languages with instant smart script search.',
-                      'urdu': 'سکھر کی کسی بھی مسجد یا علاقے کو تمام ۱۰ زبانوں میں فوری اور آسان ملٹی لینگویج سرچ کے ذریعے تلاش کریں۔',
-                      'sindhi': 'سکر جي ڪنهن به مسجد يا علائقي کي سڀني ۱۰ ٻولين ۾ فوري ۽ آسان ڳولا ذريعي ڳوليو.',
-                      'arabic': 'ابحث عن أي مسجد أو منطقة في سَكَر بجميع اللغات العشر بسهولة وسرعة فائقة.',
-                      'bengali': 'সুক্কুরের যেকোনো মসজিদ বা এলাকা ১০টি ভাষায় স্মার্ট সার্চের মাধ্যমে সহজেই খুঁজুন।',
-                      'hindi': 'सुक्कुर की किसी भी मस्जिद या क्षेत्र को सभी 10 भाषाओं में त्वरित और आसान खोज से खोजें।',
-                      'turkish': 'Sukkur\'daki herhangi bir camiyi veya bölgeyi 10 dilde akıllı arama ile kolayca bulun.',
-                      'indonesian': 'Cari masjid atau wilayah mana pun di Sukkur dalam 10 bahasa dengan pencarian cerdas yang mudah.',
-                      'french': 'Recherchez n\'importe quelle mosquée ou quartier à Sukkur dans les 10 langues grâce à la recherche intelligente.',
-                      'persian': 'هر مسجد یا منطقه‌ای در سکر را در تمام ۱۰ زبان با جستجوی هوشمند و سریع پیدا کنید.',
+                      'english': 'Pin up to 3 favorite masajid to the top of the Jama\'at list for instant, effortless timing access.',
+                      'urdu': 'اپنی روزمرہ کی ۳ مساجد کو باجماعت لسٹ میں سب سے اوپر پن کریں تاکہ تلاش کیے بغیر فوری اوقات دیکھ سکیں۔',
+                      'sindhi': 'پنهنجي روزاني جي ۳ مسجدن کي باجماعت لسٽ ۾ سڀ کان مٿي پن ڪريو ته جيئن ڳولڻ کان سواءِ فوري وقت ڏسي سگهو.',
+                      'arabic': 'قم بتثبيت حتى 3 مساجد مفضلة في أعلى قائمة صلاة الجماعة للوصول السريع إلى المواقيت دون بحث.',
+                      'bengali': 'জামাত তালিকার শীর্ষে আপনার পছন্দের ৩টি মসজিদ পিন করুন যাতে কোনো অনুসন্ধান ছাড়াই তাত্ক্ষণিক সময় দেখতে পারেন।',
+                      'hindi': 'त्वरित पहुंच के लिए अपनी 3 पसंदीदा मस्जिदों को जमाअत सूची में सबसे ऊपर पिन करें।',
+                      'turkish': 'Hızlı ve zahmetsiz erişim için en çok gittiğiniz 3 camiyi cemaat vakitleri listesinin en başına sabitleyin.',
+                      'indonesian': 'Sematkan hingga 3 masjid favorit di bagian atas daftar jamaah untuk akses jadwal instan tanpa mencari.',
+                      'french': 'Épinglez jusqu\'à 3 mosquées favorites en haut de la liste pour un accès instantané aux horaires de prière.',
+                      'persian': 'تا ۳ مسجد مورد علاقه خود را در بالای لیست جماعت پین کنید تا بدون جستجو سریعاً به اوقات دسترسی داشته باشید.',
                     }),
-                    icon: Icons.search_rounded,
-                    iconColor: AppTheme.accent,
+                    icon: Icons.push_pin_rounded,
+                    iconColor: const Color(0xFFE5A00D),
                   ),
-                  // ── Item: Prayer & Jama'at Sharing Cards ─────────────
+
+                  // ── 2. 1-Tap WhatsApp Timing Report (All 10 Languages) ─────
                   _buildNewFeatureItem(
                     context,
                     settings,
                     _getLocalizedText(settings, {
-                      'english': '🎴 Prayer & Jama\'at Sharing Cards',
-                      'urdu': '🎴 اوقاتِ نماز اور باجماعت شیئرنگ کارڈز',
-                      'sindhi': '🎴 نماز ۽ باجماعت شيئرنگ ڪارڊ',
-                      'arabic': '🎴 بطاقات مشاركة أوقات الصلاة والجماعة',
-                      'bengali': '🎴 নামাজ ও জামায়াত শেয়ারিং কার্ড',
-                      'hindi': '🎴 नमाज़ और जमात शेयरिंग कार्ड',
-                      'turkish': '🎴 Namaz ve Cemaat Vakitleri Paylaşım Kartları',
-                      'indonesian': '🎴 Kartu Berbagi Jadwal Sholat & Jamaah',
-                      'french': '🎴 Cartes de partage des prières et de Jama\'at',
-                      'persian': '🎴 کارت‌های اشتراک‌گذاری اوقات نماز و جماعت',
+                      'english': '💬 1-Tap WhatsApp Timing Report',
+                      'urdu': '💬 واٹس ایپ پر اوقات کے فرق کی رپورٹ',
+                      'sindhi': '💬 واٽس ايپ تي وقت جي فرق جي رپورٽ',
+                      'arabic': '💬 إبلاغ عن فرق المواقيت عبر واتساب',
+                      'bengali': '💬 ১-ট্যাপে হোয়াটসঅ্যাপে সময় রিপোর্ট',
+                      'hindi': '💬 1-टैप व्हाट्सएप टाइमिंग रिपोर्ट',
+                      'turkish': '💬 WhatsApp ile Vakit Farkı Bildir',
+                      'indonesian': '💬 Lapor Beda Waktu via WhatsApp',
+                      'french': '💬 Signalement d\'horaires par WhatsApp',
+                      'persian': '💬 گزارش مغایرت اوقات در واتس‌اپ',
                     }),
                     _getLocalizedText(settings, {
-                      'english': 'Easily save and share elegantly designed Islamic cards for daily prayer timings (Sukkur & worldwide cities) and local mosque Jama\'at schedules directly to WhatsApp or as PNG images.',
-                      'urdu': 'روزمرہ کے اوقاتِ نماز (سکھر اور تمام شہروں کے لیے) اور مساجد کے اوقاتِ باجماعت کے دلکش اسلامی کارڈز براہِ راست واٹس ایپ پر شیئر کریں یا تصویر (PNG) محفوظ کریں۔',
-                      'sindhi': 'روزاني نماز جا وقت (سکر ۽ دنيا جي سمورن شهرن لاءِ) ۽ مسجدن جا باجماعت وقت خوبصورت اسلامي ڪارڊن ذريعي سڌو واٽس ايپ تي شيئر ڪريو يا تصوير (PNG) محفوظ ڪريو.',
-                      'arabic': 'احفظ وشارك بطاقات إسلامية مصممة بأناقة لمواقيت الصلاة اليومية (لسكر وجميع مدن العالم) ومواقيت صلاة الجماعة للمساجد مباشرة عبر واتساب أو كصورة PNG.',
-                      'bengali': 'দৈনিক নামাজের সময়সূচি (সুক্কুর ও বিশ্বব্যাপী শহরের জন্য) এবং মসজিদের জামায়াতের সময়সূচি আকর্ষণীয় ইসলামিক কার্ড হিসেবে সরাসরি হোয়াটসঅ্যাপে শেয়ার করুন বা PNG ছবি হিসেবে সংরক্ষণ করুন।',
-                      'hindi': 'दैनिक नमाज़ के समय (सुक्कुर और दुनिया भर के शहरों के लिए) और मस्जिदों के जमात کے समय के आकर्षक इस्लामिक कार्ड सीधे व्हाट्सएप पर शेयर करें या PNG छवि के रूप में सुरक्षित करें।',
-                      'turkish': 'Günlük namaz vakitleri (Sukkur ve dünya şehirleri için) ve cami cemaat vakitleri için zarif İslami kartları doğrudan WhatsApp üzerinden paylaşın veya PNG resmi olarak kaydedin.',
-                      'indonesian': 'Simpan dan bagikan kartu Islami berdesain elegan untuk jadwal sholat harian (Sukkur & kota dunia) serta jadwal jamaah masjid langsung ke WhatsApp atau simpan sebagai gambar PNG.',
-                      'french': 'Enregistrez et partagez d\'élégantes cartes islamiques pour les horaires de prière quotidiens (Sukkur et villes du monde) et les horaires de Jama\'at directement sur WhatsApp ou au format image PNG.',
-                      'persian': 'کارت‌های اسلامی با طراحی زیبا برای اوقات روزانه نماز (سکر و تمام شهرهای جهان) و اوقات نماز جماعت مساجد را مستقیماً در واتس‌اپ به اشتراک بگذارید یا به عنوان تصویر PNG ذخیره کنید.',
+                      'english': 'Easily share mosque clock photos or report timing differences to the admin with a pre-filled WhatsApp message.',
+                      'urdu': 'مسجد کے اصل اوقات اور ایپ کے اوقات میں فرق ہونے پر ۱ ٹیپ میں گھڑی کی تصویر یا نیا وقت واٹس ایپ پر ایڈمن کو بھیجیں۔',
+                      'sindhi': 'مسجد جي اصل وقت ۽ ايپ جي وقت ۾ فرق هجڻ تي ۱ ٽيپ ۾ ڪلاڪ جي تصوير يا نئون وقت واٽس ايپ تي ايڊمن ڏانهن موڪليو.',
+                      'arabic': 'شارك صورة ساعة المسجد أو أبلغ عن أي اختلاف في المواقيت بنقرة واحدة برسالة واتساب جاهزة للمسؤول.',
+                      'bengali': 'মসজিদের ঘড়ির ছবি বা সময়ের পার্থক্য থাকলে ১ ট্যাপে প্রস্তুতকৃত বার্তাসহ অ্যাডমিনকে হোয়াটসঅ্যাপে জানান।',
+                      'hindi': 'मस्जिद की घड़ी की फोटो या समय का अंतर 1-टैप में तैयार संदेश के साथ एडमिन को व्हाट्सएप पर भेजें।',
+                      'turkish': 'Cami saatinin fotoğrafını veya vakit farkını hazır WhatsApp şablonu ile yöneticiye tek tıkla iletin.',
+                      'indonesian': 'Bagikan foto jam masjid atau laporkan perbedaan waktu ke admin via WhatsApp hanya dengan 1 ketukan.',
+                      'french': 'Partagez facilement la photo de l\'horloge ou signalez un décalage d\'horaires à l\'administrateur via WhatsApp.',
+                      'persian': 'عکس ساعت مسجد یا مغایرت زمانی را با یک کلیک و پیام آماده به مدیر در واتس‌اپ ارسال نمایید.',
                     }),
-                    icon: Icons.share_rounded,
-                    iconColor: AppTheme.accent,
+                    icon: Icons.chat_rounded,
+                    iconColor: const Color(0xFF25D366),
                   ),
-                  // ── Item 2: Live Masjid Jama'at Timings ─────────────
+
+                  // ── 3. Custom Silent Window (All 10 Languages) ─────────────
                   _buildNewFeatureItem(
                     context,
                     settings,
                     _getLocalizedText(settings, {
-                      'english': '🕌 Live Masjid Jama\'at Timings',
-                      'urdu': '🕌 لائیو مسجد باجماعت اوقات',
-                      'sindhi': '🕌 لائيو مسجد باجماعت وقت',
-                      'arabic': '🕌 مواقيت صلاة الجماعة المباشرة',
-                      'bengali': '🕌 লাইভ মসজিদ জামায়াত সময়সূচি',
-                      'hindi': '🕌 लाइव मस्जिद जमात समय',
-                      'turkish': '🕌 Canlı Cami Cemaat Vakitleri',
-                      'indonesian': '🕌 Waktu Shalat Berjamaah Terkini',
-                      'french': '🕌 Horaires de Jama\'at de la mosquée en direct',
-                      'persian': '🕌 اوقات زنده نماز جماعت مساجد',
+                      'english': '⏰ Custom Silent Window',
+                      'urdu': '⏰ کسٹم سائلنٹ دورانیہ',
+                      'sindhi': '⏰ ڪسٽم سائلنٽ دورانيو',
+                      'arabic': '⏰ فترة الصامت المخصصة',
+                      'bengali': '⏰ কাস্টম সাইলেন্ট উইন্ডো',
+                      'hindi': '⏰ कस्टम साइलेंट विंडो',
+                      'turkish': '⏰ Özel Sessiz Mod Aralığı',
+                      'indonesian': '⏰ Jendela Hening Kustom',
+                      'french': '⏰ Période de silence personnalisée',
+                      'persian': '⏰ بازه بی‌صدا سفارشی',
                     }),
                     _getLocalizedText(settings, {
-                      'english': 'Masjid committees and authorized representatives can now securely log in with an 8-digit PIN to update daily prayer times.',
-                      'urdu': 'مسجد کی انتظامیہ اور مجاز نمائندگان اب روزانہ نماز کے اوقات اپ ڈیٹ کرنے کے لیے 8 ہندسوں کے پن کوڈ کے ساتھ محفوظ لاگ ان کر سکتے ہیں۔',
-                      'sindhi': 'مسجد انتظاميه ۽ بااختيار نمائندا هاڻي روزاني نماز جا وقت اپڊيٽ ڪرڻ لاءِ 8 انگن واري پن ڪوڊ سان محفوظ طريقي سان لاگ ان ٿي سگهن ٿا.',
-                      'arabic': 'يمكن الآن للجان المساجد والممثلين المعتمدين تسجيل الدخول بأمان باستخدام رمز PIN مكون من 8 أرقام لتحديث مواقيت الصلاة اليومية.',
-                      'bengali': 'মসজিদ কমিটি এবং অনুমোদিত প্রতিনিধিরা এখন দৈনিক নামাজের সময় আপডেট করতে ৮ অঙ্কের পিন দিয়ে নিরাপদে লগইন করতে পারবেন।',
-                      'hindi': 'मस्जिद समितियां और अधिकृत प्रतिनिधि अब दैनिक नमाज़ के समय को अपडेट करने के लिए 8 अंकों के पिन के साथ सुरक्षित रूप से लॉग इन कर सकते हैं।',
-                      'turkish': 'Cami heyetleri ve yetkili temsilciler, günlük namaz vakitlerini güncellemek için 8 haneli bir PIN ile artık güvenli bir şekilde giriş yapabilirler.',
-                      'indonesian': 'Pengurus masjid dan perwakilan resmi kini dapat masuk dengan aman menggunakan PIN 8 digit untuk memperbarui waktu salat harian.',
-                      'french': 'Les comités de mosquée et représentants autorisés peuvent désormais se connecter en toute sécurité avec un code PIN à 8 chiffres pour mettre à jour les horaires de prière quotidiens.',
-                      'persian': 'هیئت‌امنا و نمایندگان مجاز مساجد اکنون می‌توانند برای به‌روزرسانی اوقات روزانه نماز با پین‌کد ۸ رقمی به‌صورت امن وارد شوند.',
+                      'english': 'Set custom silent hours & minutes to automatically mute your phone during meetings, study, or rest.',
+                      'urdu': 'نماز کے علاوہ اپنے مخصوص اوقات (میٹنگ، مطالعہ یا آرام) کے دوران فون کو خودکار سائلنٹ کرنے کی سہولت۔',
+                      'sindhi': 'نماز کانسواءِ پنهنجي مقرر ڪيل ڪلاڪن ۽ منٽن (ميٽنگ، پڙهائي يا آرام) دوران فون کي پاڻمرادو سائلنٽ ڪريو.',
+                      'arabic': 'حدد ساعات ودقائق مخصصة لكتم صوت هاتفك تلقائياً أثناء الاجتماعات أو الدراسة أو الراحة.',
+                      'bengali': 'নামাজের বাইরেও মিটিং, পড়াশোনা বা বিশ্রামের জন্য নিজের পছন্দমতো সময়ে ফোন স্বয়ংক্রিয়ভাবে সাইলেন্ট করুন।',
+                      'hindi': 'नमाज़ के अलावा मीटिंग, अध्ययन या आराम के लिए अपने तय समय पर फोन को स्वचालित रूप से साइलेंट करें।',
+                      'turkish': 'Namaz vakitleri dışında toplantı, ders veya dinlenme için belirlediğiniz saatlerde telefonu otomatik sessize alın.',
+                      'indonesian': 'Atur jam & menit kustom untuk membisukan ponsel secara otomatis saat rapat, belajar, atau istirahat.',
+                      'french': 'Définissez des plages horaires personnalisées pour mettre votre téléphone en sourdine pendant les réunions ou le repos.',
+                      'persian': 'تنظیم ساعات و دقایق دلخواه برای بی‌صدا کردن خودکار گوشی هنگام جلسات، مطالعه یا استراحت.',
                     }),
-                    icon: Icons.mosque_outlined,
+                    icon: Icons.more_time_rounded,
                     iconColor: AppTheme.accent,
                   ),
-                  // ── Item 2: Bug Fixes & Improvements ─────────────
+
+                  // ── 4. Bug Fixes & Improvements (All 10 Languages) ─────────
                   _buildNewFeatureItem(
                     context,
                     settings,
                     _getLocalizedText(settings, {
                       'english': '🛠️ Bug Fixes & Improvements',
-                      'urdu': '🛠️ بگز کا خاتمہ اور بہتری',
-                      'sindhi': '🛠️ بگس جو خاتمو ۽ بهتري',
-                      'arabic': '🛠️ إصلاح الأخطاء وتحسينات عامة',
-                      'bengali': '🛠️ বাগ সংশোধন ও সার্বিক উন্নতি',
-                      'hindi': '🛠️ बग फ़िक्स और सुधार',
-                      'turkish': '🛠️ Hata Düzeltmeleri ve İyileştirmeler',
-                      'indonesian': '🛠️ Perbaikan Bug & Peningkatan',
-                      'french': '🛠️ Corrections de bugs et améliorations',
-                      'persian': '🛠️ رفع باگ‌ها و بهبود عملکرد',
+                      'urdu': '🛠️ بگز کا خاتمہ اور کارکردگی میں بہتری',
+                      'sindhi': '🛠️ بگس جو خاتمو ۽ ڪارڪردگيءَ ۾ بهتري',
+                      'arabic': '🛠️ إصلاح الأخطاء وتحسين الأداء',
+                      'bengali': '🛠️ বাগ সংশোধন ও কর্মক্ষমতা বৃদ্ধি',
+                      'hindi': '🛠️ बग सुधार और बेहतर प्रदर्शन',
+                      'turkish': '🛠️ Hata Düzeltmeleri ve Performans İyileştirmeleri',
+                      'indonesian': '🛠️ Perbaikan Bug & Peningkatan Kinerja',
+                      'french': '🛠️ Corrections de bugs et améliorations des performances',
+                      'persian': '🛠️ رفع باگ‌ها و بهبود عملکرد برنامه',
                     }),
                     _getLocalizedText(settings, {
-                      'english': 'General bug fixes, performance improvements, and stability enhancements.',
-                      'urdu': 'عام خرابیوں کا خاتمہ، کارکردگی میں بہتری اور ایپ کے استحکام میں اضافہ۔',
-                      'sindhi': 'عام خرابين جو خاتمو، ڪارڪردگيءَ ۾ سڌارو ۽ ايپ جي بهتري.',
-                      'arabic': 'إصلاح الأخطاء العامة، وتحسينات في الأداء والاستقرار العام للتطبيق.',
-                      'bengali': 'সাধারণ সমস্যা সমাধান, কর্মক্ষমতা বৃদ্ধি এবং অ্যাপের সামগ্রিক স্থিতিশীলতা বৃদ্ধি।',
-                      'hindi': 'सामान्य बग समाधान, प्रदर्शन में सुधार और समग्र ऐप स्थिरता में वृद्धि।',
-                      'turkish': 'Genel hata düzeltmeleri, performans iyileştirmeleri ve uygulama kararlılık geliştirmeleri.',
-                      'indonesian': 'Perbaikan bug umum, peningkatan performa, dan stabilitas aplikasi secara menyeluruh.',
-                      'french': 'Corrections de bugs généraux, amélioration des performances et optimisation de la stabilité.',
-                      'persian': 'رفع باگ‌های عمومی، ارتقای سیستم و بهبود عملکرد و پایداری برنامه.',
+                      'english': 'Resolved app responsiveness delays, updated system optimizations, and enhanced overall app speed and stability.',
+                      'urdu': 'ایپ کی کارکردگی اور روانی میں اضافہ، سسٹم میں بہتری اور عمومی بگز کا خاتمہ۔',
+                      'sindhi': 'ايپ جي رواني ۽ ڪارڪردگيءَ ۾ سڌارو، سسٽم جي بهتري ۽ عام خرابين جو خاتمو.',
+                      'arabic': 'تحسين استجابة التطبيق وسرعته، وتحديث توافق النظام، وتعزيز الاستقرار العام.',
+                      'bengali': 'অ্যাপের গতি ও কার্যক্ষমতা বৃদ্ধি, সিস্টেমের উন্নতি এবং সার্বিক স্থিতিশীলতা নিশ্চিত করা হয়েছে।',
+                      'hindi': 'ऐप की गति और स्थिरता में सुधार, सिस्टम अनुकूलन और सामान्य बग समाधान।',
+                      'turkish': 'Uygulama yanıt süresi ve kararlılığı artırıldı, sistem optimizasyonları yapıldı ve genel performans geliştirildi.',
+                      'indonesian': 'Peningkatan kecepatan dan stabilitas aplikasi, optimalisasi sistem, dan perbaikan bug secara menyeluruh.',
+                      'french': 'Amélioration de la réactivité et de la stabilité de l\'application, optimisations système et corrections générales.',
+                      'persian': 'ارتقای پایداری و سرعت برنامه، بهینه‌سازی سازگاری سیستم و بهبود عملکرد کلی.',
                     }),
                     icon: Icons.bug_report_outlined,
                     iconColor: AppTheme.accent,
@@ -818,6 +816,122 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
       ),
     );
   }
+
+  void _handleVersionTap(BuildContext context) {
+    final now = DateTime.now();
+    if (_lastDevTapTime == null || now.difference(_lastDevTapTime!) > const Duration(seconds: 2)) {
+      _devTapCount = 1;
+    } else {
+      _devTapCount++;
+    }
+    _lastDevTapTime = now;
+
+    if (_devTapCount >= 5) {
+      _devTapCount = 0;
+      _showDeveloperLoginDialog(context);
+    } else if (_devTapCount >= 3) {
+      final remaining = 5 - _devTapCount;
+      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            remaining == 1
+                ? 'You are 1 tap away from Developer Mode'
+                : 'You are $remaining taps away from Developer Mode',
+            style: const TextStyle(fontSize: 12),
+          ),
+          duration: const Duration(milliseconds: 900),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else if (_devTapCount == 1) {
+      _showWhatsNewDialog(context);
+    }
+  }
+
+  void _showDeveloperLoginDialog(BuildContext context) {
+    final pinController = TextEditingController();
+    String? errorText;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          void submit() {
+            final pin = pinController.text.trim();
+            final master = JamaatTimesService.instance.masterAdminPin;
+            if (pin == '25081989' || (master.isNotEmpty && pin == master)) {
+              Navigator.of(dialogCtx).pop();
+              Navigator.of(context).pop(); // close drawer
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (ctx) => const DeveloperDashboardScreen(),
+                ),
+              );
+            } else {
+              setDialogState(() {
+                errorText = 'Invalid Master PIN';
+              });
+            }
+          }
+
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return AlertDialog(
+            backgroundColor: isDark ? const Color(0xFF222C2E) : Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            title: const Row(
+              children: [
+                Icon(Icons.terminal_rounded, color: Color(0xFF2E7D32), size: 24),
+                SizedBox(width: 10),
+                Text(
+                  'Developer Control Center',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Enter 8-digit Master PIN to unlock developer dashboard and cloud controls:',
+                  style: TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: pinController,
+                  obscureText: true,
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'Enter Master PIN',
+                    errorText: errorText,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onSubmitted: (_) => submit(),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogCtx).pop(),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1B4332),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: submit,
+                child: const Text('Unlock'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 }
 // ── Drawer Header ──────────────────────────────────────────────────
 class _DrawerHeader extends StatelessWidget {
@@ -860,6 +974,7 @@ class _DrawerItem extends StatelessWidget {
   final String? subtitle;
   final Widget? trailing;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   const _DrawerItem({
     this.icon,
@@ -867,6 +982,7 @@ class _DrawerItem extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -876,6 +992,7 @@ class _DrawerItem extends StatelessWidget {
     final isRtl = settings.isRtl;
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         child: Row(
@@ -1656,31 +1773,12 @@ class _ContactUsInline extends StatelessWidget {
 
   static Future<void> _openGmail() async {
     const email = 'mmsafiullah@yahoo.com';
-    Uri uri;
-    if (Platform.isAndroid) {
-      uri = Uri.parse(
-        'intent://compose?to=$email#Intent;scheme=mailto;package=com.google.android.gm;end',
-      );
-    } else if (Platform.isIOS) {
-      uri = Uri.parse('googlegmail:///co?to=$email');
-    } else {
-      uri = Uri(scheme: 'mailto', path: email);
-    }
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      await launchUrl(Uri(scheme: 'mailto', path: email),
-          mode: LaunchMode.externalApplication);
-    }
+    await UrlHelper.safeLaunchEmail(email: email);
   }
 
   static Future<void> _openMap() async {
     final uri = Uri.parse('https://maps.app.goo.gl/KhS6dMVmqgSTYzdT7');
-    try {
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        await launchUrl(uri, mode: LaunchMode.platformDefault);
-      }
-    } catch (_) {}
+    await UrlHelper.safeLaunch(uri);
   }
 
   @override

@@ -73,9 +73,9 @@ void main() {
     };
 
     if (!kIsWeb) {
-      await SystemChrome.setPreferredOrientations(
+      SystemChrome.setPreferredOrientations(
           [DeviceOrientation.portraitUp]);
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
@@ -84,31 +84,15 @@ void main() {
       ));
     }
 
-    try {
-      await TimingsData.instance.load();
-    } catch (e, s) {
-      _reportError(e, s);
-    }
-
-    try {
-      await JamaatTimesService.instance.loadLocalCache();
-    } catch (e, s) {
-      _reportError(e, s);
-    }
-
-    try {
-      await NotificationService.instance.init();
-    } catch (e, s) {
-      _reportError(e, s);
-    }
-
     final settings = SettingsProvider();
-    try {
-      await settings.loadFromPrefs();
-    } catch (e, s) {
-      _reportError(e, s);
-    }
 
+    // Fast parallel startup: run essential data loads concurrently to slash Cold Start TTID
+    await Future.wait([
+      settings.loadFromPrefs().catchError((e, s) => _reportError(e, s)),
+      TimingsData.instance.load().catchError((e, s) => _reportError(e, s)),
+      JamaatTimesService.instance.loadLocalCache().catchError((e, s) => _reportError(e, s)),
+      NotificationService.instance.init().catchError((e, s) => _reportError(e, s)),
+    ]);
     runApp(
       ChangeNotifierProvider.value(
         value: settings,
@@ -236,11 +220,15 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
           requiresStorageNotLow: false,
         ),
       );
-      purgeLegacySurahCache()
-          .catchError((Object e, StackTrace s) => _reportError(e, s));
-      MunajatDownloadService.instance.autoDownload();
-      QuranDownloadService.instance.startAutoDownloadAll('15_line');
-      QuranDownloadService.instance.startAutoDownloadAll('16_line');
+      // Defer heavy background downloads & cache purges so Cold Start TTID is not delayed
+      Future.delayed(const Duration(seconds: 4), () {
+        if (!mounted) return;
+        purgeLegacySurahCache()
+            .catchError((Object e, StackTrace s) => _reportError(e, s));
+        MunajatDownloadService.instance.autoDownload();
+        QuranDownloadService.instance.startAutoDownloadAll('15_line');
+        QuranDownloadService.instance.startAutoDownloadAll('16_line');
+      });
     } catch (e, s) {
       _reportError(e, s);
     } finally {
@@ -335,7 +323,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       // Hidayat belongs to the Jantri, so it follows the timings actually in
       // use rather than the radio button.
       if (!settings.usesCalculatedTimings)
-        const JamaatTimesScreen(),    // 8 - Jama'at Times (9)
+        JamaatTimesScreen(isActive: _currentIndex == 8), // 8 - Jama'at Times (9)
     ];
 
     int safeIndex = _currentIndex;

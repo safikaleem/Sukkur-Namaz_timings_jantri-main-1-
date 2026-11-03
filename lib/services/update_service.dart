@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
+import '../utils/url_helper.dart';
 
 /// Manages fast, immediate in-app updates via Google Play's official
 /// Play Core In-App Updates API, with complete 10-language localizations.
@@ -443,21 +444,12 @@ class UpdateService {
   static Future<void> openStore([String? url]) async {
     final targetUrl =
         (url != null && url.isNotEmpty) ? url : _marketUrl;
-    try {
-      final uri = Uri.parse(targetUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        return;
-      }
-    } catch (_) {}
+    final uri = Uri.parse(targetUrl);
+    final fallbackUri = Uri.parse(_defaultStoreUrl);
 
-    try {
-      final fallbackUri = Uri.parse(_defaultStoreUrl);
-      if (await canLaunchUrl(fallbackUri)) {
-        await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      debugPrint('Could not open store: $e');
+    final ok = await UrlHelper.safeLaunch(uri, mode: LaunchMode.externalApplication, fallbackToDefault: false);
+    if (!ok) {
+      await UrlHelper.safeLaunch(fallbackUri, mode: LaunchMode.externalApplication);
     }
   }
 

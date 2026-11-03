@@ -16,6 +16,7 @@ class AzanPreviewSheet extends StatefulWidget {
 class _AzanPreviewSheetState extends State<AzanPreviewSheet> {
   final AudioPlayer _player = AudioPlayer();
   int? _playingIndex;
+  bool _isSwitching = false;
 
   @override
   void initState() {
@@ -27,11 +28,14 @@ class _AzanPreviewSheetState extends State<AzanPreviewSheet> {
 
   @override
   void dispose() {
+    _player.stop();
     _player.dispose();
     super.dispose();
   }
 
   Future<void> _toggle(int index) async {
+    if (_isSwitching) return;
+    _isSwitching = true;
     try {
       if (_playingIndex == index) {
         await _player.stop();
@@ -55,6 +59,8 @@ class _AzanPreviewSheetState extends State<AzanPreviewSheet> {
               'تعذر تشغيل الصوت')),
         ),
       );
+    } finally {
+      _isSwitching = false;
     }
   }
 

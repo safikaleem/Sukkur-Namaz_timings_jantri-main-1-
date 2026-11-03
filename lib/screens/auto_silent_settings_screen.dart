@@ -21,7 +21,7 @@ class _AutoSilentSettingsScreenState extends State<AutoSilentSettingsScreen> {
         _showDndPermissionDialog(context);
       }
     } catch (e) {
-      print('Error checking DND permission: $e');
+      debugPrint('Error checking DND permission: $e');
     }
   }
 
@@ -250,9 +250,14 @@ class _AutoSilentSettingsScreenState extends State<AutoSilentSettingsScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            if (!settings.autoSilentEnabled) ...[
+              const SizedBox(height: 16),
+              // ── Custom Silent Window Card ─────────────
+              _buildCustomSilentCard(context, settings, isDark, isRtl),
+            ],
 
             if (settings.autoSilentEnabled) ...[
+              const SizedBox(height: 20),
               // Section Title
               Padding(
                 padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
@@ -400,6 +405,8 @@ class _AutoSilentSettingsScreenState extends State<AutoSilentSettingsScreen> {
                   ),
                 );
               }),
+
+              const SizedBox(height: 24),
             ],
           ],
         ),
@@ -417,6 +424,300 @@ class _AutoSilentSettingsScreenState extends State<AutoSilentSettingsScreen> {
           shape: BoxShape.circle,
         ),
         child: Icon(icon, color: AppTheme.accent, size: 18),
+      ),
+    );
+  }
+
+  Widget _buildCustomSilentCard(
+    BuildContext context,
+    SettingsProvider settings,
+    bool isDark,
+    bool isRtl,
+  ) {
+    final startTod = TimeOfDay(
+      hour: settings.customSilentStartHour,
+      minute: settings.customSilentStartMinute,
+    );
+    final endTod = TimeOfDay(
+      hour: settings.customSilentEndHour,
+      minute: settings.customSilentEndMinute,
+    );
+
+    int durationMins = (endTod.hour * 60 + endTod.minute) - (startTod.hour * 60 + startTod.minute);
+    if (durationMins <= 0) {
+      durationMins += 24 * 60; // crosses midnight
+    }
+
+    final durationHours = durationMins ~/ 60;
+    final durationRemainingMins = durationMins % 60;
+    final hrLabel = settings.translate('hr', 'گھنٹہ', 'ڪلاڪ', 'ساعة');
+    final minLabel = settings.translate('min', 'منٹ', 'منٽ', 'دقيقة');
+    final durationStr = durationHours > 0
+        ? (durationRemainingMins > 0 ? '$durationHours $hrLabel $durationRemainingMins $minLabel' : '$durationHours $hrLabel')
+        : '$durationMins $minLabel';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E2628) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: settings.customSilentEnabled
+              ? (isDark
+                  ? const Color(0xFF81C784).withValues(alpha: 0.5)
+                  : const Color(0xFF2E7D32).withValues(alpha: 0.35))
+              : (isDark ? Colors.white10 : Colors.black12),
+          width: settings.customSilentEnabled ? 1.4 : 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row with Switch
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: settings.customSilentEnabled
+                        ? const Color(0xFF1B4332).withValues(alpha: isDark ? 0.4 : 0.12)
+                        : (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.more_time_rounded,
+                    size: 20,
+                    color: settings.customSilentEnabled
+                        ? (isDark ? const Color(0xFF81C784) : const Color(0xFF2E7D32))
+                        : (isDark ? Colors.white38 : Colors.black38),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        settings.translate(
+                          'Custom Silent Window',
+                          'کسٹم سائلنٹ دورانیہ',
+                          'ڪسٽم سائلنٽ دورانيو',
+                          'فترة الصامت المخصصة',
+                        ),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        settings.translate(
+                          'Mute phone during custom hours & minutes',
+                          'مخصوص گھنٹوں اور منٹوں کے دوران فون کو خودکار سائلنٹ کریں',
+                          'مخصوص ڪلاڪن ۽ منٽن دوران فون کي پاڻمرادو سائلنٽ ڪريو',
+                          'كتم الهاتف خلال الساعات والدقائق المحددة',
+                        ),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                          color: isDark ? Colors.white60 : Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: settings.customSilentEnabled,
+                  activeColor: AppTheme.accent,
+                  onChanged: (val) {
+                    if (val && settings.autoSilentMode == 'silent') {
+                      _checkAndRequestDndPermission(settings);
+                    }
+                    settings.setCustomSilentEnabled(val);
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          if (settings.customSilentEnabled) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      // From (Start Time)
+                      Expanded(
+                        child: _buildTimePickerTile(
+                          context: context,
+                          label: settings.translate('From (Start)', 'آغاز (شروع)', 'آغاز (شروع)', 'من (البدء)'),
+                          timeOfDay: startTod,
+                          isDark: isDark,
+                          onTap: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: startTod,
+                              helpText: settings.translate('Select Start Time', 'آغاز کا وقت منتخب کریں', 'شروعات جو وقت چونڊيو', 'حدد وقت البدء'),
+                            );
+                            if (picked != null) {
+                              settings.setCustomSilentTimes(
+                                startHour: picked.hour,
+                                startMinute: picked.minute,
+                                endHour: settings.customSilentEndHour,
+                                endMinute: settings.customSilentEndMinute,
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Icon(
+                          isRtl ? Icons.arrow_back_rounded : Icons.arrow_forward_rounded,
+                          color: isDark ? Colors.white38 : Colors.black26,
+                          size: 20,
+                        ),
+                      ),
+                      // To (End Time)
+                      Expanded(
+                        child: _buildTimePickerTile(
+                          context: context,
+                          label: settings.translate('To (End)', 'اختتام (ختم)', 'پڄاڻي (ختم)', 'إلى (الانتهاء)'),
+                          timeOfDay: endTod,
+                          isDark: isDark,
+                          onTap: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: endTod,
+                              helpText: settings.translate('Select End Time', 'اختتام کا وقت منتخب کریں', 'پڄاڻي جو وقت چونڊيو', 'حدد وقت الانتهاء'),
+                            );
+                            if (picked != null) {
+                              settings.setCustomSilentTimes(
+                                startHour: settings.customSilentStartHour,
+                                startMinute: settings.customSilentStartMinute,
+                                endHour: picked.hour,
+                                endMinute: picked.minute,
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Calculated duration badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF1B4332).withValues(alpha: 0.25)
+                          : const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isDark
+                            ? const Color(0xFF2E7D32).withValues(alpha: 0.4)
+                            : const Color(0xFF1B4332).withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.timer_outlined, size: 14, color: Color(0xFF2E7D32)),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${settings.translate('Duration', 'دورانیہ', 'دورانيو', 'المدة')}: $durationStr',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                            fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimePickerTile({
+    required BuildContext context,
+    required String label,
+    required TimeOfDay timeOfDay,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final period = timeOfDay.period == DayPeriod.am ? 'AM' : 'PM';
+    int hour12 = timeOfDay.hourOfPeriod;
+    if (hour12 == 0) hour12 = 12;
+    final timeStr = '${hour12.toString().padLeft(2, '0')}:${timeOfDay.minute.toString().padLeft(2, '0')} $period';
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF151C1E) : const Color(0xFFF8FAF9),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? Colors.white12 : Colors.black12,
+            width: 1.0,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? Colors.white60 : Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(
+                  Icons.access_time_rounded,
+                  size: 16,
+                  color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                ),
+                const SizedBox(width: 6),
+                Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Text(
+                    '\u200E$timeStr\u200E',
+                    textDirection: TextDirection.ltr,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

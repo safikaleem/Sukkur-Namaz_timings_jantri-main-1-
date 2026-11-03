@@ -2,15 +2,17 @@ package pk.sukkur.salah
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
-import androidx.core.view.WindowCompat
-import io.flutter.embedding.android.FlutterActivity
+import androidx.activity.enableEdgeToEdge
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import kotlinx.coroutines.CoroutineScope
@@ -18,12 +20,58 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL = "pk.sukkur.salah/native_helper"
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+    }
+
+    private fun getAutoStartIntents(): List<Intent> {
+        return listOf(
+            // Infinix / Tecno / Itel (Transsion XOS & HiOS Phone Master)
+            Intent().setComponent(ComponentName("com.transsion.phonemanager", "com.itel.autobootmanager.activity.AutoBootMgrActivity")),
+            Intent().setComponent(ComponentName("com.transsion.phonemanager", "com.transsion.phonemanager.settings.AutoStartActivity")),
+            Intent().setComponent(ComponentName("com.transsion.phonemanager", "com.transsion.phonemanager.MainActivity")),
+            Intent().setComponent(ComponentName("com.transsion.itel.launcher", "com.itel.autobootmanager.activity.AutoBootMgrActivity")),
+            // Vivo / iQOO (FuntouchOS / OriginOS)
+            Intent().setComponent(ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity")),
+            Intent().setComponent(ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager")),
+            Intent().setComponent(ComponentName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity")),
+            // Xiaomi / Redmi / POCO (MIUI / HyperOS)
+            Intent().setComponent(ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")),
+            // Oppo / Realme / OnePlus (ColorOS / RealmeUI / OxygenOS)
+            Intent().setComponent(ComponentName("com.oplus.safecenter", "com.oplus.safecenter.permission.startup.StartupAppListActivity")),
+            Intent().setComponent(ComponentName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity")),
+            Intent().setComponent(ComponentName("com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity")),
+            Intent().setComponent(ComponentName("com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity")),
+            // Huawei / Honor (EMUI / MagicOS)
+            Intent().setComponent(ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity")),
+            Intent().setComponent(ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity")),
+            // Asus
+            Intent().setComponent(ComponentName("com.asus.mobilemanager", "com.asus.mobilemanager.entry.FunctionActivity"))
+                .setData(Uri.parse("mobilemanager://function/entry/AutoStart"))
+        )
+    }
+
+    private fun isAggressiveOemBrand(): Boolean {
+        val brand = "${Build.MANUFACTURER} ${Build.BRAND}".lowercase()
+        return brand.contains("infinix") ||
+            brand.contains("tecno") ||
+            brand.contains("itel") ||
+            brand.contains("transsion") ||
+            brand.contains("xiaomi") ||
+            brand.contains("redmi") ||
+            brand.contains("poco") ||
+            brand.contains("vivo") ||
+            brand.contains("iqoo") ||
+            brand.contains("oppo") ||
+            brand.contains("realme") ||
+            brand.contains("oneplus") ||
+            brand.contains("huawei") ||
+            brand.contains("honor") ||
+            brand.contains("asus")
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -99,13 +147,23 @@ class MainActivity : FlutterActivity() {
                             startActivity(intent)
                             result.success(true)
                         } catch (e: Exception) {
-                            // Some OEM ROMs (MIUI, OriginOS) do not support this intent.
-                            // Fall back to the general battery settings screen.
+                            // Some OEM ROMs (MIUI, OriginOS, XOS) do not support this direct intent.
+                            // Fall back to the general battery optimization settings screen.
                             try {
                                 startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
                                 result.success(true)
                             } catch (e2: Exception) {
-                                result.error("BATTERY_SETTINGS_ERROR", e2.message, null)
+                                try {
+                                    startActivity(
+                                        Intent(
+                                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                            Uri.parse("package:$packageName")
+                                        )
+                                    )
+                                    result.success(true)
+                                } catch (e3: Exception) {
+                                    result.error("BATTERY_SETTINGS_ERROR", e3.message, null)
+                                }
                             }
                         }
                     } else {
@@ -114,23 +172,13 @@ class MainActivity : FlutterActivity() {
                 }
                 "hasAutoStart" -> {
                     try {
-                        val intents = listOf(
-                            Intent().setComponent(android.content.ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager")),
-                            Intent().setComponent(android.content.ComponentName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.asus.mobilemanager", "com.asus.mobilemanager.entry.FunctionActivity")).setData(Uri.parse("mobilemanager://function/entry/AutoStart"))
-                        )
-                        var exists = false
-                        for (intent in intents) {
-                            if (packageManager.resolveActivity(intent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY) != null) {
-                                exists = true
-                                break
+                        var exists = isAggressiveOemBrand()
+                        if (!exists) {
+                            for (intent in getAutoStartIntents()) {
+                                if (packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY) != null) {
+                                    exists = true
+                                    break
+                                }
                             }
                         }
                         result.success(exists)
@@ -140,27 +188,49 @@ class MainActivity : FlutterActivity() {
                 }
                 "requestAutoStart" -> {
                     try {
-                        val intents = listOf(
-                            Intent().setComponent(android.content.ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager")),
-                            Intent().setComponent(android.content.ComponentName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity")),
-                            Intent().setComponent(android.content.ComponentName("com.asus.mobilemanager", "com.asus.mobilemanager.entry.FunctionActivity")).setData(Uri.parse("mobilemanager://function/entry/AutoStart"))
-                        )
-
                         var opened = false
-                        for (intent in intents) {
-                            if (packageManager.resolveActivity(intent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY) != null) {
-                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                startActivity(intent)
-                                opened = true
-                                break
+                        for (intent in getAutoStartIntents()) {
+                            if (packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY) != null) {
+                                try {
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    startActivity(intent)
+                                    opened = true
+                                    break
+                                } catch (_: Exception) {
+                                    // Activity might require system permission on some ROM builds; try next fallback.
+                                }
                             }
+                        }
+                        if (!opened) {
+                            // Fallback 1: Launch OEM Phone Manager / Security Center main screen (e.g. Infinix Phone Master)
+                            val managerPackages = listOf(
+                                "com.transsion.phonemanager",
+                                "com.miui.securitycenter",
+                                "com.iqoo.secure",
+                                "com.oplus.safecenter",
+                                "com.coloros.safecenter",
+                                "com.huawei.systemmanager"
+                            )
+                            for (pkg in managerPackages) {
+                                val launchIntent = packageManager.getLaunchIntentForPackage(pkg)
+                                if (launchIntent != null) {
+                                    try {
+                                        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        startActivity(launchIntent)
+                                        opened = true
+                                        break
+                                    } catch (_: Exception) {}
+                                }
+                            }
+                        }
+                        if (!opened) {
+                            // Fallback 2: Open App Info where Battery / Background limits live on Android 12–16
+                            val appDetails = Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:$packageName")
+                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            startActivity(appDetails)
+                            opened = true
                         }
                         result.success(opened)
                     } catch (e: Exception) {

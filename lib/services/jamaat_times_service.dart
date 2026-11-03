@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/timings_data.dart';
+import 'developer_gist_service.dart';
 
 class JamaatTiming {
   final String fajr;
@@ -155,6 +156,12 @@ class JamaatTiming {
     return s;
   }
 
+  static bool _isExplicitlyOff(dynamic val) {
+    if (val == null) return false;
+    final s = val.toString().trim().toLowerCase();
+    return s == 'off' || s == '-' || s == '--:--';
+  }
+
   factory JamaatTiming.fromJson(Map<String, dynamic> json) {
     final rawDefault = json['last_updated'] ?? json['lastUpdated'];
     final defaultDate = rawDefault != null ? normalizeDate(rawDefault.toString()) : '';
@@ -178,26 +185,36 @@ class JamaatTiming {
 
     return JamaatTiming(
       fajr: fajrVal,
-      fajrUpdated: fajrVal.isNotEmpty ? parseUpdated('fajr_updated', 'fajrUpdated') : '',
+      fajrUpdated: (fajrVal.isNotEmpty || _isExplicitlyOff(json['fajr']))
+          ? parseUpdated('fajr_updated', 'fajrUpdated')
+          : '',
       fajrNoteUr: json['fajr_note_ur']?.toString() ?? json['fajrNoteUr']?.toString() ?? json['fajr_note']?.toString() ?? '',
       fajrNoteEn: json['fajr_note_en']?.toString() ?? json['fajrNoteEn']?.toString() ?? '',
       zuhar: zuharVal,
-      zuharUpdated: zuharVal.isNotEmpty ? parseUpdated('zuhar_updated', 'zuharUpdated') : '',
+      zuharUpdated: (zuharVal.isNotEmpty || _isExplicitlyOff(json['zuhar']))
+          ? parseUpdated('zuhar_updated', 'zuharUpdated')
+          : '',
       zuharNoteUr: json['zuhar_note_ur']?.toString() ?? json['zuharNoteUr']?.toString() ?? json['zuhar_note']?.toString() ?? '',
       zuharNoteEn: json['zuhar_note_en']?.toString() ?? json['zuharNoteEn']?.toString() ?? '',
       asar: asarVal,
-      asarUpdated: asarVal.isNotEmpty ? parseUpdated('asar_updated', 'asarUpdated') : '',
+      asarUpdated: (asarVal.isNotEmpty || _isExplicitlyOff(json['asar']))
+          ? parseUpdated('asar_updated', 'asarUpdated')
+          : '',
       asarNoteUr: json['asar_note_ur']?.toString() ?? json['asarNoteUr']?.toString() ?? json['asar_note']?.toString() ?? '',
       asarNoteEn: json['asar_note_en']?.toString() ?? json['asarNoteEn']?.toString() ?? '',
       maghrib: maghribVal.isNotEmpty ? maghribVal : 'Sunset',
       maghribNoteUr: json['maghrib_note_ur']?.toString() ?? json['maghribNoteUr']?.toString() ?? json['maghrib_note']?.toString() ?? '',
       maghribNoteEn: json['maghrib_note_en']?.toString() ?? json['maghribNoteEn']?.toString() ?? '',
       isha: ishaVal,
-      ishaUpdated: ishaVal.isNotEmpty ? parseUpdated('isha_updated', 'ishaUpdated') : '',
+      ishaUpdated: (ishaVal.isNotEmpty || _isExplicitlyOff(json['isha']))
+          ? parseUpdated('isha_updated', 'ishaUpdated')
+          : '',
       ishaNoteUr: json['isha_note_ur']?.toString() ?? json['ishaNoteUr']?.toString() ?? json['isha_note']?.toString() ?? '',
       ishaNoteEn: json['isha_note_en']?.toString() ?? json['ishaNoteEn']?.toString() ?? '',
       jummah: jummahVal,
-      jummahUpdated: jummahVal.isNotEmpty ? parseUpdated('jummah_updated', 'jummahUpdated') : '',
+      jummahUpdated: (jummahVal.isNotEmpty || _isExplicitlyOff(json['jummah']))
+          ? parseUpdated('jummah_updated', 'jummahUpdated')
+          : '',
       jummahNoteUr: json['jummah_note_ur']?.toString() ?? json['jummahNoteUr']?.toString() ?? json['jummah_note']?.toString() ?? '',
       jummahNoteEn: json['jummah_note_en']?.toString() ?? json['jummahNoteEn']?.toString() ?? '',
     );
@@ -206,17 +223,27 @@ class JamaatTiming {
   Map<String, dynamic> toJson() => {
         'fajr': fajr,
         'fajr_updated': fajrUpdated,
+        if (fajrNoteUr.isNotEmpty) 'fajr_note_ur': fajrNoteUr,
+        if (fajrNoteEn.isNotEmpty) 'fajr_note_en': fajrNoteEn,
         'zuhar': zuhar,
         if (zuharUpdated.isNotEmpty) 'zuhar_updated': zuharUpdated,
+        if (zuharNoteUr.isNotEmpty) 'zuhar_note_ur': zuharNoteUr,
+        if (zuharNoteEn.isNotEmpty) 'zuhar_note_en': zuharNoteEn,
         'asar': asar,
         'asar_updated': asarUpdated,
+        if (asarNoteUr.isNotEmpty) 'asar_note_ur': asarNoteUr,
+        if (asarNoteEn.isNotEmpty) 'asar_note_en': asarNoteEn,
         'maghrib': maghrib,
         if (maghribNoteUr.isNotEmpty) 'maghrib_note_ur': maghribNoteUr,
         if (maghribNoteEn.isNotEmpty) 'maghrib_note_en': maghribNoteEn,
         'isha': isha,
         'isha_updated': ishaUpdated,
+        if (ishaNoteUr.isNotEmpty) 'isha_note_ur': ishaNoteUr,
+        if (ishaNoteEn.isNotEmpty) 'isha_note_en': ishaNoteEn,
         'jummah': jummah,
         if (jummahUpdated.isNotEmpty) 'jummah_updated': jummahUpdated,
+        if (jummahNoteUr.isNotEmpty) 'jummah_note_ur': jummahNoteUr,
+        if (jummahNoteEn.isNotEmpty) 'jummah_note_en': jummahNoteEn,
       };
 }
 
@@ -282,7 +309,7 @@ class JamaatMasjidInfo {
   }
 }
 
-class JamaatTimesService {
+class JamaatTimesService extends ChangeNotifier {
   static final JamaatTimesService instance = JamaatTimesService._();
   JamaatTimesService._();
 
@@ -967,9 +994,59 @@ class JamaatTimesService {
   ];
 
   final Map<String, JamaatTiming> _remoteCache = {};
+  final Map<String, JamaatTiming> _gistTimings = {};
+  final Map<String, JamaatTiming> _firestoreTimings = {};
+  final Map<String, JamaatTiming> _pendingLocalTimings = {};
+  Future<bool>? _ongoingRemoteSync;
   List<JamaatMasjidInfo> _dynamicMasjids = [];
   String _masterAdminPin = '25081989';
   final Map<String, String> _masjidPins = {};
+
+  /// Returns the baseline Gist or built-in timing for a masjid (before Firestore overlay)
+  JamaatTiming? getGistBaselineTimingFor(String masjidId) {
+    return _gistTimings[masjidId] ?? _getDefaultTimingFor(masjidId);
+  }
+
+  void _recomputeEffectiveTiming(String masjidId) {
+    JamaatTiming? effective = _gistTimings[masjidId] ?? _getDefaultTimingFor(masjidId) ?? _remoteCache[masjidId];
+    if (_firestoreTimings.containsKey(masjidId)) {
+      final fsTiming = _firestoreTimings[masjidId]!;
+      effective = effective != null
+          ? mergePrayerByPrayer(
+              current: effective,
+              incoming: fsTiming,
+              isIncomingFirestore: true,
+            )
+          : fsTiming;
+    }
+    if (_pendingLocalTimings.containsKey(masjidId)) {
+      final pending = _pendingLocalTimings[masjidId]!;
+      effective = effective != null
+          ? mergePrayerByPrayer(
+              current: effective,
+              incoming: pending,
+              isIncomingFirestore: true,
+            )
+          : pending;
+    }
+    if (effective != null) {
+      _remoteCache[masjidId] = effective;
+      final idx = _dynamicMasjids.indexWhere((m) => m.id == masjidId);
+      if (idx >= 0) {
+        final m = _dynamicMasjids[idx];
+        _dynamicMasjids[idx] = JamaatMasjidInfo(
+          id: m.id,
+          nameKey: m.nameKey,
+          addressKey: m.addressKey,
+          defaultTimings: effective,
+          isHidden: m.isHidden,
+          localizedNames: m.localizedNames,
+          localizedAddresses: m.localizedAddresses,
+          pin: m.pin,
+        );
+      }
+    }
+  }
 
   bool verifyMasjidPin(String masjidId, String inputPin) {
     final pin = inputPin.trim();
@@ -1014,6 +1091,36 @@ class JamaatTimesService {
     return false;
   }
 
+  String? getMasjidPin(String masjidId) {
+    final assigned = _masjidPins[masjidId];
+    if (assigned != null && assigned.isNotEmpty) {
+      return assigned;
+    }
+    final local = sukkurMasjids.firstWhere(
+      (m) => m.id == masjidId,
+      orElse: () => const JamaatMasjidInfo(
+        id: '',
+        nameKey: '',
+        addressKey: '',
+        defaultTimings: JamaatTiming(
+          fajr: '',
+          fajrUpdated: '',
+          zuhar: '',
+          asar: '',
+          asarUpdated: '',
+          maghrib: '',
+          isha: '',
+          ishaUpdated: '',
+          jummah: '',
+        ),
+      ),
+    );
+    if (local.pin != null && local.pin!.isNotEmpty) {
+      return local.pin;
+    }
+    return null;
+  }
+
   static Future<SharedPreferences> _getPrefs() async => await SharedPreferences.getInstance();
 
   /// Optional Gist URL for live updates from GitHub Gist
@@ -1024,14 +1131,33 @@ class JamaatTimesService {
     _gistRawUrl = url;
   }
 
-  /// Returns active list of masjids (merging local built-in list with any remote Gist additions/updates/deletions)
-  List<JamaatMasjidInfo> getMasjidList() {
+  /// Returns list of masjids. By default (includeHidden: false), filters out hidden masjids for regular users.
+  /// When includeHidden is true (Developer/Admin mode), returns all masjids with their isHidden flag intact.
+  List<JamaatMasjidInfo> getMasjidList({bool includeHidden = false}) {
     final List<JamaatMasjidInfo> list = List.from(sukkurMasjids);
     for (final remote in _dynamicMasjids) {
       final index = list.indexWhere((m) => m.id == remote.id);
       if (remote.isHidden) {
-        if (index >= 0) {
-          list.removeAt(index);
+        if (includeHidden) {
+          if (index >= 0) {
+            final local = list[index];
+            list[index] = JamaatMasjidInfo(
+              id: remote.id,
+              nameKey: remote.nameKey.isNotEmpty ? remote.nameKey : local.nameKey,
+              addressKey: remote.addressKey.isNotEmpty ? remote.addressKey : local.addressKey,
+              defaultTimings: remote.defaultTimings,
+              isHidden: true,
+              localizedNames: remote.localizedNames.isNotEmpty ? remote.localizedNames : local.localizedNames,
+              localizedAddresses: remote.localizedAddresses.isNotEmpty ? remote.localizedAddresses : local.localizedAddresses,
+              pin: remote.pin ?? _masjidPins[remote.id] ?? local.pin,
+            );
+          } else {
+            list.add(remote);
+          }
+        } else {
+          if (index >= 0) {
+            list.removeAt(index);
+          }
         }
       } else {
         if (index >= 0) {
@@ -1051,7 +1177,73 @@ class JamaatTimesService {
         }
       }
     }
-    return list.where((m) => !m.isHidden).toList();
+    return includeHidden ? list : list.where((m) => !m.isHidden).toList();
+  }
+
+  /// Toggles visibility of a masjid (hide/unhide from regular app users) and syncs to GitHub Gist
+  Future<({bool success, String message})> toggleMasjidHidden({
+    required String masjidId,
+    required bool hide,
+  }) async {
+    // 1. Update in-memory dynamic masjids list
+    final index = _dynamicMasjids.indexWhere((m) => m.id == masjidId);
+    if (index >= 0) {
+      final m = _dynamicMasjids[index];
+      _dynamicMasjids[index] = JamaatMasjidInfo(
+        id: m.id,
+        nameKey: m.nameKey,
+        addressKey: m.addressKey,
+        defaultTimings: m.defaultTimings,
+        isHidden: hide,
+        localizedNames: m.localizedNames,
+        localizedAddresses: m.localizedAddresses,
+        pin: m.pin,
+      );
+    } else {
+      // Find in built-in list
+      final builtInList = sukkurMasjids.where((m) => m.id == masjidId).toList();
+      if (builtInList.isNotEmpty) {
+        final b = builtInList.first;
+        _dynamicMasjids.add(JamaatMasjidInfo(
+          id: b.id,
+          nameKey: b.nameKey,
+          addressKey: b.addressKey,
+          defaultTimings: _remoteCache[masjidId] ?? b.defaultTimings,
+          isHidden: hide,
+          localizedNames: b.localizedNames,
+          localizedAddresses: b.localizedAddresses,
+          pin: _masjidPins[masjidId] ?? b.pin,
+        ));
+      }
+    }
+
+    // 2. Persist locally in SharedPreferences
+    try {
+      final prefs = await _getPrefs();
+      await prefs.setBool('masjid_hidden_$masjidId', hide);
+    } catch (_) {}
+
+    // 3. Prepare payload for Gist
+    final list = getMasjidList(includeHidden: true);
+    final masjid = list.firstWhere(
+      (m) => m.id == masjidId,
+      orElse: () => sukkurMasjids.firstWhere((m) => m.id == masjidId),
+    );
+    final activeTiming = _remoteCache[masjidId] ?? masjid.defaultTimings;
+    final jsonMap = activeTiming.toJson();
+    jsonMap['id'] = masjid.id;
+    jsonMap['name'] = masjid.nameKey;
+    jsonMap['address'] = masjid.addressKey;
+    jsonMap['hidden'] = hide;
+    final pin = getMasjidPin(masjidId);
+    if (pin != null && pin.isNotEmpty) {
+      jsonMap['pin'] = pin;
+    }
+    if (masjid.localizedNames.isNotEmpty) jsonMap['names'] = masjid.localizedNames;
+    if (masjid.localizedAddresses.isNotEmpty) jsonMap['addresses'] = masjid.localizedAddresses;
+
+    final res = await DeveloperGistService.instance.saveMasjidToGist(jsonMap);
+    return res;
   }
 
   /// Helper to convert time string into English 12-hour format with AM/PM & padded hours
@@ -1146,16 +1338,61 @@ class JamaatTimesService {
   }
 
   static const String prefKeyJamaatCache = 'cached_jamaat_times_json';
+  static const String prefKeyFirestoreCache = 'cached_firestore_jamaat_times_json';
+  static const String prefKeyPendingUpdates = 'pending_jamaat_firestore_updates_json';
 
   /// Loads cached timings from SharedPreferences so updated times are available
   /// immediately even if the device is offline or on slow network.
   Future<void> loadLocalCache() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+
+      // 1. Restore cached Firestore live timings
+      final fsCached = prefs.getString(prefKeyFirestoreCache);
+      if (fsCached != null && fsCached.isNotEmpty) {
+        try {
+          final fsMap = json.decode(fsCached);
+          if (fsMap is Map<String, dynamic>) {
+            fsMap.forEach((id, val) {
+              if (val is Map<String, dynamic>) {
+                _firestoreTimings[id] = JamaatTiming.fromJson(val);
+              }
+            });
+          }
+        } catch (e) {
+          debugPrint('Error parsing cached Firestore timings: $e');
+        }
+      }
+
+      // 2. Restore any pending local Imam updates not yet synced to Firestore
+      final pendingCached = prefs.getString(prefKeyPendingUpdates);
+      if (pendingCached != null && pendingCached.isNotEmpty) {
+        try {
+          final pMap = json.decode(pendingCached);
+          if (pMap is Map<String, dynamic>) {
+            pMap.forEach((id, val) {
+              if (val is Map<String, dynamic>) {
+                final t = JamaatTiming.fromJson(val);
+                _pendingLocalTimings[id] = t;
+                _firestoreTimings[id] = t;
+              }
+            });
+          }
+        } catch (e) {
+          debugPrint('Error parsing pending Jamaat updates: $e');
+        }
+      }
+
+      // 3. Restore baseline/merged masjid list and recompute effective timings
       final cached = prefs.getString(prefKeyJamaatCache);
       if (cached != null && cached.isNotEmpty) {
-        _parseAndApplyJson(cached);
+        _parseAndApplyJson(cached, isFromLocalCache: true);
+      } else {
+        for (final id in {..._firestoreTimings.keys, ..._pendingLocalTimings.keys}) {
+          _recomputeEffectiveTiming(id);
+        }
       }
+      notifyListeners();
     } catch (e) {
       debugPrint('Failed to load local cached Jamaat times: $e');
     }
@@ -1164,18 +1401,7 @@ class JamaatTimesService {
   static Map<String, String> _extractLocalizedStrings(Map<String, dynamic> item, String baseKey) {
     final Map<String, String> result = {};
 
-    // 1. Check nested maps (e.g. item['names'] or item['addresses'])
-    final pluralKey = baseKey == 'name' ? 'names' : '${baseKey}es';
-    if (item[pluralKey] is Map) {
-      final map = item[pluralKey] as Map;
-      map.forEach((k, v) {
-        if (v != null && v.toString().trim().isNotEmpty) {
-          result[k.toString().toLowerCase()] = v.toString().trim();
-        }
-      });
-    }
-
-    // 2. Check flat keys (e.g. name_ur, name_urdu, name_sd, etc.)
+    // 1. Check flat keys (e.g. name_ur, name_urdu, name_sd, etc.) as baseline
     const langKeyMappings = {
       'urdu': ['urdu', 'ur'],
       'sindhi': ['sindhi', 'sd'],
@@ -1200,10 +1426,22 @@ class JamaatTimesService {
       }
     }
 
+    // 2. Check nested maps (e.g. item['names'] or item['addresses'])
+    // Nested maps are the modern multi-language standard and take precedence over older flat keys
+    final pluralKey = baseKey == 'name' ? 'names' : '${baseKey}es';
+    if (item[pluralKey] is Map) {
+      final map = item[pluralKey] as Map;
+      map.forEach((k, v) {
+        if (v != null && v.toString().trim().isNotEmpty) {
+          result[k.toString().toLowerCase()] = v.toString().trim();
+        }
+      });
+    }
+
     return result;
   }
 
-  bool _parseAndApplyJson(String jsonStr) {
+  bool _parseAndApplyJson(String jsonStr, {bool isFromLocalCache = false}) {
     try {
       final data = json.decode(jsonStr);
       if (data is Map<String, dynamic> && data.containsKey('masjids')) {
@@ -1226,13 +1464,21 @@ class JamaatTimesService {
             final localizedNames = _extractLocalizedStrings(item, 'name');
             final localizedAddresses = _extractLocalizedStrings(item, 'address');
 
-            // Gist is the authoritative baseline for all masjids & prayer times
-            _remoteCache[id] = timing;
+            // Store Gist baseline without destroying newer Firestore or pending Imam updates
+            if (!isFromLocalCache || !_gistTimings.containsKey(id)) {
+              _gistTimings[id] = timing;
+            }
+            if (isFromLocalCache && !_remoteCache.containsKey(id)) {
+              _remoteCache[id] = timing;
+            }
+            _recomputeEffectiveTiming(id);
+            final effectiveTiming = _remoteCache[id] ?? timing;
+
             fetchedList.add(JamaatMasjidInfo(
               id: id,
               nameKey: name,
               addressKey: address,
-              defaultTimings: timing,
+              defaultTimings: effectiveTiming,
               isHidden: isHidden,
               localizedNames: localizedNames,
               localizedAddresses: localizedAddresses,
@@ -1288,7 +1534,7 @@ class JamaatTimesService {
       return isAFirestore ? 1 : 0;
     }
     if (dateA != null && dateB == null) return 1;
-    if (dateA == null && dateB != null) return -1;
+    if (dateA == null && dateB != null) return isAFirestore ? 1 : -1;
 
     final dayDiff = _compareCalendarDays(dateA!, dateB!);
     if (dayDiff != 0) return dayDiff;
@@ -1354,8 +1600,25 @@ class JamaatTimesService {
             noteEn: incNoteEn,
           );
         } else {
-          // Incoming is Firestore, and this prayer was not set by the committee.
-          // Preserve whatever Gist/current has.
+          // Incoming is Firestore. If incUpdated is non-empty, the Imam explicitly turned off / cleared this prayer.
+          if (incUpdated.isNotEmpty) {
+            final currDt = _parseDate(currUpdated);
+            final incDt = _parseDate(incUpdated);
+            final cmp = _compareDatesWithPrecedence(
+              dateA: incDt,
+              dateB: currDt,
+              isAFirestore: true,
+            );
+            if (cmp > 0) {
+              return PrayerMergeResult(
+                time: isMaghrib ? 'Sunset' : '',
+                updated: incUpdated,
+                noteUr: incNoteUr.isNotEmpty ? incNoteUr : currNoteUr,
+                noteEn: incNoteEn.isNotEmpty ? incNoteEn : currNoteEn,
+              );
+            }
+          }
+          // Otherwise this prayer was not set by the committee in Firestore; preserve whatever Gist/current has.
           return PrayerMergeResult(
             time: cleanCurr,
             updated: currUpdated,
@@ -1365,8 +1628,25 @@ class JamaatTimesService {
         }
       }
 
-      // If current has no time specified, take incoming
+      // If current has no time specified, take incoming unless current was explicitly cleared on a newer date
       if (cleanCurr.isEmpty || cleanCurr == '-' || cleanCurr.toLowerCase() == 'off') {
+        if (currUpdated.isNotEmpty && incUpdated.isNotEmpty) {
+          final currDt = _parseDate(currUpdated);
+          final incDt = _parseDate(incUpdated);
+          final cmp = _compareDatesWithPrecedence(
+            dateA: incDt,
+            dateB: currDt,
+            isAFirestore: isIncomingFirestore,
+          );
+          if (cmp <= 0) {
+            return PrayerMergeResult(
+              time: isMaghrib ? 'Sunset' : '',
+              updated: currUpdated,
+              noteUr: currNoteUr.isNotEmpty ? currNoteUr : incNoteUr,
+              noteEn: currNoteEn.isNotEmpty ? currNoteEn : incNoteEn,
+            );
+          }
+        }
         return PrayerMergeResult(
           time: cleanInc,
           updated: incUpdated,
@@ -1512,9 +1792,13 @@ class JamaatTimesService {
 
   static const String _firestoreProjectId = 'sukkur-salah';
   static const String _firestoreCollection = 'jamaat_times';
+  static const String _firestoreBundleUrl =
+      'https://firestore.googleapis.com/v1/projects/$_firestoreProjectId/databases/(default)/documents/jamaat_bundle/all_masjids';
   static final Uri _firestoreCollectionUrl = Uri.parse(
-    'https://firestore.googleapis.com/v1/projects/$_firestoreProjectId/databases/(default)/documents/$_firestoreCollection',
+    'https://firestore.googleapis.com/v1/projects/$_firestoreProjectId/databases/(default)/documents/$_firestoreCollection?pageSize=300',
   );
+  DateTime? _lastFirestoreFetchTime;
+  bool _isMirroringToGist = false;
 
   static Map<String, dynamic> _flattenFirestoreFields(Map<String, dynamic> fields) {
     final Map<String, dynamic> flat = {};
@@ -1561,14 +1845,67 @@ class JamaatTimesService {
   }
 
   /// Updates timings for a specific masjid, updates in-memory cache instantly,
-  /// persists to local cache in the background, and syncs to Cloud Firestore.
+  /// persists to local cache, and awaits sync to Cloud Firestore so all users receive it immediately.
   Future<bool> updateTimingForMasjid({
     required String masjidId,
     required JamaatTiming newTiming,
   }) async {
     try {
-      // 1. Instant in-memory cache update
-      _remoteCache[masjidId] = newTiming;
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final now = DateTime.now();
+      final todayStr = '${now.day.toString().padLeft(2, '0')} ${months[now.month - 1]} ${now.year}';
+      final gistBase = _gistTimings[masjidId] ?? _getDefaultTimingFor(masjidId);
+
+      String ensureWinsOverGist(String newTime, String newUpdated, String? gistTime, String? gistUpdated) {
+        if (gistBase == null) return newUpdated;
+        final cleanNew = format12HourEnglish(newTime.trim());
+        final cleanGist = format12HourEnglish((gistTime ?? '').trim());
+        if (cleanNew != cleanGist) {
+          if (newUpdated.trim().isEmpty) return todayStr;
+          final newDt = _parseDate(newUpdated);
+          final gistDt = _parseDate(gistUpdated);
+          if (newDt == null || (gistDt != null && _compareCalendarDays(newDt, gistDt) < 0)) {
+            final todayDt = _parseDate(todayStr);
+            if (gistDt != null && todayDt != null && _compareCalendarDays(todayDt, gistDt) < 0) {
+              return gistUpdated ?? todayStr;
+            }
+            return todayStr;
+          }
+        }
+        return newUpdated;
+      }
+
+      final stampedTiming = JamaatTiming(
+        fajr: newTiming.fajr,
+        fajrUpdated: ensureWinsOverGist(newTiming.fajr, newTiming.fajrUpdated, gistBase?.fajr, gistBase?.fajrUpdated),
+        fajrNoteUr: newTiming.fajrNoteUr,
+        fajrNoteEn: newTiming.fajrNoteEn,
+        zuhar: newTiming.zuhar,
+        zuharUpdated: ensureWinsOverGist(newTiming.zuhar, newTiming.zuharUpdated, gistBase?.zuhar, gistBase?.zuharUpdated),
+        zuharNoteUr: newTiming.zuharNoteUr,
+        zuharNoteEn: newTiming.zuharNoteEn,
+        asar: newTiming.asar,
+        asarUpdated: ensureWinsOverGist(newTiming.asar, newTiming.asarUpdated, gistBase?.asar, gistBase?.asarUpdated),
+        asarNoteUr: newTiming.asarNoteUr,
+        asarNoteEn: newTiming.asarNoteEn,
+        maghrib: newTiming.maghrib,
+        maghribNoteUr: newTiming.maghribNoteUr,
+        maghribNoteEn: newTiming.maghribNoteEn,
+        isha: newTiming.isha,
+        ishaUpdated: ensureWinsOverGist(newTiming.isha, newTiming.ishaUpdated, gistBase?.isha, gistBase?.ishaUpdated),
+        ishaNoteUr: newTiming.ishaNoteUr,
+        ishaNoteEn: newTiming.ishaNoteEn,
+        jummah: newTiming.jummah,
+        jummahUpdated: ensureWinsOverGist(newTiming.jummah, newTiming.jummahUpdated, gistBase?.jummah, gistBase?.jummahUpdated),
+        jummahNoteUr: newTiming.jummahNoteUr,
+        jummahNoteEn: newTiming.jummahNoteEn,
+      );
+
+      // 1. Instant in-memory cache update (protected against concurrent background overwrites)
+      _pendingLocalTimings[masjidId] = stampedTiming;
+      _firestoreTimings[masjidId] = stampedTiming;
+      _recomputeEffectiveTiming(masjidId);
+      final effective = _remoteCache[masjidId] ?? stampedTiming;
 
       // Update in _dynamicMasjids or create entry
       final index = _dynamicMasjids.indexWhere((m) => m.id == masjidId);
@@ -1578,7 +1915,7 @@ class JamaatTimesService {
           id: m.id,
           nameKey: m.nameKey,
           addressKey: m.addressKey,
-          defaultTimings: newTiming,
+          defaultTimings: effective,
           isHidden: m.isHidden,
           localizedNames: m.localizedNames,
           localizedAddresses: m.localizedAddresses,
@@ -1593,7 +1930,7 @@ class JamaatTimesService {
           id: local.id,
           nameKey: local.nameKey,
           addressKey: local.addressKey,
-          defaultTimings: newTiming,
+          defaultTimings: effective,
           isHidden: local.isHidden,
           localizedNames: local.localizedNames,
           localizedAddresses: local.localizedAddresses,
@@ -1601,46 +1938,359 @@ class JamaatTimesService {
         ));
       }
 
-      // 2. Persist to storage in background without blocking UI
+      notifyListeners();
+
+      // 2. Persist to local storage (including pending queue)
       _persistCacheAsync(masjidId);
 
-      // 3. Sync to Google Cloud Firestore in background
-      _syncTimingToFirestore(masjidId, newTiming);
+      // 3. Await Google Cloud Firestore sync (with retry) so all users receive the update immediately
+      final synced = await _syncTimingToFirestore(masjidId, effective);
+      if (synced) {
+        _pendingLocalTimings.remove(masjidId);
+        _persistPendingUpdatesAsync();
+      }
 
-      return true;
+      // 4. Sync to GitHub Gist in background (if Developer GitHub token is configured)
+      _syncTimingToGistAsync(masjidId, effective);
+
+      return synced;
     } catch (e) {
       debugPrint('Error saving updated timing for $masjidId: $e');
       return false;
     }
   }
 
-  void _syncTimingToFirestore(String masjidId, JamaatTiming timing) async {
-    try {
-      final patchUrl = Uri.parse(
-        'https://firestore.googleapis.com/v1/projects/$_firestoreProjectId/databases/(default)/documents/$_firestoreCollection/$masjidId',
-      );
-      final payload = _timingToFirestoreFields(timing);
-      final response = await http
-          .patch(
-            patchUrl,
-            headers: const {'Content-Type': 'application/json'},
-            body: json.encode(payload),
-          )
-          .timeout(const Duration(seconds: 10));
+  /// Registers a newly added masjid dynamically in memory, local persistent cache,
+  /// and syncs baseline timing to Cloud Firestore and GitHub Gist.
+  void registerDynamicMasjid(JamaatMasjidInfo newMasjid) {
+    final index = _dynamicMasjids.indexWhere((m) => m.id == newMasjid.id);
+    if (index >= 0) {
+      _dynamicMasjids[index] = newMasjid;
+    } else {
+      _dynamicMasjids.add(newMasjid);
+    }
+    _gistTimings[newMasjid.id] = newMasjid.defaultTimings;
+    _firestoreTimings[newMasjid.id] = newMasjid.defaultTimings;
+    _remoteCache[newMasjid.id] = newMasjid.defaultTimings;
+    if (newMasjid.pin != null && newMasjid.pin!.isNotEmpty) {
+      _masjidPins[newMasjid.id] = newMasjid.pin!;
+    }
+    notifyListeners();
+    _persistCacheAsync(newMasjid.id);
+    _syncTimingToFirestore(newMasjid.id, newMasjid.defaultTimings);
+    _syncTimingToGistAsync(newMasjid.id, newMasjid.defaultTimings);
+  }
 
-      if (response.statusCode == 200) {
-        debugPrint('Successfully synced timing for masjid $masjidId to Cloud Firestore');
+  /// Synchronizes a masjid's Jama'at timing to the authoritative GitHub Gist (jamaat_times.json).
+  Future<({bool success, String message})> syncMasjidTimingToGist(
+    String masjidId, [
+    JamaatTiming? timing,
+  ]) async {
+    final token = await DeveloperGistService.instance.getGistToken();
+    if (token == null || token.isEmpty) {
+      return (
+        success: false,
+        message: 'No GitHub Gist Token configured. Set it in Developer settings to enable Gist sync.',
+      );
+    }
+    try {
+      final list = getMasjidList();
+      final masjid = list.firstWhere(
+        (m) => m.id == masjidId,
+        orElse: () => sukkurMasjids.firstWhere((m) => m.id == masjidId),
+      );
+      final activeTiming = timing ?? (_remoteCache[masjidId] ?? masjid.defaultTimings);
+      final jsonMap = activeTiming.toJson();
+      jsonMap['id'] = masjid.id;
+      jsonMap['name'] = masjid.nameKey;
+      jsonMap['address'] = masjid.addressKey;
+      final pin = _masjidPins[masjid.id] ?? masjid.pin;
+      if (pin != null && pin.isNotEmpty) {
+        jsonMap['pin'] = pin;
+      }
+      if (masjid.localizedNames.isNotEmpty) {
+        jsonMap['names'] = masjid.localizedNames;
+      }
+      if (masjid.localizedAddresses.isNotEmpty) {
+        jsonMap['addresses'] = masjid.localizedAddresses;
+      }
+
+      final result = await DeveloperGistService.instance.saveMasjidToGist(jsonMap);
+      if (result.success) {
+        _gistTimings[masjidId] = activeTiming;
+        debugPrint('Successfully synced timing for masjid $masjidId to GitHub Gist');
       } else {
-        debugPrint('Firestore sync returned status ${response.statusCode}: ${response.body}');
+        debugPrint('Gist sync notice for $masjidId: ${result.message}');
+      }
+      return result;
+    } catch (e) {
+      debugPrint('Background Gist sync error for $masjidId: $e');
+      return (success: false, message: 'Gist sync error: $e');
+    }
+  }
+
+  void _syncTimingToGistAsync(String masjidId, JamaatTiming timing) {
+    syncMasjidTimingToGist(masjidId, timing);
+  }
+
+  String get masterAdminPin => _masterAdminPin;
+
+  /// Updates a masjid's committee PIN in memory, local persistent cache,
+  /// and syncs to GitHub Gist (jamaat_times.json).
+  Future<({bool success, String message})> updateMasjidPin({
+    required String masjidId,
+    required String newPin,
+  }) async {
+    final cleanPin = newPin.trim();
+    if (cleanPin.isEmpty) {
+      return (success: false, message: 'PIN cannot be empty.');
+    }
+
+    _masjidPins[masjidId] = cleanPin;
+    _persistCacheAsync(masjidId);
+
+    final token = await DeveloperGistService.instance.getGistToken();
+    if (token == null || token.isEmpty) {
+      return (success: true, message: 'PIN updated locally! (GitHub token not set for Gist sync).');
+    }
+
+    try {
+      final list = getMasjidList();
+      final masjid = list.firstWhere(
+        (m) => m.id == masjidId,
+        orElse: () => sukkurMasjids.firstWhere((m) => m.id == masjidId),
+      );
+      final activeTiming = _remoteCache[masjidId] ?? masjid.defaultTimings;
+      final jsonMap = activeTiming.toJson();
+      jsonMap['id'] = masjid.id;
+      jsonMap['name'] = masjid.nameKey;
+      jsonMap['address'] = masjid.addressKey;
+      jsonMap['pin'] = cleanPin;
+      if (masjid.localizedNames.isNotEmpty) jsonMap['names'] = masjid.localizedNames;
+      if (masjid.localizedAddresses.isNotEmpty) jsonMap['addresses'] = masjid.localizedAddresses;
+
+      final res = await DeveloperGistService.instance.saveMasjidToGist(jsonMap);
+      if (res.success) {
+        return (success: true, message: 'Masjid PIN updated and synced to GitHub Gist!');
+      } else {
+        return (success: true, message: 'PIN updated locally. Gist notice: ${res.message}');
       }
     } catch (e) {
-      debugPrint('Background Firestore sync error for masjid $masjidId: $e');
+      return (success: false, message: 'Failed to sync PIN to Gist: $e');
+    }
+  }
+
+  /// Updates the Master Admin PIN in memory, local persistent cache,
+  /// and syncs to GitHub Gist (jamaat_times.json).
+  Future<({bool success, String message})> updateMasterPin(String newMasterPin) async {
+    final cleanPin = newMasterPin.trim();
+    if (cleanPin.isEmpty) {
+      return (success: false, message: 'Master PIN cannot be empty.');
+    }
+
+    _masterAdminPin = cleanPin;
+    _persistCacheAsync('master_pin');
+
+    final token = await DeveloperGistService.instance.getGistToken();
+    if (token == null || token.isEmpty) {
+      return (success: true, message: 'Master PIN updated locally! (GitHub token not set for Gist sync).');
+    }
+
+    try {
+      final res = await DeveloperGistService.instance.updateMasterPinOnGist(cleanPin);
+      if (res.success) {
+        return (success: true, message: 'Master PIN updated and synced to GitHub Gist!');
+      } else {
+        return (success: true, message: 'Master PIN updated locally. Gist notice: ${res.message}');
+      }
+    } catch (e) {
+      return (success: false, message: 'Failed to sync Master PIN to Gist: $e');
+    }
+  }
+
+  static String _escapeFirestoreFieldPath(String key) {
+    if (RegExp(r'^[A-Za-z_][A-Za-z0-9_]*$').hasMatch(key)) {
+      return key;
+    }
+    return '`${key.replaceAll('`', r'\`')}`';
+  }
+
+  Future<bool> _syncTimingToFirestore(String masjidId, JamaatTiming timing) async {
+    final safeField = _escapeFirestoreFieldPath(masjidId);
+    final bundlePatchUrl = Uri.parse(
+      '$_firestoreBundleUrl?updateMask.fieldPaths=${Uri.encodeQueryComponent(safeField)}',
+    );
+    final timingMap = timing.toJson();
+    final pin = _masjidPins[masjidId];
+    if (pin != null && pin.isNotEmpty) {
+      timingMap['pin'] = pin;
+    }
+    final bundleBody = json.encode({
+      'fields': {
+        masjidId: {
+          'stringValue': json.encode(timingMap),
+        },
+      },
+    });
+
+    final legacyPatchUrl = Uri.parse(
+      'https://firestore.googleapis.com/v1/projects/$_firestoreProjectId/databases/(default)/documents/$_firestoreCollection/$masjidId',
+    );
+    final legacyBody = json.encode(_timingToFirestoreFields(timing));
+
+    for (int attempt = 1; attempt <= 2; attempt++) {
+      try {
+        // Primary: write to the single aggregated bundle document (1 read for all users!)
+        final bundleRes = await http
+            .patch(
+              bundlePatchUrl,
+              headers: const {'Content-Type': 'application/json'},
+              body: bundleBody,
+            )
+            .timeout(const Duration(seconds: 8));
+
+        if (bundleRes.statusCode >= 200 && bundleRes.statusCode < 300) {
+          // Best-effort background sync to legacy per-masjid document for older app versions
+          http
+              .patch(
+                legacyPatchUrl,
+                headers: const {'Content-Type': 'application/json'},
+                body: legacyBody,
+              )
+              .timeout(const Duration(seconds: 6))
+              .catchError((_) => http.Response('', 500));
+          debugPrint('Successfully synced timing for masjid $masjidId to Firestore bundle (attempt $attempt)');
+          return true;
+        } else {
+          debugPrint('Firestore bundle sync returned status ${bundleRes.statusCode} (attempt $attempt): ${bundleRes.body}');
+        }
+      } catch (e) {
+        debugPrint('Firestore sync error for masjid $masjidId (attempt $attempt): $e');
+      }
+      if (attempt < 2) {
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+    }
+    return false;
+  }
+
+  Future<void> _seedFirestoreBundleFromCurrentMap() async {
+    if (_firestoreTimings.isEmpty) return;
+    try {
+      final Map<String, dynamic> fields = {};
+      _firestoreTimings.forEach((masjidId, timing) {
+        final map = timing.toJson();
+        final pin = _masjidPins[masjidId];
+        if (pin != null && pin.isNotEmpty) {
+          map['pin'] = pin;
+        }
+        fields[masjidId] = {'stringValue': json.encode(map)};
+      });
+      await http
+          .patch(
+            Uri.parse(_firestoreBundleUrl),
+            headers: const {'Content-Type': 'application/json'},
+            body: json.encode({'fields': fields}),
+          )
+          .timeout(const Duration(seconds: 8));
+      debugPrint('Seeded Firestore single-document bundle with ${fields.length} masjids');
+    } catch (e) {
+      debugPrint('Failed to seed Firestore bundle: $e');
+    }
+  }
+
+  Future<void> _autoMirrorFirestoreToGistIfDeveloper() async {
+    if (_isMirroringToGist || _firestoreTimings.isEmpty) return;
+    final token = await DeveloperGistService.instance.getGistToken();
+    if (token == null || token.isEmpty) return;
+
+    _isMirroringToGist = true;
+    try {
+      final currentData = await DeveloperGistService.instance.fetchJamaatTimesJson();
+      if (currentData.isEmpty || currentData['masjids'] is! List) return;
+
+      final List<Map<String, dynamic>> masjids = [];
+      for (final item in (currentData['masjids'] as List)) {
+        if (item is Map) {
+          masjids.add(Map<String, dynamic>.from(item));
+        }
+      }
+
+      bool anyDiff = false;
+      for (int i = 0; i < masjids.length; i++) {
+        final id = masjids[i]['id']?.toString().trim() ?? '';
+        if (id.isEmpty || !_remoteCache.containsKey(id)) continue;
+        final effective = _remoteCache[id]!;
+        final gistTiming = JamaatTiming.fromJson(masjids[i]);
+        if (format12HourEnglish(effective.fajr) != format12HourEnglish(gistTiming.fajr) ||
+            format12HourEnglish(effective.zuhar) != format12HourEnglish(gistTiming.zuhar) ||
+            format12HourEnglish(effective.asar) != format12HourEnglish(gistTiming.asar) ||
+            format12HourEnglish(effective.isha) != format12HourEnglish(gistTiming.isha) ||
+            format12HourEnglish(effective.jummah) != format12HourEnglish(gistTiming.jummah) ||
+            effective.fajrUpdated != gistTiming.fajrUpdated ||
+            effective.zuharUpdated != gistTiming.zuharUpdated ||
+            effective.asarUpdated != gistTiming.asarUpdated ||
+            effective.ishaUpdated != gistTiming.ishaUpdated ||
+            effective.jummahUpdated != gistTiming.jummahUpdated) {
+          final updatedMap = Map<String, dynamic>.from(masjids[i]);
+          effective.toJson().forEach((k, v) {
+            updatedMap[k] = v;
+          });
+          masjids[i] = updatedMap;
+          anyDiff = true;
+        }
+      }
+
+      if (anyDiff) {
+        final gistData = Map<String, dynamic>.from(currentData);
+        gistData['masjids'] = masjids;
+        const encoder = JsonEncoder.withIndent('  ');
+        await DeveloperGistService.instance.updateGistFiles(
+          jamaatTimesContent: encoder.convert(gistData),
+        );
+        debugPrint('Auto-mirrored Imam Firestore updates to GitHub Gist!');
+      }
+    } catch (e) {
+      debugPrint('Auto-mirror Firestore to Gist skipped: $e');
+    } finally {
+      _isMirroringToGist = false;
+    }
+  }
+
+  Future<void> _flushPendingUpdates() async {
+    if (_pendingLocalTimings.isEmpty) return;
+    final pendingEntries = Map<String, JamaatTiming>.from(_pendingLocalTimings);
+    bool anySynced = false;
+    for (final entry in pendingEntries.entries) {
+      final ok = await _syncTimingToFirestore(entry.key, entry.value);
+      if (ok) {
+        _pendingLocalTimings.remove(entry.key);
+        anySynced = true;
+      }
+    }
+    if (anySynced) {
+      await _persistPendingUpdatesAsync();
+    }
+  }
+
+  Future<void> _persistPendingUpdatesAsync() async {
+    try {
+      final prefs = await _getPrefs();
+      if (_pendingLocalTimings.isEmpty) {
+        await prefs.remove(prefKeyPendingUpdates);
+      } else {
+        final map = <String, dynamic>{};
+        _pendingLocalTimings.forEach((k, v) => map[k] = v.toJson());
+        await prefs.setString(prefKeyPendingUpdates, json.encode(map));
+      }
+    } catch (e) {
+      debugPrint('Error persisting pending updates: $e');
     }
   }
 
   void _persistCacheAsync(String masjidId) async {
     try {
-      final activeList = getMasjidList();
+      final activeList = getMasjidList(includeHidden: true);
       final Map<String, dynamic> exportData = {
         'master_pin': _masterAdminPin,
         'masjids': activeList.map((m) {
@@ -1649,6 +2299,9 @@ class JamaatTimesService {
           jsonMap['id'] = m.id;
           jsonMap['name'] = m.nameKey;
           jsonMap['address'] = m.addressKey;
+          if (m.isHidden) {
+            jsonMap['hidden'] = true;
+          }
           final pin = _masjidPins[m.id] ?? m.pin;
           if (pin != null && pin.isNotEmpty) {
             jsonMap['pin'] = pin;
@@ -1659,103 +2312,88 @@ class JamaatTimesService {
         }).toList(),
       };
 
+      final Map<String, dynamic> fsExport = {};
+      _firestoreTimings.forEach((k, v) => fsExport[k] = v.toJson());
+
       final prefs = await _getPrefs();
       await prefs.setString(prefKeyJamaatCache, json.encode(exportData));
+      await prefs.setString(prefKeyFirestoreCache, json.encode(fsExport));
+      await _persistPendingUpdatesAsync();
     } catch (e) {
       debugPrint('Error persisting cache for $masjidId: $e');
     }
   }
 
-  /// Fetches live timings from Google Cloud Firestore.
-  Future<bool> fetchFirestoreTimings() async {
+  /// Fetches live timings from Google Cloud Firestore using the single-document bundle
+  /// (`jamaat_bundle/all_masjids` = 1 Document Read instead of 85 reads!).
+  Future<bool> fetchFirestoreTimings({bool force = false}) async {
     try {
-      final separator = _firestoreCollectionUrl.toString().contains('?') ? '&' : '?';
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final freshUrl = '$_firestoreCollectionUrl${separator}t=$timestamp';
+      if (_pendingLocalTimings.isNotEmpty) {
+        await _flushPendingUpdates();
+      }
 
-      final response = await http
-          .get(Uri.parse(freshUrl))
+      if (!force &&
+          _lastFirestoreFetchTime != null &&
+          DateTime.now().difference(_lastFirestoreFetchTime!).inMinutes < 3 &&
+          _firestoreTimings.isNotEmpty) {
+        return true;
+      }
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final bundleUrl = '$_firestoreBundleUrl?t=$timestamp';
+
+      final bundleResponse = await (kIsWeb
+              ? http.get(Uri.parse(bundleUrl))
+              : http.get(
+                  Uri.parse(bundleUrl),
+                  headers: const {
+                    'Accept': 'application/json',
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0',
+                  },
+                ))
           .timeout(const Duration(seconds: 8));
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data is Map<String, dynamic> &&
-            data.containsKey('documents') &&
-            data['documents'] is List) {
-          final docs = data['documents'] as List;
+      if (bundleResponse.statusCode == 200) {
+        final data = json.decode(bundleResponse.body);
+        if (data is Map<String, dynamic> && data['fields'] is Map<String, dynamic>) {
+          final fields = data['fields'] as Map<String, dynamic>;
           bool anyApplied = false;
-          for (final doc in docs) {
-            if (doc is Map<String, dynamic> &&
-                doc.containsKey('name') &&
-                doc.containsKey('fields')) {
-              final name = doc['name'].toString();
-              final masjidId = name.split('/').last;
-              final fields = doc['fields'] as Map<String, dynamic>? ?? {};
-              if (fields.containsKey('pin')) {
-                final p = fields['pin'];
-                if (p is Map && p['stringValue'] != null && p['stringValue'].toString().trim().isNotEmpty) {
-                  _masjidPins[masjidId] = p['stringValue'].toString().trim();
+          for (final entry in fields.entries) {
+            final masjidId = entry.key;
+            final valMap = entry.value;
+            if (valMap is Map && valMap['stringValue'] != null) {
+              try {
+                final rawMap = json.decode(valMap['stringValue'].toString());
+                if (rawMap is Map<String, dynamic>) {
+                  if (rawMap['pin'] != null && rawMap['pin'].toString().trim().isNotEmpty) {
+                    _masjidPins[masjidId] = rawMap['pin'].toString().trim();
+                  }
+                  final timing = JamaatTiming.fromJson(rawMap);
+                  if (!_pendingLocalTimings.containsKey(masjidId)) {
+                    _firestoreTimings[masjidId] = timing;
+                  }
+                  _recomputeEffectiveTiming(masjidId);
+                  anyApplied = true;
                 }
-              }
-              final flatJson = _flattenFirestoreFields(fields);
-              if (flatJson.isNotEmpty) {
-                final timing = JamaatTiming.fromJson(flatJson);
-
-                // Merge prayer-by-prayer: incoming is from Firestore (isIncomingFirestore: true)
-                final existingTiming = _remoteCache[masjidId] ?? _getDefaultTimingFor(masjidId);
-                final mergedTiming = existingTiming != null
-                    ? mergePrayerByPrayer(
-                        current: existingTiming,
-                        incoming: timing,
-                        isIncomingFirestore: true,
-                      )
-                    : timing;
-
-                _remoteCache[masjidId] = mergedTiming;
-
-                final index = _dynamicMasjids.indexWhere((m) => m.id == masjidId);
-                if (index >= 0) {
-                  final m = _dynamicMasjids[index];
-                  _dynamicMasjids[index] = JamaatMasjidInfo(
-                    id: m.id,
-                    nameKey: m.nameKey,
-                    addressKey: m.addressKey,
-                    defaultTimings: mergedTiming,
-                    isHidden: m.isHidden,
-                    localizedNames: m.localizedNames,
-                    localizedAddresses: m.localizedAddresses,
-                    pin: m.pin,
-                  );
-                }
-                anyApplied = true;
-              }
+              } catch (_) {}
             }
           }
           if (anyApplied) {
+            _lastFirestoreFetchTime = DateTime.now();
+            notifyListeners();
             _persistCacheAsync('firestore_sync');
+            _autoMirrorFirestoreToGistIfDeveloper();
             return true;
           }
         }
       }
-    } catch (e) {
-      debugPrint('Firestore fetch error: $e');
-    }
-    return false;
-  }
 
-
-  /// Fetches updated timings from Google Cloud Firestore and GitHub Gist.
-  /// Firestore holds live real-time committee updates, while Gist provides
-  /// any new masjid registrations and fallback defaults.
-  Future<bool> fetchRemoteGistTimings() async {
-    bool anySuccess = false;
-
-    // 1. First fetch Gist for baseline masjid list & defaults
-    if (_gistRawUrl.isNotEmpty) {
-      try {
-        final separator = _gistRawUrl.contains('?') ? '&' : '?';
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final freshUrl = '$_gistRawUrl${separator}t=$timestamp';
+      // One-time fallback if bundle document does not exist yet (404): read legacy collection & seed bundle
+      if (bundleResponse.statusCode == 404) {
+        final separator = _firestoreCollectionUrl.toString().contains('?') ? '&' : '?';
+        final freshUrl = '$_firestoreCollectionUrl${separator}t=$timestamp';
 
         final response = await (kIsWeb
                 ? http.get(Uri.parse(freshUrl))
@@ -1768,37 +2406,119 @@ class JamaatTimesService {
                       'Expires': '0',
                     },
                   ))
-            .timeout(const Duration(seconds: 10));
+            .timeout(const Duration(seconds: 8));
 
         if (response.statusCode == 200) {
-          final applied = _parseAndApplyJson(response.body);
-          if (applied) {
-            anySuccess = true;
-            try {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.setString(prefKeyJamaatCache, response.body);
-            } catch (_) {}
+          final data = json.decode(response.body);
+          if (data is Map<String, dynamic> &&
+              data.containsKey('documents') &&
+              data['documents'] is List) {
+            final docs = data['documents'] as List;
+            bool anyApplied = false;
+            for (final doc in docs) {
+              if (doc is Map<String, dynamic> &&
+                  doc.containsKey('name') &&
+                  doc.containsKey('fields')) {
+                final name = doc['name'].toString();
+                final masjidId = name.split('/').last;
+                final fields = doc['fields'] as Map<String, dynamic>? ?? {};
+                if (fields.containsKey('pin')) {
+                  final p = fields['pin'];
+                  if (p is Map && p['stringValue'] != null && p['stringValue'].toString().trim().isNotEmpty) {
+                    _masjidPins[masjidId] = p['stringValue'].toString().trim();
+                  }
+                }
+                final flatJson = _flattenFirestoreFields(fields);
+                if (flatJson.isNotEmpty) {
+                  final timing = JamaatTiming.fromJson(flatJson);
+                  if (!_pendingLocalTimings.containsKey(masjidId)) {
+                    _firestoreTimings[masjidId] = timing;
+                  }
+                  _recomputeEffectiveTiming(masjidId);
+                  anyApplied = true;
+                }
+              }
+            }
+            if (anyApplied) {
+              _lastFirestoreFetchTime = DateTime.now();
+              notifyListeners();
+              _persistCacheAsync('firestore_sync');
+              _seedFirestoreBundleFromCurrentMap();
+              _autoMirrorFirestoreToGistIfDeveloper();
+              return true;
+            }
           }
         }
-      } catch (e) {
-        debugPrint('Network error fetching Jamaat times from Gist: $e');
       }
-    }
-
-    // 2. Then overlay live committee updates from Google Cloud Firestore on top.
-    // This guarantees that any update made by an Imam in Firestore is NEVER overwritten
-    // by older Gist lines.
-    try {
-      final firestoreSuccess = await fetchFirestoreTimings();
-      if (firestoreSuccess) anySuccess = true;
     } catch (e) {
       debugPrint('Firestore fetch error: $e');
     }
+    return false;
+  }
 
+  Future<bool> _fetchGistBaselineInternal() async {
+    if (_gistRawUrl.isEmpty) return false;
+    try {
+      final separator = _gistRawUrl.contains('?') ? '&' : '?';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final freshUrl = '$_gistRawUrl${separator}t=$timestamp';
+
+      final response = await (kIsWeb
+              ? http.get(Uri.parse(freshUrl))
+              : http.get(
+                  Uri.parse(freshUrl),
+                  headers: const {
+                    'Accept': 'application/json',
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0',
+                  },
+                ))
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final applied = _parseAndApplyJson(response.body);
+        if (applied) {
+          notifyListeners();
+          _persistCacheAsync('gist_sync');
+          return true;
+        }
+      }
+    } catch (e) {
+      debugPrint('Network error fetching Jamaat times from Gist: $e');
+    }
+    return false;
+  }
+
+  /// Fetches updated timings from Google Cloud Firestore and GitHub Gist in parallel.
+  /// Firestore holds live real-time committee updates, while Gist provides
+  /// any new masjid registrations and fallback defaults without ever overwriting newer Firestore times.
+  Future<bool> fetchRemoteGistTimings({bool force = false}) async {
+    if (!force && _ongoingRemoteSync != null) {
+      return _ongoingRemoteSync!;
+    }
+
+    final future = _performRemoteSync(force: force);
+    _ongoingRemoteSync = future;
+    try {
+      return await future;
+    } finally {
+      if (_ongoingRemoteSync == future) {
+        _ongoingRemoteSync = null;
+      }
+    }
+  }
+
+  Future<bool> _performRemoteSync({bool force = false}) async {
+    final results = await Future.wait<bool>([
+      fetchFirestoreTimings(force: force),
+      _fetchGistBaselineInternal(),
+    ]);
+
+    final anySuccess = results[0] || results[1];
     if (!anySuccess && _remoteCache.isEmpty) {
       await loadLocalCache();
     }
-
     return anySuccess;
   }
 }

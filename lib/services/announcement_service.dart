@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../utils/url_helper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/settings_provider.dart';
@@ -608,9 +609,7 @@ class AnnouncementService {
                           onTap: () async {
                             if (!isLocal && actionUrl != null && actionUrl.isNotEmpty) {
                               final uri = Uri.parse(actionUrl);
-                              if (await canLaunchUrl(uri)) {
-                                await launchUrl(uri, mode: LaunchMode.externalApplication);
-                              }
+                              await UrlHelper.safeLaunch(uri, mode: LaunchMode.externalApplication);
                             }
                           },
                           child: Container(
@@ -710,6 +709,24 @@ class AnnouncementService {
                                       ),
                                     ),
                                   ),
+                          ),
+                        ),
+                      )
+                    else
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20, bottom: 4),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1B4332).withValues(alpha: isDark ? 0.35 : 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.campaign_rounded,
+                              size: 36,
+                              color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                            ),
                           ),
                         ),
                       ),
@@ -819,9 +836,7 @@ class AnnouncementService {
                             ElevatedButton(
                               onPressed: () async {
                                 final uri = Uri.parse(actionUrl);
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                }
+                                await UrlHelper.safeLaunch(uri, mode: LaunchMode.externalApplication);
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.accent,

@@ -26,24 +26,30 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
   int _completedCycles = 0;
   bool? _localIsDark;
   DarkModeOption? _lastDarkModeOption;
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  AudioPlayer? _audioPlayer;
+  bool _audioInitialized = false;
+  DateTime _lastClickSoundTime = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
     super.initState();
     _loadVibrateSetting();
-    _initAudio();
   }
 
-  Future<void> _initAudio() async {
+  Future<void> _ensureAudioInitialized() async {
+    if (_audioInitialized) return;
     try {
-      await _audioPlayer.setSource(AssetSource('tasbeeh_click.wav'));
+      final player = AudioPlayer();
+      await player.setPlayerMode(PlayerMode.lowLatency);
+      await player.setSource(AssetSource('tasbeeh_click.wav'));
+      _audioPlayer = player;
+      _audioInitialized = true;
     } catch (_) {}
   }
 
   @override
   void dispose() {
-    _audioPlayer.dispose();
+    _audioPlayer?.dispose();
     super.dispose();
   }
 
@@ -80,8 +86,12 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
     if (!_soundOn) return;
     try {
       SystemSound.play(SystemSoundType.click);
-      _audioPlayer.seek(Duration.zero);
-      _audioPlayer.resume();
+      final now = DateTime.now();
+      if (now.difference(_lastClickSoundTime).inMilliseconds > 60) {
+        _lastClickSoundTime = now;
+        _audioPlayer?.seek(Duration.zero);
+        _audioPlayer?.resume();
+      }
     } catch (_) {}
   }
 
@@ -96,6 +106,9 @@ class _TasbeehScreenState extends State<TasbeehScreen> {
     setState(() {
       _soundOn = !_soundOn;
     });
+    if (_soundOn) {
+      _ensureAudioInitialized();
+    }
     _playSound();
   }
 

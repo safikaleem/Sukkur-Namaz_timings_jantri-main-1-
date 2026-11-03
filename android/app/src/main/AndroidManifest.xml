@@ -18,9 +18,24 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
     <queries>
+        <!-- OEM AutoStart & Battery Manager packages (required on Android 11+ so resolveActivity can detect them) -->
+        <package android:name="com.transsion.phonemanager" />
+        <package android:name="com.transsion.itel.launcher" />
+        <package android:name="com.iqoo.secure" />
+        <package android:name="com.vivo.permissionmanager" />
+        <package android:name="com.miui.securitycenter" />
+        <package android:name="com.coloros.safecenter" />
+        <package android:name="com.oplus.safecenter" />
+        <package android:name="com.oppo.safe" />
+        <package android:name="com.huawei.systemmanager" />
+        <package android:name="com.samsung.android.lool" />
+        <package android:name="com.asus.mobilemanager" />
+
         <!-- Mail queries -->
         <intent>
             <action android:name="android.intent.action.SENDTO" />
@@ -79,13 +94,17 @@
         </activity>
 
         <!-- Flutter notification plugin receiver -->
-        <!-- MUST be exported=true: AlarmManager delivers intents to this receiver
-             on Samsung One UI and Vivo OEM builds only if it is exported. -->
+        <!-- MUST be exported=true & directBootAware=true: AlarmManager delivers intents to this receiver
+             on Samsung One UI, Vivo, and Infinix/Tecno XOS/HiOS OEM builds only if exported. -->
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:directBootAware="true"
+            android:enabled="true"
             android:exported="true" />
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:directBootAware="true"
+            android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -95,6 +114,8 @@
                 <action android:name="android.intent.action.TIME_SET" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
                 <action android:name="android.intent.action.TIME_CHANGED" />
+                <!-- Transsion (Infinix XOS / Tecno HiOS) specific boot action -->
+                <action android:name="com.transsion.intent.action.BOOT_COMPLETED" />
                 <!-- Vivo Funtouch OS specific boot action -->
                 <action android:name="com.vivo.action.BOOT_COMPLETED" />
                 <!-- Samsung One UI specific boot action -->
@@ -235,22 +256,24 @@
                 android:resource="@xml/prayer_widget_vertical_info" />
         </receiver>
 
-
-
         <!-- Auto Silent Receiver for Jama'at times -->
         <receiver
             android:name="pk.sukkur.salah.AutoSilentReceiver"
+            android:directBootAware="true"
             android:exported="false" />
 
         <!-- Restores the ringer if the device reboots mid auto-silent window -->
         <receiver
             android:name="pk.sukkur.salah.BootReceiver"
+            android:directBootAware="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+                <!-- Transsion (Infinix XOS / Tecno HiOS) specific boot action -->
+                <action android:name="com.transsion.intent.action.BOOT_COMPLETED" />
                 <!-- Vivo Funtouch OS specific boot action -->
                 <action android:name="com.vivo.action.BOOT_COMPLETED" />
                 <!-- Samsung One UI specific boot action -->

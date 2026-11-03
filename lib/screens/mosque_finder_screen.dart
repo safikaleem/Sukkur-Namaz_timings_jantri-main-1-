@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../utils/url_helper.dart';
 import '../l10n/world_translations.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
@@ -43,31 +44,12 @@ class MosqueFinderScreen extends StatelessWidget {
           : 'geo:0,0?q=${Uri.encodeComponent(queryText)}',
     );
 
-    bool launched = false;
-
     // 1. Try Google Maps HTTPS URL with external application mode
-    try {
-      launched = await launchUrl(httpsUri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      launched = false;
-    }
+    bool launched = await UrlHelper.safeLaunch(httpsUri, mode: LaunchMode.externalApplication);
 
-    // 2. Fallback to platform default launch mode
+    // 2. Fallback to geo: URI scheme if https failed
     if (!launched) {
-      try {
-        launched = await launchUrl(httpsUri, mode: LaunchMode.platformDefault);
-      } catch (_) {
-        launched = false;
-      }
-    }
-
-    // 3. Fallback to geo: URI scheme
-    if (!launched) {
-      try {
-        launched = await launchUrl(geoUri, mode: LaunchMode.externalApplication);
-      } catch (_) {
-        launched = false;
-      }
+      launched = await UrlHelper.safeLaunch(geoUri, mode: LaunchMode.externalApplication);
     }
 
     // 4. Show SnackBar if map app or browser could not be launched

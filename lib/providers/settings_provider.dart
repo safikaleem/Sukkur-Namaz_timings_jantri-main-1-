@@ -113,10 +113,10 @@ class SettingsProvider extends ChangeNotifier {
   DarkModeOption _darkModeOption = DarkModeOption.auto;
   String _language = 'english';
   bool _notificationsEnabled = true;
-  bool _liveCountdownEnabled = false;
+  bool _liveCountdownEnabled = true;
   bool _hasCompletedSetup = false;
   int _hijriAdjustment = 0;
-  int _selectedAzanIndex = 0;
+  int _selectedAzanIndex = 3; // Default: Hayya Alas Salah (index 3)
   TimeFormat _timeFormat = TimeFormat.system;
   ClockStyle _clockStyle = ClockStyle.classic;
   DisplayTheme _displayTheme = DisplayTheme.defaultLight;
@@ -142,6 +142,12 @@ class SettingsProvider extends ChangeNotifier {
   bool _autoSilentEnabled = false;
   String _autoSilentMode = 'vibrate';
 
+  bool _customSilentEnabled = false;
+  int _customSilentStartHour = 13;
+  int _customSilentStartMinute = 30;
+  int _customSilentEndHour = 14;
+  int _customSilentEndMinute = 0;
+
   bool _jamaatRemindersEnabled = false;
   String _favoriteMasjidId = '';
   int _jamaatReminderOffsetMins = 15;
@@ -165,12 +171,12 @@ class SettingsProvider extends ChangeNotifier {
   };
 
   final Map<String, bool> _autoSilentPrayerToggles = {
-    'Fajar': true,
-    'Zuhar': true,
-    'Misl Awwal': true,
-    'Asr Hanafi': true,
-    'Maghrib': true,
-    'Isha': true,
+    'Fajar': false,
+    'Zuhar': false,
+    'Misl Awwal': false,
+    'Asr Hanafi': false,
+    'Maghrib': false,
+    'Isha': false,
   };
 
   final Map<String, bool> _prayerToggles = {
@@ -317,6 +323,12 @@ class SettingsProvider extends ChangeNotifier {
   bool get autoSilentEnabled => _autoSilentEnabled;
   String get autoSilentMode => _autoSilentMode;
 
+  bool get customSilentEnabled => _customSilentEnabled;
+  int get customSilentStartHour => _customSilentStartHour;
+  int get customSilentStartMinute => _customSilentStartMinute;
+  int get customSilentEndHour => _customSilentEndHour;
+  int get customSilentEndMinute => _customSilentEndMinute;
+
   bool get jamaatRemindersEnabled => _jamaatRemindersEnabled;
   String get favoriteMasjidId => _favoriteMasjidId;
   int get jamaatReminderOffsetMins => _jamaatReminderOffsetMins;
@@ -359,7 +371,7 @@ class SettingsProvider extends ChangeNotifier {
 
   int getAutoSilentOffset(String prayer) => _autoSilentOffsets[prayer] ?? 15;
   int getAutoSilentDuration(String prayer) => _autoSilentDurations[prayer] ?? 20;
-  bool isAutoSilentPrayerEnabled(String prayer) => _autoSilentPrayerToggles[prayer] ?? true;
+  bool isAutoSilentPrayerEnabled(String prayer) => _autoSilentPrayerToggles[prayer] ?? false;
 
   Future<void> setLocationMode(LocationMode mode) async {
     if (_locationMode == mode) return;
@@ -586,6 +598,42 @@ class SettingsProvider extends ChangeNotifier {
     });
   }
 
+  Future<void> setCustomSilentEnabled(bool value) async {
+    if (_customSilentEnabled == value) return;
+    _customSilentEnabled = value;
+    notifyListeners();
+    Future.delayed(const Duration(milliseconds: 150), () async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('custom_silent_enabled', value);
+      if (_notificationsEnabled) {
+        await NotificationService.instance.scheduleWeeklyNotifications();
+      }
+    });
+  }
+
+  Future<void> setCustomSilentTimes({
+    required int startHour,
+    required int startMinute,
+    required int endHour,
+    required int endMinute,
+  }) async {
+    _customSilentStartHour = startHour;
+    _customSilentStartMinute = startMinute;
+    _customSilentEndHour = endHour;
+    _customSilentEndMinute = endMinute;
+    notifyListeners();
+    Future.delayed(const Duration(milliseconds: 150), () async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('custom_silent_start_hour', startHour);
+      await prefs.setInt('custom_silent_start_minute', startMinute);
+      await prefs.setInt('custom_silent_end_hour', endHour);
+      await prefs.setInt('custom_silent_end_minute', endMinute);
+      if (_notificationsEnabled) {
+        await NotificationService.instance.scheduleWeeklyNotifications();
+      }
+    });
+  }
+
   Future<void> setAutoSilentOffset(String prayer, int offset) async {
     if (_autoSilentOffsets[prayer] == offset) return;
     _autoSilentOffsets[prayer] = offset;
@@ -796,11 +844,11 @@ class SettingsProvider extends ChangeNotifier {
       }
     }
     _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
-    _liveCountdownEnabled = prefs.getBool('live_countdown_enabled') ?? false;
+    _liveCountdownEnabled = prefs.getBool('live_countdown_enabled') ?? true;
     _hasCompletedSetup = prefs.getBool('has_completed_setup') ?? false;
     _hijriAdjustment = prefs.getInt('hijri_adjustment') ?? 0;
     await HijriSyncService.loadLocalCache();
-    _selectedAzanIndex = prefs.getInt('selected_azan_index') ?? prefs.getInt('selected_azan') ?? 0;
+    _selectedAzanIndex = prefs.getInt('selected_azan_index') ?? prefs.getInt('selected_azan') ?? 3;
     _tasbeehThemeIndex = prefs.getInt('tasbeeh_theme') ?? 0;
     _circleWidgetStyle = prefs.getString('circle_widget_style') ?? 'digital';
     final tf = prefs.getInt('time_format') ?? 0;
@@ -811,6 +859,11 @@ class SettingsProvider extends ChangeNotifier {
     _tasbeehThemeIndex = prefs.getInt('tasbeeh_theme_index') ?? 0;
     _autoSilentEnabled = prefs.getBool('auto_silent_enabled') ?? false;
     _autoSilentMode = prefs.getString('auto_silent_mode') ?? 'vibrate';
+    _customSilentEnabled = prefs.getBool('custom_silent_enabled') ?? false;
+    _customSilentStartHour = prefs.getInt('custom_silent_start_hour') ?? 13;
+    _customSilentStartMinute = prefs.getInt('custom_silent_start_minute') ?? 30;
+    _customSilentEndHour = prefs.getInt('custom_silent_end_hour') ?? 14;
+    _customSilentEndMinute = prefs.getInt('custom_silent_end_minute') ?? 0;
     _quranType = prefs.getString('quran_type') ?? '16_line';
 
     final locRaw = prefs.getString('location_mode');
@@ -880,7 +933,7 @@ class SettingsProvider extends ChangeNotifier {
       _autoSilentDurations[key] = prefs.getInt('auto_silent_duration_$key') ?? _autoSilentDurations[key]!;
     }
     for (final key in _autoSilentPrayerToggles.keys) {
-      _autoSilentPrayerToggles[key] = prefs.getBool('auto_silent_enabled_$key') ?? true;
+      _autoSilentPrayerToggles[key] = prefs.getBool('auto_silent_enabled_$key') ?? false;
     }
     _syncAccent();
 
@@ -1374,7 +1427,7 @@ class SettingsProvider extends ChangeNotifier {
     
     _autoSilentEnabled = false;
     _autoSilentMode = 'vibrate';
-    _liveCountdownEnabled = false;
+    _liveCountdownEnabled = true;
 
     final defaultOffsets = {'Fajar': 15, 'Zuhar': 15, 'Misl Awwal': 15, 'Asr Hanafi': 15, 'Maghrib': 5, 'Isha': 15};
     final defaultDurations = {'Fajar': 20, 'Zuhar': 20, 'Misl Awwal': 20, 'Asr Hanafi': 20, 'Maghrib': 15, 'Isha': 20};
@@ -1383,8 +1436,9 @@ class SettingsProvider extends ChangeNotifier {
       _autoSilentDurations[key] = defaultDurations[key]!;
     }
     for (final key in _autoSilentPrayerToggles.keys) {
-      _autoSilentPrayerToggles[key] = true;
+      _autoSilentPrayerToggles[key] = false;
     }
+    _selectedAzanIndex = 3;
 
     notifyListeners();
 
@@ -1437,10 +1491,11 @@ class SettingsProvider extends ChangeNotifier {
         await prefs.setInt('auto_silent_duration_$key', defaultDurations[key]!);
       }
       for (final key in _autoSilentPrayerToggles.keys) {
-        await prefs.setBool('auto_silent_enabled_$key', true);
+        _autoSilentPrayerToggles[key] = false;
+        await prefs.setBool('auto_silent_enabled_$key', false);
       }
 
-      await prefs.setBool('live_countdown_enabled', false);
+      await prefs.setBool('live_countdown_enabled', true);
       NotificationService.instance.stopLiveCountdownTimer();
       await NotificationService.instance.cancelLiveCountdown();
 

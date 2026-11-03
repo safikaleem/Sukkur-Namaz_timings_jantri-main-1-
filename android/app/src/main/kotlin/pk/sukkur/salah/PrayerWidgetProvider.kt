@@ -131,18 +131,22 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     try {
-                        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                        if (isScreenOn) {
+                            alarmManager.setExact(AlarmManager.RTC, triggerTime, pendingIntent)
+                        } else {
+                            alarmManager.set(AlarmManager.RTC, triggerTime, pendingIntent)
+                        }
                     } catch (se: SecurityException) {
-                        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                        alarmManager.set(AlarmManager.RTC, triggerTime, pendingIntent)
                     }
                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                    alarmManager.setExact(AlarmManager.RTC, triggerTime, pendingIntent)
                 } else {
-                    alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                    alarmManager.set(AlarmManager.RTC, triggerTime, pendingIntent)
                 }
             } catch (e: Exception) {
                 try {
-                    alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                    alarmManager.set(AlarmManager.RTC, triggerTime, pendingIntent)
                 } catch (e2: Exception) {}
             }
         }
