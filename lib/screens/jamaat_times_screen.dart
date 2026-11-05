@@ -26,6 +26,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
   String _selectedPrayerFilter = 'All'; // 'All', 'Fajr', 'Zuhar', 'Asar', 'Maghrib', 'Isha', 'Jummah'
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _mainScrollController = ScrollController();
   Timer? _liveSyncTimer;
 
   List<String> _pinnedMasjidIds = [];
@@ -58,7 +59,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     _liveSyncTimer?.cancel();
     _liveSyncTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted && widget.isActive) {
-        JamaatTimesService.instance.fetchFirestoreTimings();
+        JamaatTimesService.instance.fetchFirestoreTimings(force: true);
       }
     });
   }
@@ -309,6 +310,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     _stopLiveSyncTimer();
     JamaatTimesService.instance.removeListener(_onServiceUpdated);
     _searchController.dispose();
+    _mainScrollController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -762,7 +764,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     final lang = settings.language;
 
     // Trigger live background Firestore check whenever a user opens a Masjid card
-    JamaatTimesService.instance.fetchFirestoreTimings();
+    JamaatTimesService.instance.fetchFirestoreTimings(force: true);
 
     showModalBottomSheet(
       context: context,
@@ -1418,6 +1420,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                         context,
                         settings,
                         nameKey: 'Fajr',
+                        subNoteKey: timing.fajrUpdated.trim().isEmpty ? 'Fixed' : null,
                         customNote: timing.getNoteFor('Fajr', lang).isNotEmpty
                             ? timing.getNoteFor('Fajr', lang)
                             : null,
@@ -1445,6 +1448,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                         context,
                         settings,
                         nameKey: 'Asar',
+                        subNoteKey: timing.asarUpdated.trim().isEmpty ? 'Fixed' : null,
                         customNote: timing.getNoteFor('Asar', lang).isNotEmpty
                             ? timing.getNoteFor('Asar', lang)
                             : null,
@@ -1472,6 +1476,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                         context,
                         settings,
                         nameKey: 'Isha',
+                        subNoteKey: timing.ishaUpdated.trim().isEmpty ? 'Fixed' : null,
                         customNote: timing.getNoteFor('Isha', lang).isNotEmpty
                             ? timing.getNoteFor('Isha', lang)
                             : null,
@@ -2559,44 +2564,45 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                                         asar == currentTiming.asar &&
                                         isha == currentTiming.isha &&
                                         jummah == currentTiming.jummah;
+
+                                    String resolveUpdated(String key, String newTime, String oldTime, String oldUpdated) {
+                                      if (newTime != oldTime || modifiedPrayers.contains(key)) {
+                                        return todayStr;
+                                      }
+                                      if (forceStampAll) {
+                                        return oldUpdated.trim().isEmpty ? '' : todayStr;
+                                      }
+                                      return oldUpdated;
+                                    }
+
                                     final updatedTiming = JamaatTiming(
                                       fajr: fajr,
-                                      fajrUpdated: (fajr != currentTiming.fajr || modifiedPrayers.contains('fajr') || forceStampAll)
-                                          ? todayStr
-                                          : currentTiming.fajrUpdated,
+                                      fajrUpdated: resolveUpdated('fajr', fajr, currentTiming.fajr, currentTiming.fajrUpdated),
                                       fajrNoteUr: currentTiming.fajrNoteUr,
                                       fajrNoteEn: currentTiming.fajrNoteEn,
                                       zuhar: zuhar,
-                                      zuharUpdated: (zuhar != currentTiming.zuhar || modifiedPrayers.contains('zuhar') || forceStampAll)
-                                          ? todayStr
-                                          : currentTiming.zuharUpdated,
+                                      zuharUpdated: resolveUpdated('zuhar', zuhar, currentTiming.zuhar, currentTiming.zuharUpdated),
                                       zuharNoteUr: currentTiming.zuharNoteUr,
                                       zuharNoteEn: currentTiming.zuharNoteEn,
                                       asar: asar,
-                                      asarUpdated: (asar != currentTiming.asar || modifiedPrayers.contains('asar') || forceStampAll)
-                                          ? todayStr
-                                          : currentTiming.asarUpdated,
+                                      asarUpdated: resolveUpdated('asar', asar, currentTiming.asar, currentTiming.asarUpdated),
                                       asarNoteUr: currentTiming.asarNoteUr,
                                       asarNoteEn: currentTiming.asarNoteEn,
                                       maghrib: 'Sunset',
                                       maghribNoteUr: currentTiming.maghribNoteUr,
                                       maghribNoteEn: currentTiming.maghribNoteEn,
                                       isha: isha,
-                                      ishaUpdated: (isha != currentTiming.isha || modifiedPrayers.contains('isha') || forceStampAll)
-                                          ? todayStr
-                                          : currentTiming.ishaUpdated,
+                                      ishaUpdated: resolveUpdated('isha', isha, currentTiming.isha, currentTiming.ishaUpdated),
                                       ishaNoteUr: currentTiming.ishaNoteUr,
                                       ishaNoteEn: currentTiming.ishaNoteEn,
                                       jummah: jummah,
-                                      jummahUpdated: (jummah != currentTiming.jummah || modifiedPrayers.contains('jummah') || forceStampAll)
-                                          ? todayStr
-                                          : currentTiming.jummahUpdated,
+                                      jummahUpdated: resolveUpdated('jummah', jummah, currentTiming.jummah, currentTiming.jummahUpdated),
                                       jummahNoteUr: currentTiming.jummahNoteUr,
                                       jummahNoteEn: currentTiming.jummahNoteEn,
                                     );
 
                                     // 1. Update cache immediately & await live Firestore sync
-                                    await JamaatTimesService.instance.updateTimingForMasjid(
+                                    final synced = await JamaatTimesService.instance.updateTimingForMasjid(
                                       masjidId: masjid.id,
                                       newTiming: updatedTiming,
                                     );
@@ -2613,15 +2619,21 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
-                                          backgroundColor: const Color(0xFF1B4332),
+                                          backgroundColor: synced ? const Color(0xFF1B4332) : const Color(0xFFB71C1C),
                                           behavior: SnackBarBehavior.floating,
                                           content: Row(
                                             children: [
-                                              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                                              Icon(
+                                                synced ? Icons.check_circle_rounded : Icons.warning_amber_rounded,
+                                                color: Colors.white,
+                                                size: 20,
+                                              ),
                                               const SizedBox(width: 8),
                                               Expanded(
                                                 child: Text(
-                                                  _t(settings, 'Jama\'at times updated successfully!'),
+                                                  synced
+                                                      ? _t(settings, 'Jama\'at times updated successfully!', 'نماز کے اوقات کامیابی سے اپڈیٹ ہو گئے!', 'نماز جا اوقات ڪاميابي سان اپڊيٽ ٿي ويا!', 'تم تحديث أوقات صلاة الجماعة بنجاح!')
+                                                      : _t(settings, 'Saved on phone, but cloud sync failed. Please check internet connection.', 'فون پر محفوظ ہو گیا مگر کلاؤڈ سنک نہیں ہو سکا۔ انٹرنیٹ کنکشن چیک کریں۔', 'فون تي محفوظ ٿي ويو پر ڪلائوڊ سنڪ نه ٿي سگهيو. انٽرنيٽ چيڪ ڪريو.', 'تم الحفظ على الهاتف، لكن تعذر المزامنة السحابية. يرجى التحقق من الاتصال بالإنترنت.'),
                                                   style: TextStyle(
                                                     fontFamily: AppTheme.getFontForLanguage(context, lang),
                                                     color: Colors.white,
@@ -3121,6 +3133,8 @@ JazakAllah Khair''';
         color: const Color(0xFF1B4332),
         onRefresh: () => _loadRemoteTimings(force: true),
         child: SingleChildScrollView(
+          key: const PageStorageKey<String>('jamaat_main_scroll_view'),
+          controller: _mainScrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -3769,6 +3783,7 @@ JazakAllah Khair''';
     return [
       for (final masjid in displayList)
         Padding(
+          key: ValueKey('masjid_item_${masjid.id}'),
           padding: const EdgeInsets.only(bottom: 12),
           child: _buildMasjidJamaatBar(
             context: context,

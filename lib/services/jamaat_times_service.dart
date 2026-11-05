@@ -167,11 +167,11 @@ class JamaatTiming {
     final defaultDate = rawDefault != null ? normalizeDate(rawDefault.toString()) : '';
 
     String parseUpdated(String fieldKey, String altKey) {
-      if (json[fieldKey] != null && json[fieldKey].toString().trim().isNotEmpty) {
-        return normalizeDate(json[fieldKey].toString());
+      if (json.containsKey(fieldKey)) {
+        return normalizeDate(json[fieldKey]?.toString() ?? '');
       }
-      if (json[altKey] != null && json[altKey].toString().trim().isNotEmpty) {
-        return normalizeDate(json[altKey].toString());
+      if (json.containsKey(altKey)) {
+        return normalizeDate(json[altKey]?.toString() ?? '');
       }
       return defaultDate;
     }
@@ -226,7 +226,7 @@ class JamaatTiming {
         if (fajrNoteUr.isNotEmpty) 'fajr_note_ur': fajrNoteUr,
         if (fajrNoteEn.isNotEmpty) 'fajr_note_en': fajrNoteEn,
         'zuhar': zuhar,
-        if (zuharUpdated.isNotEmpty) 'zuhar_updated': zuharUpdated,
+        'zuhar_updated': zuharUpdated,
         if (zuharNoteUr.isNotEmpty) 'zuhar_note_ur': zuharNoteUr,
         if (zuharNoteEn.isNotEmpty) 'zuhar_note_en': zuharNoteEn,
         'asar': asar,
@@ -241,7 +241,7 @@ class JamaatTiming {
         if (ishaNoteUr.isNotEmpty) 'isha_note_ur': ishaNoteUr,
         if (ishaNoteEn.isNotEmpty) 'isha_note_en': ishaNoteEn,
         'jummah': jummah,
-        if (jummahUpdated.isNotEmpty) 'jummah_updated': jummahUpdated,
+        'jummah_updated': jummahUpdated,
         if (jummahNoteUr.isNotEmpty) 'jummah_note_ur': jummahNoteUr,
         if (jummahNoteEn.isNotEmpty) 'jummah_note_en': jummahNoteEn,
       };
@@ -1655,9 +1655,25 @@ class JamaatTimesService extends ChangeNotifier {
         );
       }
 
-      // Both have a time. Compare dates with Firestore precedence rule.
+      // Both have a time.
       final currDt = _parseDate(currUpdated);
       final incDt = _parseDate(incUpdated);
+
+      // If prayer times match and either side is explicitly Fixed (""), Fixed wins!
+      // This guarantees that marking a prayer as Fixed in Gist or the app is never
+      // undone by a stale timestamp from the other remote source.
+      final bool currIsFixed = cleanCurr.isNotEmpty && currUpdated.trim().isEmpty;
+      final bool incIsFixed = cleanInc.isNotEmpty && incUpdated.trim().isEmpty;
+      if (cleanCurr == cleanInc && (currIsFixed || incIsFixed)) {
+        return PrayerMergeResult(
+          time: cleanInc,
+          updated: (currIsFixed && incIsFixed)
+              ? ''
+              : (isIncomingFirestore && incUpdated.trim().isNotEmpty ? incUpdated : ''),
+          noteUr: incNoteUr.isNotEmpty ? incNoteUr : currNoteUr,
+          noteEn: incNoteEn.isNotEmpty ? incNoteEn : currNoteEn,
+        );
+      }
 
       final cmp = _compareDatesWithPrecedence(
         dateA: incDt,
@@ -1669,7 +1685,7 @@ class JamaatTimesService extends ChangeNotifier {
         // Incoming wins
         return PrayerMergeResult(
           time: cleanInc,
-          updated: incUpdated.isNotEmpty ? incUpdated : currUpdated,
+          updated: incUpdated,
           noteUr: incNoteUr.isNotEmpty ? incNoteUr : currNoteUr,
           noteEn: incNoteEn.isNotEmpty ? incNoteEn : currNoteEn,
         );
@@ -1827,9 +1843,7 @@ class JamaatTimesService extends ChangeNotifier {
         fields['${key}_updated'] = {'stringValue': updated};
       } else if (clean.isNotEmpty && clean != '-') {
         fields[key] = {'stringValue': clean};
-        if (updated.isNotEmpty) {
-          fields['${key}_updated'] = {'stringValue': updated};
-        }
+        fields['${key}_updated'] = {'stringValue': updated};
       }
     }
 
@@ -1962,7 +1976,7 @@ class JamaatTimesService extends ChangeNotifier {
 
   /// Registers a newly added masjid dynamically in memory, local persistent cache,
   /// and syncs baseline timing to Cloud Firestore and GitHub Gist.
-  void registerDynamicMasjid(JamaatMasjidInfo newMasjid) {
+  Future<bool> registerDynamicMasjid(JamaatMasjidInfo newMasjid) async {
     final index = _dynamicMasjids.indexWhere((m) => m.id == newMasjid.id);
     if (index >= 0) {
       _dynamicMasjids[index] = newMasjid;
@@ -1972,13 +1986,15 @@ class JamaatTimesService extends ChangeNotifier {
     _gistTimings[newMasjid.id] = newMasjid.defaultTimings;
     _firestoreTimings[newMasjid.id] = newMasjid.defaultTimings;
     _remoteCache[newMasjid.id] = newMasjid.defaultTimings;
+    _pendingLocalTimings.remove(newMasjid.id);
     if (newMasjid.pin != null && newMasjid.pin!.isNotEmpty) {
       _masjidPins[newMasjid.id] = newMasjid.pin!;
     }
     notifyListeners();
     _persistCacheAsync(newMasjid.id);
-    _syncTimingToFirestore(newMasjid.id, newMasjid.defaultTimings);
+    final fsOk = await _syncTimingToFirestore(newMasjid.id, newMasjid.defaultTimings);
     _syncTimingToGistAsync(newMasjid.id, newMasjid.defaultTimings);
+    return fsOk;
   }
 
   /// Synchronizes a masjid's Jama'at timing to the authoritative GitHub Gist (jamaat_times.json).
@@ -2334,7 +2350,7 @@ class JamaatTimesService extends ChangeNotifier {
 
       if (!force &&
           _lastFirestoreFetchTime != null &&
-          DateTime.now().difference(_lastFirestoreFetchTime!).inMinutes < 3 &&
+          DateTime.now().difference(_lastFirestoreFetchTime!).inSeconds < 25 &&
           _firestoreTimings.isNotEmpty) {
         return true;
       }
@@ -2520,5 +2536,256 @@ class JamaatTimesService extends ChangeNotifier {
       await loadLocalCache();
     }
     return anySuccess;
+  }
+
+  /// Exports the entire database of all registered masajid and their current active timings
+  /// formatted as valid JSON matching the GitHub Gist structure.
+  String exportRawGistJson() {
+    final activeList = getMasjidList(includeHidden: true);
+    final Map<String, dynamic> exportData = {
+      'master_pin': _masterAdminPin,
+      'masjids': activeList.map((m) {
+        final t = _remoteCache[m.id] ?? m.defaultTimings;
+        final jsonMap = t.toJson();
+        jsonMap['id'] = m.id;
+        jsonMap['name'] = m.nameKey;
+        jsonMap['address'] = m.addressKey;
+        if (m.isHidden) {
+          jsonMap['hidden'] = true;
+        }
+        final pin = _masjidPins[m.id] ?? m.pin;
+        if (pin != null && pin.isNotEmpty) {
+          jsonMap['pin'] = pin;
+        }
+        if (m.localizedNames.isNotEmpty) jsonMap['names'] = m.localizedNames;
+        if (m.localizedAddresses.isNotEmpty) jsonMap['addresses'] = m.localizedAddresses;
+        return jsonMap;
+      }).toList(),
+    };
+    const encoder = JsonEncoder.withIndent('  ');
+    return encoder.convert(exportData);
+  }
+
+  /// Clears local cache from SharedPreferences and in-memory stores,
+  /// then re-fetches fresh data from Firestore and Gist.
+  Future<void> clearCacheAndReload() async {
+    try {
+      final prefs = await _getPrefs();
+      await prefs.remove(prefKeyJamaatCache);
+      await prefs.remove(prefKeyFirestoreCache);
+      await prefs.remove(prefKeyPendingUpdates);
+
+      _remoteCache.clear();
+      _firestoreTimings.clear();
+      _pendingLocalTimings.clear();
+      _gistTimings.clear();
+
+      await loadLocalCache();
+      await fetchRemoteGistTimings(force: true);
+    } catch (e) {
+      debugPrint('Error clearing cache: $e');
+    }
+  }
+
+  /// Shifts a 12-hour formatted time string (e.g. "05:00 PM") by [deltaMinutes]
+  static String shiftTimeString(String timeStr, int deltaMinutes) {
+    try {
+      final clean = timeStr.trim();
+      final isPM = clean.toUpperCase().contains('PM');
+      final isAM = clean.toUpperCase().contains('AM');
+      final digits = clean.replaceAll(RegExp(r'[a-zA-Z]'), '').trim();
+      final parts = digits.split(':');
+      if (parts.length >= 2) {
+        int h = int.parse(parts[0].trim());
+        int m = int.parse(parts[1].trim());
+        if (isPM && h < 12) h += 12;
+        if (isAM && h == 12) h = 0;
+        int totalMinutes = h * 60 + m + deltaMinutes;
+        totalMinutes = (totalMinutes % 1440 + 1440) % 1440;
+        int newH = totalMinutes ~/ 60;
+        int newM = totalMinutes % 60;
+        String period = newH >= 12 ? 'PM' : 'AM';
+        if (newH > 12) newH -= 12;
+        if (newH == 0) newH = 12;
+        return '${newH.toString().padLeft(2, '0')}:${newM.toString().padLeft(2, '0')} $period';
+      }
+    } catch (_) {}
+    return timeStr;
+  }
+
+  /// Bulk shifts a specific prayer timing across all non-hidden masajid (or selected IDs)
+  /// by [deltaMinutes] (e.g. +15 or -15), updates timestamps, and persists to local cache and Firestore.
+  Future<int> bulkShiftPrayerTiming({
+    required String prayerKey,
+    required int deltaMinutes,
+    List<String>? targetMasjidIds,
+  }) async {
+    final now = DateTime.now();
+    final dayStr = now.day.toString().padLeft(2, '0');
+    final monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    final monthStr = monthKeys[now.month - 1].toUpperCase();
+    final todayStamp = '$dayStr $monthStr ${now.year}';
+
+    final allMasajid = getMasjidList(includeHidden: false);
+    int count = 0;
+
+    for (final m in allMasajid) {
+      if (targetMasjidIds != null && !targetMasjidIds.contains(m.id)) continue;
+      final current = getTimingFor(m);
+      JamaatTiming updated;
+
+      switch (prayerKey.toLowerCase()) {
+        case 'fajr':
+          final newTime = shiftTimeString(current.fajr, deltaMinutes);
+          updated = JamaatTiming(
+            fajr: newTime,
+            fajrUpdated: todayStamp,
+            fajrNoteUr: current.fajrNoteUr,
+            fajrNoteEn: current.fajrNoteEn,
+            zuhar: current.zuhar,
+            zuharUpdated: current.zuharUpdated,
+            zuharNoteUr: current.zuharNoteUr,
+            zuharNoteEn: current.zuharNoteEn,
+            asar: current.asar,
+            asarUpdated: current.asarUpdated,
+            asarNoteUr: current.asarNoteUr,
+            asarNoteEn: current.asarNoteEn,
+            maghrib: current.maghrib,
+            maghribNoteUr: current.maghribNoteUr,
+            maghribNoteEn: current.maghribNoteEn,
+            isha: current.isha,
+            ishaUpdated: current.ishaUpdated,
+            ishaNoteUr: current.ishaNoteUr,
+            ishaNoteEn: current.ishaNoteEn,
+            jummah: current.jummah,
+            jummahUpdated: current.jummahUpdated,
+            jummahNoteUr: current.jummahNoteUr,
+            jummahNoteEn: current.jummahNoteEn,
+          );
+          break;
+        case 'zuhar':
+          final newTime = shiftTimeString(current.zuhar, deltaMinutes);
+          updated = JamaatTiming(
+            fajr: current.fajr,
+            fajrUpdated: current.fajrUpdated,
+            fajrNoteUr: current.fajrNoteUr,
+            fajrNoteEn: current.fajrNoteEn,
+            zuhar: newTime,
+            zuharUpdated: todayStamp,
+            zuharNoteUr: current.zuharNoteUr,
+            zuharNoteEn: current.zuharNoteEn,
+            asar: current.asar,
+            asarUpdated: current.asarUpdated,
+            asarNoteUr: current.asarNoteUr,
+            asarNoteEn: current.asarNoteEn,
+            maghrib: current.maghrib,
+            maghribNoteUr: current.maghribNoteUr,
+            maghribNoteEn: current.maghribNoteEn,
+            isha: current.isha,
+            ishaUpdated: current.ishaUpdated,
+            ishaNoteUr: current.ishaNoteUr,
+            ishaNoteEn: current.ishaNoteEn,
+            jummah: current.jummah,
+            jummahUpdated: current.jummahUpdated,
+            jummahNoteUr: current.jummahNoteUr,
+            jummahNoteEn: current.jummahNoteEn,
+          );
+          break;
+        case 'asar':
+          final newTime = shiftTimeString(current.asar, deltaMinutes);
+          updated = JamaatTiming(
+            fajr: current.fajr,
+            fajrUpdated: current.fajrUpdated,
+            fajrNoteUr: current.fajrNoteUr,
+            fajrNoteEn: current.fajrNoteEn,
+            zuhar: current.zuhar,
+            zuharUpdated: current.zuharUpdated,
+            zuharNoteUr: current.zuharNoteUr,
+            zuharNoteEn: current.zuharNoteEn,
+            asar: newTime,
+            asarUpdated: todayStamp,
+            asarNoteUr: current.asarNoteUr,
+            asarNoteEn: current.asarNoteEn,
+            maghrib: current.maghrib,
+            maghribNoteUr: current.maghribNoteUr,
+            maghribNoteEn: current.maghribNoteEn,
+            isha: current.isha,
+            ishaUpdated: current.ishaUpdated,
+            ishaNoteUr: current.ishaNoteUr,
+            ishaNoteEn: current.ishaNoteEn,
+            jummah: current.jummah,
+            jummahUpdated: current.jummahUpdated,
+            jummahNoteUr: current.jummahNoteUr,
+            jummahNoteEn: current.jummahNoteEn,
+          );
+          break;
+        case 'isha':
+          final newTime = shiftTimeString(current.isha, deltaMinutes);
+          updated = JamaatTiming(
+            fajr: current.fajr,
+            fajrUpdated: current.fajrUpdated,
+            fajrNoteUr: current.fajrNoteUr,
+            fajrNoteEn: current.fajrNoteEn,
+            zuhar: current.zuhar,
+            zuharUpdated: current.zuharUpdated,
+            zuharNoteUr: current.zuharNoteUr,
+            zuharNoteEn: current.zuharNoteEn,
+            asar: current.asar,
+            asarUpdated: current.asarUpdated,
+            asarNoteUr: current.asarNoteUr,
+            asarNoteEn: current.asarNoteEn,
+            maghrib: current.maghrib,
+            maghribNoteUr: current.maghribNoteUr,
+            maghribNoteEn: current.maghribNoteEn,
+            isha: newTime,
+            ishaUpdated: todayStamp,
+            ishaNoteUr: current.ishaNoteUr,
+            ishaNoteEn: current.ishaNoteEn,
+            jummah: current.jummah,
+            jummahUpdated: current.jummahUpdated,
+            jummahNoteUr: current.jummahNoteUr,
+            jummahNoteEn: current.jummahNoteEn,
+          );
+          break;
+        case 'jummah':
+          final newTime = shiftTimeString(current.jummah, deltaMinutes);
+          updated = JamaatTiming(
+            fajr: current.fajr,
+            fajrUpdated: current.fajrUpdated,
+            fajrNoteUr: current.fajrNoteUr,
+            fajrNoteEn: current.fajrNoteEn,
+            zuhar: current.zuhar,
+            zuharUpdated: current.zuharUpdated,
+            zuharNoteUr: current.zuharNoteUr,
+            zuharNoteEn: current.zuharNoteEn,
+            asar: current.asar,
+            asarUpdated: current.asarUpdated,
+            asarNoteUr: current.asarNoteUr,
+            asarNoteEn: current.asarNoteEn,
+            maghrib: current.maghrib,
+            maghribNoteUr: current.maghribNoteUr,
+            maghribNoteEn: current.maghribNoteEn,
+            isha: current.isha,
+            ishaUpdated: current.ishaUpdated,
+            ishaNoteUr: current.ishaNoteUr,
+            ishaNoteEn: current.ishaNoteEn,
+            jummah: newTime,
+            jummahUpdated: todayStamp,
+            jummahNoteUr: current.jummahNoteUr,
+            jummahNoteEn: current.jummahNoteEn,
+          );
+          break;
+        default:
+          continue;
+      }
+
+      await updateTimingForMasjid(
+        masjidId: m.id,
+        newTiming: updated,
+      );
+      count++;
+    }
+
+    return count;
   }
 }

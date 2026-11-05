@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../providers/settings_provider.dart';
 import '../services/jamaat_times_service.dart';
 import '../services/developer_gist_service.dart';
+import '../utils/app_theme.dart';
 import 'developer_gist_manager_screen.dart';
 import 'developer_add_masjid_screen.dart';
 
@@ -26,6 +27,12 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
     'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
     'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
   };
+
+  bool get _isUrdu => ['urdu', 'sindhi', 'arabic', 'persian'].contains(
+    Provider.of<SettingsProvider>(context, listen: false).language,
+  );
+  String _t(String en, String ur) => _isUrdu ? ur : en;
+  String? get _urduFont => _isUrdu ? AppTheme.getFontForLanguage(context, 'urdu') : null;
 
   DateTime? _parseDate(String dateStr) {
     try {
@@ -64,17 +71,24 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
     return latest;
   }
 
-  List<String> _getUpdatedPrayersList(JamaatTiming timing) {
+  List<String> _getUpdatedPrayersList(JamaatTiming timing, [bool useUrdu = false]) {
     final list = <String>[];
-    if (timing.fajrUpdated.isNotEmpty) list.add('Fajr (${timing.fajrUpdated})');
-    if (timing.zuharUpdated.isNotEmpty) list.add('Zuhar (${timing.zuharUpdated})');
-    if (timing.asarUpdated.isNotEmpty) list.add('Asar (${timing.asarUpdated})');
-    if (timing.ishaUpdated.isNotEmpty) list.add('Isha (${timing.ishaUpdated})');
-    if (timing.jummahUpdated.isNotEmpty) list.add('Jummah (${timing.jummahUpdated})');
+    final fajr = useUrdu ? 'فجر' : 'Fajr';
+    final zuhar = useUrdu ? 'ظہر' : 'Zuhar';
+    final asar = useUrdu ? 'عصر' : 'Asar';
+    final isha = useUrdu ? 'عشاء' : 'Isha';
+    final jummah = useUrdu ? 'جمعہ' : 'Jummah';
+    if (timing.fajrUpdated.isNotEmpty) list.add('$fajr (${timing.fajrUpdated})');
+    if (timing.zuharUpdated.isNotEmpty) list.add('$zuhar (${timing.zuharUpdated})');
+    if (timing.asarUpdated.isNotEmpty) list.add('$asar (${timing.asarUpdated})');
+    if (timing.ishaUpdated.isNotEmpty) list.add('$isha (${timing.ishaUpdated})');
+    if (timing.jummahUpdated.isNotEmpty) list.add('$jummah (${timing.jummahUpdated})');
     return list;
   }
 
   Future<void> _refreshData() async {
+    final isUrdu = _isUrdu;
+    final urduFont = _urduFont;
     setState(() => _isRefreshing = true);
     final success = await JamaatTimesService.instance.fetchRemoteGistTimings(force: true);
     if (mounted) {
@@ -83,8 +97,9 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
         SnackBar(
           content: Text(
             success
-                ? 'Synced live timings from Cloud Firestore & Gist!'
-                : 'Could not reach server. Showing local cache.',
+                ? (isUrdu ? 'کلاؤڈ فائر اسٹور اور گسٹ سے اوقات سنک ہو گئے!' : 'Synced live timings from Cloud Firestore & Gist!')
+                : (isUrdu ? 'سرور سے رابطہ نہ ہو سکا۔ مقامی کیش دکھایا جا رہا ہے۔' : 'Could not reach server. Showing local cache.'),
+            style: TextStyle(fontFamily: urduFont),
           ),
           backgroundColor: success
               ? const Color(0xFF1B4332)
@@ -98,11 +113,16 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
   Future<void> _shareReport(
     List<({JamaatMasjidInfo masjid, JamaatTiming timing, DateTime? latestDate, List<String> updatedPrayers})> items,
   ) async {
+    final isUrdu = _isUrdu;
+    final urduFont = _urduFont;
     if (items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No masajid found in current filter to share.'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(
+            isUrdu ? 'شیئر کرنے کے لیے کوئی مسجد نہیں ملی۔' : 'No masajid found in current filter to share.',
+            style: TextStyle(fontFamily: urduFont),
+          ),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -115,27 +135,31 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
     final dateFormatted = '$dayStr $monthStr ${now.year}';
 
     final filterLabel = switch (_filter) {
-      'week' => 'This Week (Last 7 Days)',
-      'month' => 'This Month (Last 30 Days)',
-      'default' => 'Unchanged (Default)',
-      _ => 'All Masajid',
+      'today' => isUrdu ? 'آج (Today)' : 'Today',
+      'week' => isUrdu ? 'اس ہفتے (گزشتہ 7 دن)' : 'This Week (Last 7 Days)',
+      'month' => isUrdu ? 'اس ماہ (گزشتہ 30 دن)' : 'This Month (Last 30 Days)',
+      'default' => isUrdu ? 'غیر تبدیل شدہ (طے شدہ)' : 'Unchanged (Default)',
+      'hidden' => isUrdu ? 'پوشیدہ مساجد' : 'Hidden Masajid',
+      _ => isUrdu ? 'تمام مساجد' : 'All Masajid',
     };
 
     final buffer = StringBuffer();
-    buffer.writeln('🕌 *Sukkur Salah - Masajid Timings Update Report*');
+    buffer.writeln(isUrdu ? '🕌 *سکھر صلاۃ - مساجد اپڈیٹ رپورٹ*' : '🕌 *Sukkur Salah - Masajid Timings Update Report*');
     buffer.writeln('📅 Date: $dateFormatted');
     buffer.writeln('📊 Category: $filterLabel (${items.length} Masajid)');
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
     int counter = 1;
     for (final item in items) {
-      buffer.writeln('$counter. *${item.masjid.nameKey}* (${item.masjid.addressKey})');
+      final name = isUrdu ? item.masjid.getNameFor('urdu') : item.masjid.nameKey;
+      final addr = isUrdu ? item.masjid.getAddressFor('urdu') : item.masjid.addressKey;
+      buffer.writeln('$counter. *$name* ($addr)');
       if (item.updatedPrayers.isNotEmpty) {
         for (final p in item.updatedPrayers) {
           buffer.writeln('   • $p');
         }
       } else {
-        buffer.writeln('   • Timings: Default (Base)');
+        buffer.writeln(isUrdu ? '   • اوقات: طے شدہ (بنیادی)' : '   • Timings: Default (Base)');
       }
       buffer.writeln();
       counter++;
@@ -154,10 +178,13 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
       await Clipboard.setData(ClipboardData(text: text));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Report copied to clipboard!'),
-            backgroundColor: Color(0xFF1B4332),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(
+              isUrdu ? 'رپورٹ کلپ بورڈ پر کاپی ہو گئی!' : 'Report copied to clipboard!',
+              style: TextStyle(fontFamily: urduFont),
+            ),
+            backgroundColor: const Color(0xFF1B4332),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -169,12 +196,15 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
     final settings = Provider.of<SettingsProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final allMasajid = JamaatTimesService.instance.getMasjidList(includeHidden: true);
+    final bool useUrdu = ['urdu', 'sindhi', 'arabic', 'persian'].contains(settings.language);
+    String t(String en, String ur) => useUrdu ? ur : en;
+    final urduFont = useUrdu ? AppTheme.getFontForLanguage(context, 'urdu') : null;
 
     // Collect info with calculated latest update dates
     final records = allMasajid.map((m) {
       final timing = JamaatTimesService.instance.getTimingFor(m);
       final latestDate = _getLatestUpdateDate(timing);
-      final updatedPrayers = _getUpdatedPrayersList(timing);
+      final updatedPrayers = _getUpdatedPrayersList(timing, useUrdu);
       return (
         masjid: m,
         timing: timing,
@@ -200,6 +230,7 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
     final sevenDaysAgo = today.subtract(const Duration(days: 7));
     final thirtyDaysAgo = today.subtract(const Duration(days: 30));
 
+    final updatedToday = records.where((r) => r.latestDate != null && !r.latestDate!.isBefore(today)).length;
     final updatedThisWeek = records.where((r) => r.latestDate != null && !r.latestDate!.isBefore(sevenDaysAgo)).length;
     final updatedThisMonth = records.where((r) => r.latestDate != null && !r.latestDate!.isBefore(thirtyDaysAgo)).length;
     final totalDefault = records.where((r) => r.latestDate == null).length;
@@ -212,10 +243,14 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
         final q = _searchQuery.toLowerCase();
         final name = r.masjid.nameKey.toLowerCase();
         final addr = r.masjid.addressKey.toLowerCase();
-        if (!name.contains(q) && !addr.contains(q)) return false;
+        final urduName = r.masjid.getNameFor('urdu').toLowerCase();
+        final urduAddr = r.masjid.getAddressFor('urdu').toLowerCase();
+        if (!name.contains(q) && !addr.contains(q) && !urduName.contains(q) && !urduAddr.contains(q)) return false;
       }
       // Timeframe & status filter
-      if (_filter == 'week') {
+      if (_filter == 'today') {
+        if (r.latestDate == null || r.latestDate!.isBefore(today)) return false;
+      } else if (_filter == 'week') {
         if (r.latestDate == null || r.latestDate!.isBefore(sevenDaysAgo)) return false;
       } else if (_filter == 'month') {
         if (r.latestDate == null || r.latestDate!.isBefore(thirtyDaysAgo)) return false;
@@ -230,17 +265,20 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF12181A) : const Color(0xFFF4F6F6),
       appBar: AppBar(
-        title: const Text(
-          'Admin Change Log',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        title: Text(
+          t('Admin Change Log', 'مساجد لاگ و اوقات'),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, fontFamily: urduFont),
         ),
+        titleSpacing: 0,
         backgroundColor: isDark ? const Color(0xFF1A2426) : const Color(0xFF1B4332),
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_business_rounded),
-            tooltip: 'Add New Masjid (All 10 Languages)',
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            icon: const Icon(Icons.add_business_rounded, size: 20),
+            tooltip: t('Add New Masjid (All 10 Languages)', 'نئی مسجد شامل کریں'),
             onPressed: () async {
               final added = await Navigator.push<bool>(
                 context,
@@ -252,8 +290,10 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.cloud_upload_rounded),
-            tooltip: 'Gist Manager (Hijri & Popups)',
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            icon: const Icon(Icons.cloud_upload_rounded, size: 20),
+            tooltip: t('Gist Manager (Hijri & Popups)', 'گسٹ مینیجر'),
             onPressed: () {
               Navigator.push(
                 context,
@@ -262,29 +302,36 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.password_rounded),
-            tooltip: 'Change Master PIN',
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            icon: const Icon(Icons.password_rounded, size: 20),
+            tooltip: t('Change Master PIN', 'ماسٹر پن تبدیل کریں'),
             onPressed: _showChangeMasterPinDialog,
           ),
           IconButton(
-            icon: const Icon(Icons.share_rounded),
-            tooltip: 'Share / Export Timings Report',
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            icon: const Icon(Icons.share_rounded, size: 20),
+            tooltip: t('Share / Export Timings Report', 'رپورٹ شیئر کریں'),
             onPressed: () => _shareReport(filtered),
           ),
           IconButton(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             icon: _isRefreshing
                 ? const SizedBox(
-                    width: 20,
-                    height: 20,
+                    width: 18,
+                    height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : const Icon(Icons.sync_rounded),
-            tooltip: 'Sync with Cloud Firestore & Gist',
+                : const Icon(Icons.sync_rounded, size: 20),
+            tooltip: t('Sync with Cloud Firestore & Gist', 'سنک کریں'),
             onPressed: _isRefreshing ? null : _refreshData,
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Column(
@@ -302,27 +349,39 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
             child: Row(
               children: [
                 _buildStatCard(
-                  title: 'Total Masajid',
+                  title: t('Total', 'کل مساجد'),
                   value: '${allMasajid.length}',
                   icon: Icons.mosque_rounded,
                   color: const Color(0xFF81C784),
                   isDark: isDark,
+                  urduFont: urduFont,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _buildStatCard(
-                  title: 'This Week',
+                  title: t('Today', 'آج'),
+                  value: '$updatedToday',
+                  icon: Icons.today_rounded,
+                  color: const Color(0xFF4DD0E1),
+                  isDark: isDark,
+                  urduFont: urduFont,
+                ),
+                const SizedBox(width: 6),
+                _buildStatCard(
+                  title: t('This Week', 'اس ہفتے'),
                   value: '$updatedThisWeek',
                   icon: Icons.flash_on_rounded,
                   color: const Color(0xFFFFD54F),
                   isDark: isDark,
+                  urduFont: urduFont,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _buildStatCard(
-                  title: 'This Month',
+                  title: t('This Month', 'اس ماہ'),
                   value: '$updatedThisMonth',
                   icon: Icons.trending_up_rounded,
                   color: const Color(0xFF64B5F6),
                   isDark: isDark,
+                  urduFont: urduFont,
                 ),
               ],
             ),
@@ -360,10 +419,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Master PIN: ',
+                  t('Master PIN: ', 'ماسٹر پن: '),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
+                    fontFamily: urduFont,
                     color: isDark ? Colors.white70 : Colors.black87,
                   ),
                 ),
@@ -393,10 +453,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Change',
+                          t('Change', 'تبدیل کریں'),
                           style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.bold,
+                            fontFamily: urduFont,
                             color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
                           ),
                         ),
@@ -417,10 +478,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                   onChanged: (val) => setState(() => _searchQuery = val.trim()),
                   style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: 'Search masjid name or area...',
+                    hintText: t('Search masjid name or area...', 'مسجد کا نام یا علاقہ تلاش کریں...'),
                     hintStyle: TextStyle(
                       color: isDark ? Colors.white38 : Colors.black38,
                       fontSize: 13,
+                      fontFamily: urduFont,
                     ),
                     prefixIcon: Icon(
                       Icons.search_rounded,
@@ -449,15 +511,17 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildFilterChip('all', 'All (${allMasajid.length})', isDark),
+                      _buildFilterChip('all', t('All (${allMasajid.length})', 'تمام (${allMasajid.length})'), isDark, urduFont: urduFont),
                       const SizedBox(width: 8),
-                      _buildFilterChip('week', 'This Week ($updatedThisWeek)', isDark),
+                      _buildFilterChip('today', t('Today ($updatedToday)', 'آج ($updatedToday)'), isDark, urduFont: urduFont),
                       const SizedBox(width: 8),
-                      _buildFilterChip('month', 'This Month ($updatedThisMonth)', isDark),
+                      _buildFilterChip('week', t('This Week ($updatedThisWeek)', 'اس ہفتے ($updatedThisWeek)'), isDark, urduFont: urduFont),
                       const SizedBox(width: 8),
-                      _buildFilterChip('default', 'Unchanged ($totalDefault)', isDark),
+                      _buildFilterChip('month', t('This Month ($updatedThisMonth)', 'اس ماہ ($updatedThisMonth)'), isDark, urduFont: urduFont),
                       const SizedBox(width: 8),
-                      _buildFilterChip('hidden', 'Hidden ($totalHidden)', isDark, isAlert: totalHidden > 0),
+                      _buildFilterChip('default', t('Unchanged ($totalDefault)', 'غیر تبدیل شدہ ($totalDefault)'), isDark, urduFont: urduFont),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('hidden', t('Hidden ($totalHidden)', 'پوشیدہ ($totalHidden)'), isDark, isAlert: totalHidden > 0, urduFont: urduFont),
                     ],
                   ),
                 ),
@@ -470,10 +534,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
             child: filtered.isEmpty
                 ? Center(
                     child: Text(
-                      'No matching masajid found',
+                      t('No matching masajid found', 'کوئی مسجد نہیں ملی'),
                       style: TextStyle(
                         color: isDark ? Colors.white54 : Colors.black54,
                         fontSize: 14,
+                        fontFamily: urduFont,
                       ),
                     ),
                   )
@@ -490,6 +555,8 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                         latestDate: item.latestDate,
                         updatedPrayers: item.updatedPrayers,
                         isDark: isDark,
+                        useUrdu: useUrdu,
+                        urduFont: urduFont,
                       );
                     },
                   ),
@@ -505,6 +572,7 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
     required IconData icon,
     required Color color,
     required bool isDark,
+    String? urduFont,
   }) {
     return Expanded(
       child: Container(
@@ -534,10 +602,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
             const SizedBox(height: 4),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10.5,
                 color: Colors.white70,
                 fontWeight: FontWeight.w500,
+                fontFamily: urduFont,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -548,7 +617,7 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
     );
   }
 
-  Widget _buildFilterChip(String key, String label, bool isDark, {bool isAlert = false}) {
+  Widget _buildFilterChip(String key, String label, bool isDark, {bool isAlert = false, String? urduFont}) {
     final selected = _filter == key;
     final activeBg = isAlert
         ? const Color(0xFFC62828)
@@ -578,6 +647,7 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
           style: TextStyle(
             fontSize: 11.5,
             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+            fontFamily: urduFont,
             color: selected ? Colors.white : inactiveText,
           ),
         ),
@@ -593,8 +663,13 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
     required DateTime? latestDate,
     required List<String> updatedPrayers,
     required bool isDark,
+    bool useUrdu = false,
+    String? urduFont,
   }) {
     final hasUpdates = latestDate != null;
+    final String displayName = useUrdu ? masjid.getNameFor('urdu') : masjid.nameKey;
+    final String displayAddress = useUrdu ? masjid.getAddressFor('urdu') : masjid.addressKey;
+    String t(String en, String ur) => useUrdu ? ur : en;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -637,10 +712,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            masjid.nameKey,
+                            displayName,
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
+                              fontFamily: urduFont,
                               color: isDark ? Colors.white : Colors.black87,
                             ),
                           ),
@@ -670,10 +746,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                                 ),
                                 const SizedBox(width: 2),
                                 Text(
-                                  'Edit Info',
+                                  t('Edit Info', 'ترمیم کریں'),
                                   style: TextStyle(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w600,
+                                    fontFamily: urduFont,
                                     color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
                                   ),
                                 ),
@@ -685,9 +762,10 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      masjid.addressKey,
+                      displayAddress,
                       style: TextStyle(
                         fontSize: 11.5,
+                        fontFamily: urduFont,
                         color: isDark ? Colors.white54 : Colors.grey[600],
                       ),
                     ),
@@ -725,7 +803,10 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                                             Clipboard.setData(ClipboardData(text: pin));
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(
-                                                content: Text('Copied PIN for ${masjid.nameKey}: $pin'),
+                                                content: Text(
+                                                  useUrdu ? 'پن کوڈ کاپی ہو گیا: $pin' : 'Copied PIN for ${masjid.nameKey}: $pin',
+                                                  style: TextStyle(fontFamily: urduFont),
+                                                ),
                                                 backgroundColor: const Color(0xFF1B4332),
                                                 duration: const Duration(seconds: 2),
                                               ),
@@ -733,11 +814,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                                           }
                                         : () => _showChangeMasjidPinDialog(masjid, ''),
                                     child: Text(
-                                      hasPin ? 'PIN: $pin' : '+ Set PIN',
+                                      hasPin ? '${t('PIN', 'پن')}: $pin' : t('+ Set PIN', '+ پن درج کریں'),
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.bold,
-                                        fontFamily: hasPin ? 'monospace' : null,
+                                        fontFamily: hasPin ? 'monospace' : urduFont,
                                         color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0369A1),
                                       ),
                                     ),
@@ -749,7 +830,10 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                                         Clipboard.setData(ClipboardData(text: pin));
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
-                                            content: Text('Copied PIN for ${masjid.nameKey}: $pin'),
+                                            content: Text(
+                                              useUrdu ? 'پن کوڈ کاپی ہو گیا: $pin' : 'Copied PIN for ${masjid.nameKey}: $pin',
+                                              style: TextStyle(fontFamily: urduFont),
+                                            ),
                                             backgroundColor: const Color(0xFF1B4332),
                                             duration: const Duration(seconds: 2),
                                           ),
@@ -801,10 +885,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Edit & Sync Gist',
+                                  t('Edit & Sync Gist', 'اوقات تبدیل کریں'),
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
+                                    fontFamily: urduFont,
                                     color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
                                   ),
                                 ),
@@ -847,10 +932,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Edit Info (10 Langs)',
+                                  t('Edit Info (10 Langs)', '10 زبانوں میں معلومات'),
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
+                                    fontFamily: urduFont,
                                     color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
                                   ),
                                 ),
@@ -895,10 +981,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  masjid.isHidden ? 'Unhide' : 'Hide',
+                                  masjid.isHidden ? t('Unhide', 'ظاہر کریں') : t('Hide', 'پوشیدہ کریں'),
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
+                                    fontFamily: urduFont,
                                     color: masjid.isHidden
                                         ? (isDark ? const Color(0xFF86EFAC) : const Color(0xFF15803D))
                                         : (isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626)),
@@ -936,11 +1023,12 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                       ),
                       const SizedBox(width: 3),
                       Text(
-                        'HIDDEN',
+                        t('HIDDEN', 'پوشیدہ'),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
+                          fontFamily: urduFont,
                           color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB91C1C),
                         ),
                       ),
@@ -975,10 +1063,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                     Text(
                       hasUpdates
                           ? '${latestDate.day.toString().padLeft(2, '0')} ${_monthMap.keys.firstWhere((k) => _monthMap[k] == latestDate.month).toUpperCase()} ${latestDate.year}'
-                          : 'Default',
+                          : t('Default', 'طے شدہ'),
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
+                        fontFamily: urduFont,
                         color: hasUpdates
                             ? (isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332))
                             : Colors.grey[600],
@@ -998,12 +1087,12 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildPrayerPill('Fajr', timing.fajr, timing.fajrUpdated, isDark),
-              _buildPrayerPill('Zuhar', timing.zuhar, timing.zuharUpdated, isDark),
-              _buildPrayerPill('Asar', timing.asar, timing.asarUpdated, isDark),
-              _buildPrayerPill('Maghrib', timing.maghrib, timing.maghribNoteEn, isDark),
-              _buildPrayerPill('Isha', timing.isha, timing.ishaUpdated, isDark),
-              _buildPrayerPill('Jummah', timing.jummah, timing.jummahUpdated, isDark),
+              _buildPrayerPill(t('Fajr', 'فجر'), timing.fajr, timing.fajrUpdated, isDark, urduFont),
+              _buildPrayerPill(t('Zuhar', 'ظہر'), timing.zuhar, timing.zuharUpdated, isDark, urduFont),
+              _buildPrayerPill(t('Asar', 'عصر'), timing.asar, timing.asarUpdated, isDark, urduFont),
+              _buildPrayerPill(t('Maghrib', 'مغرب'), timing.maghrib, timing.maghribNoteEn, isDark, urduFont),
+              _buildPrayerPill(t('Isha', 'عشاء'), timing.isha, timing.ishaUpdated, isDark, urduFont),
+              _buildPrayerPill(t('Jummah', 'جمعہ'), timing.jummah, timing.jummahUpdated, isDark, urduFont),
             ],
           ),
 
@@ -1036,10 +1125,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Updated: ${updatedPrayers.join(', ')}',
+                      '${t('Updated: ', 'تبدیل شدہ: ')}${updatedPrayers.join(', ')}',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
+                        fontFamily: urduFont,
                         height: 1.35,
                         color: isDark ? const Color(0xFFFFD54F) : const Color(0xFFB45309),
                       ),
@@ -1054,7 +1144,7 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
     );
   }
 
-  Widget _buildPrayerPill(String name, String time, String updatedDate, bool isDark) {
+  Widget _buildPrayerPill(String name, String time, String updatedDate, bool isDark, [String? urduFont]) {
     final isUpdated = updatedDate.isNotEmpty;
     return Expanded(
       child: Column(
@@ -1064,6 +1154,7 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
+              fontFamily: urduFont,
               color: isDark ? Colors.white60 : Colors.black54,
             ),
           ),
@@ -1130,6 +1221,10 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
 
   /// Confirmation dialog and execution to Hide or Unhide a mosque in the app
   Future<void> _confirmToggleHidden(JamaatMasjidInfo masjid, {required bool hide}) async {
+    final isUrdu = _isUrdu;
+    final urduFont = _urduFont;
+    final masjidName = isUrdu ? masjid.getNameFor('urdu') : masjid.nameKey;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) {
@@ -1154,22 +1249,26 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  hide ? 'Hide Mosque?' : 'Unhide Mosque?',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  hide ? _t('Hide Mosque?', 'مسجد پوشیدہ کریں؟') : _t('Unhide Mosque?', 'مسجد ظاہر کریں؟'),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: urduFont),
                 ),
               ),
             ],
           ),
           content: Text(
             hide
-                ? 'Are you sure you want to hide "${masjid.nameKey}" from regular users?\n\nIt will be hidden from the app prayer list and Gist, but will remain visible in this Developer screen so you can unhide it at any time.'
-                : 'Make "${masjid.nameKey}" visible again to all users in the app and sync to Gist?',
-            style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
+                ? (isUrdu
+                    ? 'کیا آپ واقعی "$masjidName" کو عام صارفین سے پوشیدہ کرنا چاہتے ہیں؟\n\nیہ مسجد ایپ کی نمازوں کی فہرست اور گسٹ سے چھپ جائے گی، لیکن اس ڈویلپر اسکرین میں موجود رہے گی تاکہ آپ جب چاہیں دوبارہ ظاہر کر سکیں۔'
+                    : 'Are you sure you want to hide "${masjid.nameKey}" from regular users?\n\nIt will be hidden from the app prayer list and Gist, but will remain visible in this Developer screen so you can unhide it at any time.')
+                : (isUrdu
+                    ? 'کیا "$masjidName" کو دوبارہ تمام صارفین کے لیے ظاہر اور گسٹ پر سنک کرنا چاہتے ہیں؟'
+                    : 'Make "${masjid.nameKey}" visible again to all users in the app and sync to Gist?'),
+            style: TextStyle(fontSize: 13, fontFamily: urduFont, color: isDark ? Colors.white70 : Colors.black87),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child: Text(_t('Cancel', 'منسوخ'), style: TextStyle(fontFamily: urduFont)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -1178,7 +1277,10 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text(hide ? 'Hide Mosque' : 'Unhide Mosque'),
+              child: Text(
+                hide ? _t('Hide Mosque', 'پوشیدہ کریں') : _t('Unhide Mosque', 'ظاہر کریں'),
+                style: TextStyle(fontFamily: urduFont),
+              ),
             ),
           ],
         );
@@ -1188,7 +1290,12 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
     if (confirmed == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(hide ? 'Hiding mosque and syncing to Gist...' : 'Unhiding mosque and syncing to Gist...'),
+          content: Text(
+            hide
+                ? _t('Hiding mosque and syncing to Gist...', 'مسجد پوشیدہ کی جا رہی ہے اور گسٹ سنک ہو رہا ہے...')
+                : _t('Unhiding mosque and syncing to Gist...', 'مسجد ظاہر کی جا رہی ہے اور گسٹ سنک ہو رہا ہے...'),
+            style: TextStyle(fontFamily: urduFont),
+          ),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -1203,8 +1310,9 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
           SnackBar(
             content: Text(
               res.success
-                  ? (hide ? 'Mosque hidden & synced to Gist!' : 'Mosque unhidden & synced to Gist!')
-                  : 'Local status updated. Gist sync: ${res.message}',
+                  ? (hide ? _t('Mosque hidden & synced to Gist!', 'مسجد پوشیدہ اور گسٹ پر سنک ہو گئی!') : _t('Mosque unhidden & synced to Gist!', 'مسجد ظاہر اور گسٹ پر سنک ہو گئی!'))
+                  : (isUrdu ? 'مقامی اسٹیٹس اپڈیٹ ہو گیا۔ گسٹ سنک: ${res.message}' : 'Local status updated. Gist sync: ${res.message}'),
+              style: TextStyle(fontFamily: urduFont),
             ),
             backgroundColor: res.success ? const Color(0xFF1B4332) : const Color(0xFFE65100),
             duration: const Duration(seconds: 3),
@@ -1217,6 +1325,9 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
 
   /// Dialog to view, change, or assign a committee PIN for a specific Mosque
   Future<void> _showChangeMasjidPinDialog(JamaatMasjidInfo masjid, String currentPin) async {
+    final isUrdu = _isUrdu;
+    final urduFont = _urduFont;
+    final masjidName = isUrdu ? masjid.getNameFor('urdu') : masjid.nameKey;
     final pinController = TextEditingController(text: currentPin);
     bool isSaving = false;
 
@@ -1244,13 +1355,13 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Masjid Committee PIN',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        Text(
+                          _t('Masjid Committee PIN', 'مسجد کمیٹی پن کوڈ'),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: urduFont),
                         ),
                         Text(
-                          masjid.nameKey,
-                          style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54),
+                          masjidName,
+                          style: TextStyle(fontSize: 12, fontFamily: urduFont, color: isDark ? Colors.white60 : Colors.black54),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
@@ -1263,8 +1374,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'This committee PIN allows the mosque imam / committee to update prayer times from their phone.',
-                    style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87),
+                    _t(
+                      'This committee PIN allows the mosque imam / committee to update prayer times from their phone.',
+                      'یہ کمیٹی پن مسجد کے امام / کمیٹی کو اپنے فون سے اوقاتِ باجماعت تبدیل کرنے کی اجازت دیتا ہے۔',
+                    ),
+                    style: TextStyle(fontSize: 12, fontFamily: urduFont, color: isDark ? Colors.white70 : Colors.black87),
                   ),
                   const SizedBox(height: 16),
                   TextField(
@@ -1279,8 +1393,8 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                       color: isDark ? Colors.white : Colors.black87,
                     ),
                     decoration: InputDecoration(
-                      labelText: 'Committee PIN',
-                      hintText: 'e.g. 1234 or 2026',
+                      labelText: _t('Committee PIN', 'کمیٹی پن کوڈ'),
+                      hintText: _t('e.g. 1234 or 2026', 'مثلاً 1234 یا 2026'),
                       prefixIcon: const Icon(Icons.key_rounded, size: 20),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
@@ -1288,8 +1402,8 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                   if (currentPin.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(
-                      'Current PIN: $currentPin',
-                      style: TextStyle(fontSize: 11, color: isDark ? Colors.white38 : Colors.black45),
+                      '${_t('Current PIN: ', 'موجودہ پن: ')}$currentPin',
+                      style: TextStyle(fontSize: 11, fontFamily: urduFont, color: isDark ? Colors.white38 : Colors.black45),
                     ),
                   ],
                 ],
@@ -1297,7 +1411,7 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
               actions: [
                 TextButton(
                   onPressed: isSaving ? null : () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
+                  child: Text(_t('Cancel', 'منسوخ'), style: TextStyle(fontFamily: urduFont)),
                 ),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
@@ -1312,20 +1426,29 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : const Icon(Icons.save_rounded, size: 18),
-                  label: Text(isSaving ? 'Saving to Gist...' : 'Save & Sync Gist'),
+                  label: Text(
+                    isSaving
+                        ? _t('Saving to Gist...', 'محفوظ ہو رہا ہے...')
+                        : _t('Save & Sync Gist', 'محفوظ اور سنک کریں'),
+                    style: TextStyle(fontFamily: urduFont),
+                  ),
                   onPressed: isSaving
                       ? null
                       : () async {
                           final newPin = pinController.text.trim();
                           if (newPin.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('PIN cannot be empty.')),
+                              SnackBar(
+                                content: Text(_t('PIN cannot be empty.', 'پن خالی نہیں ہو سکتا۔'), style: TextStyle(fontFamily: urduFont)),
+                              ),
                             );
                             return;
                           }
                           if (newPin.length < 4) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('PIN must be at least 4 digits.')),
+                              SnackBar(
+                                content: Text(_t('PIN must be at least 4 digits.', 'پن کم از کم 4 ہندسوں کا ہونا چاہیے۔'), style: TextStyle(fontFamily: urduFont)),
+                              ),
                             );
                             return;
                           }
@@ -1342,8 +1465,9 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                               SnackBar(
                                 content: Text(
                                   result.success
-                                      ? 'PIN updated & synced to Gist for ${masjid.nameKey}: $newPin'
-                                      : 'Saved locally. Gist update: ${result.message}',
+                                      ? (isUrdu ? '$masjidName کا پن تبدیل اور گسٹ پر سنک ہو گیا: $newPin' : 'PIN updated & synced to Gist for ${masjid.nameKey}: $newPin')
+                                      : (isUrdu ? 'مقامی طور پر محفوظ ہو گیا۔ گسٹ: ${result.message}' : 'Saved locally. Gist update: ${result.message}'),
+                                  style: TextStyle(fontFamily: urduFont),
                                 ),
                                 backgroundColor: result.success
                                     ? const Color(0xFF1B4332)
@@ -1365,6 +1489,8 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
 
   /// Dialog to view, change, and sync Master Admin PIN across the entire app
   Future<void> _showChangeMasterPinDialog() async {
+    final isUrdu = _isUrdu;
+    final urduFont = _urduFont;
     final currentMaster = JamaatTimesService.instance.masterAdminPin;
     final pinController = TextEditingController(text: currentMaster);
     final confirmController = TextEditingController();
@@ -1390,10 +1516,10 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                     child: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFFD97706), size: 22),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Change Master PIN',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      _t('Change Master PIN', 'ماسٹر پن تبدیل کریں'),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: urduFont),
                     ),
                   ),
                 ],
@@ -1404,8 +1530,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'The Master PIN grants developer/admin access to all masajid, logs, settings, and Gist management across the entire app.',
-                      style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87),
+                      _t(
+                        'The Master PIN grants developer/admin access to all masajid, logs, settings, and Gist management across the entire app.',
+                        'ماسٹر پن ڈویلپر سیٹنگز، تمام مساجد، لاگز اور گسٹ کے انتظام تک رسائی فراہم کرتا ہے۔',
+                      ),
+                      style: TextStyle(fontSize: 12, fontFamily: urduFont, color: isDark ? Colors.white70 : Colors.black87),
                     ),
                     const SizedBox(height: 12),
                     Container(
@@ -1417,8 +1546,8 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                       child: Row(
                         children: [
                           Text(
-                            'Current Master PIN: ',
-                            style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : Colors.black54),
+                            _t('Current Master PIN: ', 'موجودہ ماسٹر پن: '),
+                            style: TextStyle(fontSize: 11, fontFamily: urduFont, color: isDark ? Colors.white54 : Colors.black54),
                           ),
                           Text(
                             currentMaster,
@@ -1445,7 +1574,7 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                         color: isDark ? Colors.white : Colors.black87,
                       ),
                       decoration: InputDecoration(
-                        labelText: 'New Master PIN',
+                        labelText: _t('New Master PIN', 'نیا ماسٹر پن'),
                         prefixIcon: const Icon(Icons.password_rounded, size: 20),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       ),
@@ -1462,7 +1591,7 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                         color: isDark ? Colors.white : Colors.black87,
                       ),
                       decoration: InputDecoration(
-                        labelText: 'Confirm New Master PIN',
+                        labelText: _t('Confirm New Master PIN', 'نئے ماسٹر پن کی تصدیق'),
                         prefixIcon: const Icon(Icons.check_circle_outline_rounded, size: 20),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       ),
@@ -1473,7 +1602,7 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
               actions: [
                 TextButton(
                   onPressed: isSaving ? null : () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
+                  child: Text(_t('Cancel', 'منسوخ'), style: TextStyle(fontFamily: urduFont)),
                 ),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
@@ -1488,7 +1617,10 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : const Icon(Icons.save_rounded, size: 18),
-                  label: Text(isSaving ? 'Updating...' : 'Update & Sync Gist'),
+                  label: Text(
+                    isSaving ? _t('Updating...', 'اپڈیٹ ہو رہا ہے...') : _t('Update & Sync Gist', 'اپڈیٹ اور سنک کریں'),
+                    style: TextStyle(fontFamily: urduFont),
+                  ),
                   onPressed: isSaving
                       ? null
                       : () async {
@@ -1497,19 +1629,25 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
 
                           if (newPin.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Master PIN cannot be empty.')),
+                              SnackBar(
+                                content: Text(_t('Master PIN cannot be empty.', 'ماسٹر پن خالی نہیں ہو سکتا۔'), style: TextStyle(fontFamily: urduFont)),
+                              ),
                             );
                             return;
                           }
                           if (newPin.length < 4) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Master PIN must be at least 4 digits.')),
+                              SnackBar(
+                                content: Text(_t('Master PIN must be at least 4 digits.', 'ماسٹر پن کم از کم 4 ہندسوں کا ہونا چاہیے۔'), style: TextStyle(fontFamily: urduFont)),
+                              ),
                             );
                             return;
                           }
                           if (newPin != confirmPin) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('PINs do not match. Please re-enter.')),
+                              SnackBar(
+                                content: Text(_t('PINs do not match. Please re-enter.', 'دونوں پن مماثل نہیں ہیں۔ براہ کرم دوبارہ درج کریں۔'), style: TextStyle(fontFamily: urduFont)),
+                              ),
                             );
                             return;
                           }
@@ -1523,8 +1661,9 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                               SnackBar(
                                 content: Text(
                                   result.success
-                                      ? 'Master PIN successfully updated to: $newPin & synced to Gist!'
-                                      : 'Saved locally. Gist sync: ${result.message}',
+                                      ? (isUrdu ? 'ماسٹر پن کامیابی سے $newPin پر اپڈیٹ اور گسٹ پر سنک ہو گیا!' : 'Master PIN successfully updated to: $newPin & synced to Gist!')
+                                      : (isUrdu ? 'مقامی طور پر محفوظ ہو گیا۔ گسٹ: ${result.message}' : 'Saved locally. Gist sync: ${result.message}'),
+                                  style: TextStyle(fontFamily: urduFont),
                                 ),
                                 backgroundColor: result.success
                                     ? const Color(0xFF1B4332)
@@ -1549,6 +1688,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
     JamaatTiming currentTiming,
   ) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isUrdu = _isUrdu;
+    final urduFont = _urduFont;
+    final masjidName = isUrdu ? masjid.getNameFor('urdu') : masjid.nameKey;
+    final masjidAddress = isUrdu ? masjid.getAddressFor('urdu') : masjid.addressKey;
+
     final token = await DeveloperGistService.instance.getGistToken();
     final hasToken = token != null && token.isNotEmpty;
 
@@ -1645,18 +1789,20 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Edit Jama\'at Timings',
+                                _t('Edit Jama\'at Timings', 'اوقاتِ باجماعت میں ترمیم'),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
+                                  fontFamily: urduFont,
                                   color: isDark ? Colors.white : Colors.black87,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '${masjid.nameKey} • ${masjid.addressKey}',
+                                '$masjidName • $masjidAddress',
                                 style: TextStyle(
                                   fontSize: 12,
+                                  fontFamily: urduFont,
                                   color: isDark ? Colors.white60 : Colors.black54,
                                 ),
                                 maxLines: 1,
@@ -1703,9 +1849,13 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                           Expanded(
                             child: hasToken
                                 ? Text(
-                                    'Live Gist Sync Enabled: Saving here updates Firestore and pushes directly to GitHub Gist (jamaat_times.json).',
+                                    _t(
+                                      'Live Gist Sync Enabled: Saving here updates Firestore and pushes directly to GitHub Gist (jamaat_times.json).',
+                                      'لائیو گسٹ سنک فعال: یہاں محفوظ کرنے سے فائر اسٹور اپڈیٹ ہوگا اور براہ راست گٹ ہب گسٹ پر بھیجا جائے گا۔',
+                                    ),
                                     style: TextStyle(
                                       fontSize: 11.5,
+                                      fontFamily: urduFont,
                                       color: isDark ? const Color(0xFFA5D6A7) : const Color(0xFF1B4332),
                                       height: 1.35,
                                     ),
@@ -1720,10 +1870,14 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                                       );
                                     },
                                     child: Text(
-                                      'GitHub Token not set: Updates will sync to Firestore only. Tap here to set Gist Token in Developer settings.',
+                                      _t(
+                                        'GitHub Token not set: Updates will sync to Firestore only. Tap here to set Gist Token in Developer settings.',
+                                        'گٹ ہب ٹوکن درج نہیں: تبدیلیاں صرف فائر اسٹور پر محفوظ ہوں گی۔ ٹوکن شامل کرنے کے لیے یہاں کلک کریں۔',
+                                      ),
                                       style: TextStyle(
                                         fontSize: 11.5,
                                         fontWeight: FontWeight.w600,
+                                        fontFamily: urduFont,
                                         color: isDark ? const Color(0xFFFFD54F) : const Color(0xFFB45309),
                                         decoration: TextDecoration.underline,
                                         height: 1.35,
@@ -1740,8 +1894,10 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                     // Fajr
                     _buildEditPrayerTile(
                       isDark: isDark,
-                      name: 'Fajr',
+                      name: _t('Fajr', 'فجر'),
                       time: fajr,
+                      subtitle: currentTiming.fajrUpdated.trim().isEmpty ? _t('Fixed (No Date)', 'مستقل وقت (بغیر تاریخ)') : null,
+                      urduFont: urduFont,
                       icon: Icons.wb_twilight_rounded,
                       onTap: () => pickTimeFor(fajr, (v) {
                         fajr = v;
@@ -1757,8 +1913,10 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                     // Zuhar
                     _buildEditPrayerTile(
                       isDark: isDark,
-                      name: 'Zuhar',
+                      name: _t('Zuhar', 'ظہر'),
                       time: zuhar,
+                      subtitle: currentTiming.zuharUpdated.trim().isEmpty ? _t('Fixed (No Date)', 'مستقل وقت (بغیر تاریخ)') : null,
+                      urduFont: urduFont,
                       icon: Icons.wb_sunny_rounded,
                       onTap: () => pickTimeFor(zuhar, (v) {
                         zuhar = v;
@@ -1774,8 +1932,10 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                     // Asar
                     _buildEditPrayerTile(
                       isDark: isDark,
-                      name: 'Asar',
+                      name: _t('Asar', 'عصر'),
                       time: asar,
+                      subtitle: currentTiming.asarUpdated.trim().isEmpty ? _t('Fixed (No Date)', 'مستقل وقت (بغیر تاریخ)') : null,
+                      urduFont: urduFont,
                       icon: Icons.wb_sunny_outlined,
                       onTap: () => pickTimeFor(asar, (v) {
                         asar = v;
@@ -1791,17 +1951,24 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                     // Maghrib (Sunset fixed note)
                     _buildEditPrayerTile(
                       isDark: isDark,
-                      name: 'Maghrib',
+                      name: _t('Maghrib', 'مغرب'),
                       time: maghrib,
+                      urduFont: urduFont,
                       icon: Icons.nights_stay_outlined,
-                      subtitle: 'Auto Sunset (Sukkur Jantri)',
+                      subtitle: _t('Auto Sunset (Sukkur Jantri)', 'غروبِ آفتاب (سکھر جنتری)'),
                       isLocked: true,
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Maghrib time is calculated daily based on Sukkur Jantri Sunset time.'),
-                            backgroundColor: Color(0xFF1B4332),
-                            duration: Duration(seconds: 2),
+                          SnackBar(
+                            content: Text(
+                              _t(
+                                'Maghrib time is calculated daily based on Sukkur Jantri Sunset time.',
+                                'مغرب کا وقت روزانہ سکھر جنتری کے غروبِ آفتاب کے مطابق خودکار مقرر ہوتا ہے۔',
+                              ),
+                              style: TextStyle(fontFamily: urduFont),
+                            ),
+                            backgroundColor: const Color(0xFF1B4332),
+                            duration: const Duration(seconds: 2),
                           ),
                         );
                       },
@@ -1811,8 +1978,10 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                     // Isha
                     _buildEditPrayerTile(
                       isDark: isDark,
-                      name: 'Isha',
+                      name: _t('Isha', 'عشاء'),
                       time: isha,
+                      subtitle: currentTiming.ishaUpdated.trim().isEmpty ? _t('Fixed (No Date)', 'مستقل وقت (بغیر تاریخ)') : null,
+                      urduFont: urduFont,
                       icon: Icons.bedtime_rounded,
                       onTap: () => pickTimeFor(isha, (v) {
                         isha = v;
@@ -1828,8 +1997,10 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                     // Jummah
                     _buildEditPrayerTile(
                       isDark: isDark,
-                      name: 'Jummah',
+                      name: _t('Jummah', 'جمعہ'),
                       time: jummah,
+                      subtitle: currentTiming.jummahUpdated.trim().isEmpty ? _t('Fixed (No Date)', 'مستقل وقت (بغیر تاریخ)') : null,
+                      urduFont: urduFont,
                       icon: Icons.star_rounded,
                       onTap: () => pickTimeFor(jummah, (v) {
                         jummah = v;
@@ -1857,8 +2028,9 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                             ),
                             onPressed: isSaving ? null : () => Navigator.of(sCtx).pop(),
                             child: Text(
-                              'Cancel',
+                              _t('Cancel', 'منسوخ'),
                               style: TextStyle(
+                                fontFamily: urduFont,
                                 color: isDark ? Colors.white70 : Colors.black87,
                               ),
                             ),
@@ -1882,10 +2054,11 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                                   )
                                 : const Icon(Icons.cloud_upload_rounded, size: 20),
                             label: Text(
-                              isSaving ? 'Saving...' : 'Save & Sync Gist',
-                              style: const TextStyle(
+                              isSaving ? _t('Saving...', 'محفوظ ہو رہا ہے...') : _t('Save & Sync Gist', 'محفوظ اور سنک کریں'),
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
+                                fontFamily: urduFont,
                               ),
                             ),
                             onPressed: isSaving
@@ -1898,45 +2071,47 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                                     ];
                                     final now = DateTime.now();
                                     final todayStr = '${now.day.toString().padLeft(2, '0')} ${months[now.month - 1]} ${now.year}';
-                                    final forceStampAll = modifiedPrayers.isEmpty &&
-                                        fajr == currentTiming.fajr &&
-                                        zuhar == currentTiming.zuhar &&
-                                        asar == currentTiming.asar &&
-                                        isha == currentTiming.isha &&
-                                        jummah == currentTiming.jummah;
+
+                                    String resolveSheetUpdated(
+                                      String prayerKey,
+                                      String newTime,
+                                      String currentTime,
+                                      String currentUpdated,
+                                    ) {
+                                      final wasFixed = currentUpdated.trim().isEmpty;
+                                      final timeChanged = (newTime.trim() != currentTime.trim()) ||
+                                          modifiedPrayers.contains(prayerKey);
+                                      if (wasFixed && !timeChanged) {
+                                        return '';
+                                      }
+                                      if (timeChanged) {
+                                        return todayStr;
+                                      }
+                                      return currentUpdated;
+                                    }
 
                                     final updatedTiming = JamaatTiming(
                                       fajr: fajr,
-                                      fajrUpdated: (fajr != currentTiming.fajr || modifiedPrayers.contains('fajr') || forceStampAll)
-                                          ? todayStr
-                                          : currentTiming.fajrUpdated,
+                                      fajrUpdated: resolveSheetUpdated('fajr', fajr, currentTiming.fajr, currentTiming.fajrUpdated),
                                       fajrNoteUr: currentTiming.fajrNoteUr,
                                       fajrNoteEn: currentTiming.fajrNoteEn,
                                       zuhar: zuhar,
-                                      zuharUpdated: (zuhar != currentTiming.zuhar || modifiedPrayers.contains('zuhar') || forceStampAll)
-                                          ? todayStr
-                                          : currentTiming.zuharUpdated,
+                                      zuharUpdated: resolveSheetUpdated('zuhar', zuhar, currentTiming.zuhar, currentTiming.zuharUpdated),
                                       zuharNoteUr: currentTiming.zuharNoteUr,
                                       zuharNoteEn: currentTiming.zuharNoteEn,
                                       asar: asar,
-                                      asarUpdated: (asar != currentTiming.asar || modifiedPrayers.contains('asar') || forceStampAll)
-                                          ? todayStr
-                                          : currentTiming.asarUpdated,
+                                      asarUpdated: resolveSheetUpdated('asar', asar, currentTiming.asar, currentTiming.asarUpdated),
                                       asarNoteUr: currentTiming.asarNoteUr,
                                       asarNoteEn: currentTiming.asarNoteEn,
                                       maghrib: 'Sunset',
                                       maghribNoteUr: currentTiming.maghribNoteUr,
                                       maghribNoteEn: currentTiming.maghribNoteEn,
                                       isha: isha,
-                                      ishaUpdated: (isha != currentTiming.isha || modifiedPrayers.contains('isha') || forceStampAll)
-                                          ? todayStr
-                                          : currentTiming.ishaUpdated,
+                                      ishaUpdated: resolveSheetUpdated('isha', isha, currentTiming.isha, currentTiming.ishaUpdated),
                                       ishaNoteUr: currentTiming.ishaNoteUr,
                                       ishaNoteEn: currentTiming.ishaNoteEn,
                                       jummah: jummah,
-                                      jummahUpdated: (jummah != currentTiming.jummah || modifiedPrayers.contains('jummah') || forceStampAll)
-                                          ? todayStr
-                                          : currentTiming.jummahUpdated,
+                                      jummahUpdated: resolveSheetUpdated('jummah', jummah, currentTiming.jummah, currentTiming.jummahUpdated),
                                       jummahNoteUr: currentTiming.jummahNoteUr,
                                       jummahNoteEn: currentTiming.jummahNoteEn,
                                     );
@@ -1972,8 +2147,9 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                                               Expanded(
                                                 child: Text(
                                                   gistRes.success
-                                                      ? 'Updated ${masjid.nameKey} timings & successfully pushed to GitHub Gist!'
-                                                      : 'Saved locally & Firestore. (${gistRes.message})',
+                                                      ? (isUrdu ? '$masjidName کے اوقات اپڈیٹ اور گسٹ پر سنک ہو گئے!' : 'Updated ${masjid.nameKey} timings & successfully pushed to GitHub Gist!')
+                                                      : (isUrdu ? 'مقامی اور فائر اسٹور پر محفوظ ہو گیا (${gistRes.message})' : 'Saved locally & Firestore. (${gistRes.message})'),
+                                                  style: TextStyle(fontFamily: urduFont),
                                                 ),
                                               ),
                                             ],
@@ -2007,6 +2183,7 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
     required String time,
     required IconData icon,
     String? subtitle,
+    String? urduFont,
     bool isLocked = false,
     VoidCallback? onTap,
     VoidCallback? onClear,
@@ -2039,6 +2216,7 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
+                      fontFamily: urduFont,
                       color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
@@ -2048,6 +2226,7 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
                       subtitle,
                       style: TextStyle(
                         fontSize: 11,
+                        fontFamily: urduFont,
                         color: isDark ? Colors.white54 : Colors.grey[600],
                       ),
                     ),

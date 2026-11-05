@@ -76,6 +76,14 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
   String _isha = '08:00 PM';
   String _jummah = '01:45 PM';
 
+  // ── Fixed Flags (if true, prayer is Fixed; update date is saved as empty string) ──
+  bool _isFajrFixed = false;
+  bool _isZuharFixed = true; // Fixed by default in Sukkur tradition
+  bool _isAsarFixed = false;
+  bool _isIshaFixed = false;
+  bool _isJummahFixed = true; // Fixed by default in Sukkur tradition
+  JamaatTiming? _initialTiming;
+
   // ── Prayer Notes Controllers ──────────────────────────────────────────
   final _fajrNoteController = TextEditingController();
   final _zuharNoteController = TextEditingController();
@@ -116,11 +124,17 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
       _pinController.text = currentPin ?? '';
 
       final timing = JamaatTimesService.instance.getTimingFor(m);
+      _initialTiming = timing;
       _fajr = timing.fajr;
       _zuhar = timing.zuhar;
       _asar = timing.asar;
       _isha = timing.isha;
       _jummah = timing.jummah;
+      _isFajrFixed = timing.fajrUpdated.trim().isEmpty;
+      _isZuharFixed = timing.zuharUpdated.trim().isEmpty;
+      _isAsarFixed = timing.asarUpdated.trim().isEmpty;
+      _isIshaFixed = timing.ishaUpdated.trim().isEmpty;
+      _isJummahFixed = timing.jummahUpdated.trim().isEmpty;
       _fajrNoteController.text = timing.fajrNoteUr;
       _zuharNoteController.text = timing.zuharNoteUr;
       _asarNoteController.text = timing.asarNoteUr;
@@ -587,24 +601,46 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
       });
 
       // ── Build Timing Object ────────────────────────────────────────
+      String resolveUpdated(String newTime, bool isFixed, String? initialTime, String? initialUpdated) {
+        if (isFixed) return '';
+        if (initialTime == null || initialUpdated == null) {
+          // New masjid being registered
+          return todayStr;
+        }
+        final wasFixed = initialUpdated.trim().isEmpty;
+        final timeChanged = newTime.trim() != initialTime.trim();
+        if (wasFixed || timeChanged) {
+          // User either un-fixed it or changed the time
+          return todayStr;
+        }
+        // Time didn't change and was not fixed: preserve existing date
+        return initialUpdated.isNotEmpty ? initialUpdated : todayStr;
+      }
+
       final timing = JamaatTiming(
         fajr: _fajr,
-        fajrUpdated: todayStr,
+        fajrUpdated: resolveUpdated(_fajr, _isFajrFixed, _initialTiming?.fajr, _initialTiming?.fajrUpdated),
         fajrNoteUr: _fajrNoteController.text.trim(),
+        fajrNoteEn: _fajrNoteController.text.trim(),
         zuhar: _zuhar,
-        zuharUpdated: todayStr,
+        zuharUpdated: resolveUpdated(_zuhar, _isZuharFixed, _initialTiming?.zuhar, _initialTiming?.zuharUpdated),
         zuharNoteUr: _zuharNoteController.text.trim(),
+        zuharNoteEn: _zuharNoteController.text.trim(),
         asar: _asar,
-        asarUpdated: todayStr,
+        asarUpdated: resolveUpdated(_asar, _isAsarFixed, _initialTiming?.asar, _initialTiming?.asarUpdated),
         asarNoteUr: _asarNoteController.text.trim(),
+        asarNoteEn: _asarNoteController.text.trim(),
         maghrib: 'Sunset',
         maghribNoteUr: _maghribNoteController.text.trim(),
+        maghribNoteEn: _maghribNoteController.text.trim(),
         isha: _isha,
-        ishaUpdated: todayStr,
+        ishaUpdated: resolveUpdated(_isha, _isIshaFixed, _initialTiming?.isha, _initialTiming?.ishaUpdated),
         ishaNoteUr: _ishaNoteController.text.trim(),
+        ishaNoteEn: _ishaNoteController.text.trim(),
         jummah: _jummah,
-        jummahUpdated: todayStr,
+        jummahUpdated: resolveUpdated(_jummah, _isJummahFixed, _initialTiming?.jummah, _initialTiming?.jummahUpdated),
         jummahNoteUr: _jummahNoteController.text.trim(),
+        jummahNoteEn: _jummahNoteController.text.trim(),
       );
 
       // ── Gist Payload Map ───────────────────────────────────────────
@@ -643,7 +679,7 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
         pin: pin,
       );
 
-      JamaatTimesService.instance.registerDynamicMasjid(newMasjidInfo);
+      await JamaatTimesService.instance.registerDynamicMasjid(newMasjidInfo);
 
       if (mounted) {
         setState(() => _isSaving = false);
@@ -742,6 +778,9 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
 
   String _t(SettingsProvider settings, String en, [String? ur, String? sd, String? ar]) {
     final lang = settings.language;
+    if (['urdu', 'sindhi', 'arabic', 'persian'].contains(lang)) {
+      if (ur != null && ur.isNotEmpty) return ur;
+    }
     final map = worldTranslations[lang];
     if (map != null && map.containsKey(en)) {
       return map[en]!;
@@ -749,11 +788,17 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
     return settings.translate(en, ur ?? en, sd ?? ur ?? en, ar);
   }
 
+  String? _effectiveFont(BuildContext context, SettingsProvider settings) {
+    if (['urdu', 'sindhi', 'arabic', 'persian'].contains(settings.language)) {
+      return AppTheme.getFontForLanguage(context, 'urdu');
+    }
+    return AppTheme.getFontForLanguage(context, settings.language);
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final lang = settings.language;
     final isRtl = settings.isRtl;
 
     final isEditMode = widget.initialMasjid != null;
@@ -766,7 +811,7 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
               : _t(settings, 'Add New Masjid', 'نئی مسجد شامل کریں', 'نئين مسجد شامل ڪريو', 'إضافة مسجد جديد'),
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontFamily: AppTheme.getFontForLanguage(context, lang),
+            fontFamily: _effectiveFont(context, settings),
           ),
         ),
         backgroundColor: isDark ? const Color(0xFF1A2426) : const Color(0xFF1B4332),
@@ -827,7 +872,7 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
                               fontSize: 15.5,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
-                              fontFamily: AppTheme.getFontForLanguage(context, lang),
+                              fontFamily: _effectiveFont(context, settings),
                             ),
                           ),
                           const SizedBox(height: 3),
@@ -919,7 +964,7 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
                       : _t(settings, 'Auto-Populate Remaining 8 Languages', 'باقی تمام ۸ زبانوں کے نام خودکار تیار کریں', 'باقي سڀني ۸ ٻولين جا نالا خودڪار ٺاهيو', 'توليد تلقائي لبقية اللغات الثمانية'),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.getFontForLanguage(context, lang),
+                    fontFamily: _effectiveFont(context, settings),
                     color: const Color(0xFF2E7D32),
                   ),
                 ),
@@ -945,7 +990,7 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
                     style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+                      fontFamily: _effectiveFont(context, settings),
                     ),
                   ),
                   subtitle: Text(
@@ -1032,7 +1077,7 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
                       : _t(settings, 'Auto-Populate Remaining 8 Languages', 'باقی تمام ۸ زبانوں کا پتہ خودکار تیار کریں', 'باقي سڀني ۸ ٻولين جو پتو خودڪار ٺاهيو', 'توليد تلقائي لبقية اللغات الثمانية'),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.getFontForLanguage(context, lang),
+                    fontFamily: _effectiveFont(context, settings),
                     color: const Color(0xFF2E7D32),
                   ),
                 ),
@@ -1058,7 +1103,7 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
                     style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+                      fontFamily: _effectiveFont(context, settings),
                     ),
                   ),
                   subtitle: Text(
@@ -1172,6 +1217,8 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
                 onPickTime: () => _pickTime(_fajr, (v) => setState(() => _fajr = v), fallback: const TimeOfDay(hour: 6, minute: 0)),
                 noteController: _fajrNoteController,
                 noteHint: 'e.g. 15 mins after Azan',
+                isFixed: _isFajrFixed,
+                onFixedChanged: (v) => setState(() => _isFajrFixed = v),
               ),
               const SizedBox(height: 8),
 
@@ -1184,6 +1231,8 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
                 onPickTime: () => _pickTime(_zuhar, (v) => setState(() => _zuhar = v), fallback: const TimeOfDay(hour: 13, minute: 30)),
                 noteController: _zuharNoteController,
                 noteHint: 'e.g. Fixed time',
+                isFixed: _isZuharFixed,
+                onFixedChanged: (v) => setState(() => _isZuharFixed = v),
               ),
               const SizedBox(height: 8),
 
@@ -1196,6 +1245,8 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
                 onPickTime: () => _pickTime(_asar, (v) => setState(() => _asar = v), fallback: const TimeOfDay(hour: 16, minute: 45)),
                 noteController: _asarNoteController,
                 noteHint: 'e.g. In Winter: 04:30 PM',
+                isFixed: _isAsarFixed,
+                onFixedChanged: (v) => setState(() => _isAsarFixed = v),
               ),
               const SizedBox(height: 8),
 
@@ -1221,6 +1272,8 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
                 onPickTime: () => _pickTime(_isha, (v) => setState(() => _isha = v), fallback: const TimeOfDay(hour: 20, minute: 0)),
                 noteController: _ishaNoteController,
                 noteHint: 'e.g. Taraweeh begins 08:30 PM',
+                isFixed: _isIshaFixed,
+                onFixedChanged: (v) => setState(() => _isIshaFixed = v),
               ),
               const SizedBox(height: 8),
 
@@ -1233,6 +1286,8 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
                 onPickTime: () => _pickTime(_jummah, (v) => setState(() => _jummah = v), fallback: const TimeOfDay(hour: 13, minute: 45)),
                 noteController: _jummahNoteController,
                 noteHint: 'e.g. 1st: 01:30 PM, 2nd: 02:15 PM',
+                isFixed: _isJummahFixed,
+                onFixedChanged: (v) => setState(() => _isJummahFixed = v),
               ),
 
               const SizedBox(height: 24),
@@ -1263,7 +1318,7 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.getFontForLanguage(context, lang),
+                      fontFamily: _effectiveFont(context, settings),
                     ),
                   ),
                   onPressed: _isSaving ? null : _saveAndPublish,
@@ -1332,9 +1387,22 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
     required TextEditingController noteController,
     required String noteHint,
     bool isLocked = false,
+    bool isFixed = false,
+    ValueChanged<bool>? onFixedChanged,
   }) {
     final lang = settings.language;
+    final bool useUrdu = ['urdu', 'sindhi', 'arabic', 'persian'].contains(lang);
+    final urduName = switch (nameKey) {
+      'Fajr' => 'فجر',
+      'Zuhar' => 'ظہر',
+      'Asar' => 'عصر',
+      'Maghrib' => 'مغرب',
+      'Isha' => 'عشاء',
+      'Jummah' => 'جمعہ',
+      _ => nameKey,
+    };
     String getDisplayName() {
+      if (useUrdu) return urduName;
       switch (nameKey) {
         case 'Fajr': return settings.translate('Fajr', 'فجر', 'فجر', 'الفجر');
         case 'Zuhar': return settings.translate('Zuhar', 'ظہر', 'ظهر', 'الظهر');
@@ -1359,14 +1427,66 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  getDisplayName(),
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.getFontForLanguage(context, lang),
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      getDisplayName(),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: _effectiveFont(context, settings),
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    if (onFixedChanged != null) ...[
+                      const SizedBox(height: 3),
+                      InkWell(
+                        onTap: () => onFixedChanged(!isFixed),
+                        borderRadius: BorderRadius.circular(6),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isFixed ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                                size: 16,
+                                color: isFixed
+                                    ? (isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332))
+                                    : (isDark ? Colors.white38 : Colors.grey),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isFixed
+                                    ? _t(settings, 'Fixed (No Date)', 'مستقل وقت (بغیر تاریخ)', 'پڪو وقت (بغير تاريخ)', 'وقت ثابت (بدون تاريخ)')
+                                    : _t(settings, 'Show Update Date', 'تاریخ دکھائیں', 'تاريخ ڏيکاريو', 'إظهار التاريخ'),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: isFixed ? FontWeight.bold : FontWeight.w500,
+                                  color: isFixed
+                                      ? (isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332))
+                                      : (isDark ? Colors.white60 : Colors.grey[700]),
+                                  fontFamily: _effectiveFont(context, settings),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ] else if (isLocked) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        _t(settings, 'Fixed at Sunset', 'غروب آفتاب پر مقرر', 'سج لٿي تي مقرر', 'ثابت عند الغروب'),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark ? const Color(0xFF81C784) : const Color(0xFF2D6A4F),
+                          fontFamily: _effectiveFont(context, settings),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               InkWell(
@@ -1421,7 +1541,7 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
             style: const TextStyle(fontSize: 12.5),
             decoration: InputDecoration(
               isDense: true,
-              labelText: _t(settings, '$nameKey Note (Optional)', '$nameKey کا اضافی نوٹ (اختیاری)', '$nameKey جو اضافي نوٽ (اختياري)', 'ملاحظة $nameKey (اختياري)'),
+              labelText: _t(settings, '$nameKey Note (Optional)', '$urduName کا اضافی نوٹ (اختیاری)', '$nameKey جو اضافي نوٽ (اختياري)', 'ملاحظة $nameKey (اختياري)'),
               hintText: noteHint,
               prefixIcon: const Icon(Icons.sticky_note_2_outlined, size: 18),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
