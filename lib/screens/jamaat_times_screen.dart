@@ -347,8 +347,12 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     return settings.translate(key, ur ?? key, sd ?? ur ?? key, ar);
   }
 
-  String _getMasjidName(SettingsProvider settings, JamaatMasjidInfo masjid) {
-    final lang = settings.language;
+  String _getMasjidName(SettingsProvider settings, JamaatMasjidInfo masjid, [String? overrideLang]) {
+    final lang = overrideLang ?? settings.language;
+    final dynamicName = masjid.getNameFor(lang);
+    if (dynamicName.isNotEmpty && dynamicName != masjid.nameKey) {
+      return dynamicName;
+    }
     final extraMap = additionalTranslations[lang];
     if (extraMap != null && extraMap.containsKey(masjid.nameKey)) {
       return extraMap[masjid.nameKey]!;
@@ -357,9 +361,15 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     if (map != null && map.containsKey(masjid.nameKey)) {
       return map[masjid.nameKey]!;
     }
-    final dynamicName = masjid.getNameFor(lang);
-    if (dynamicName.isNotEmpty && dynamicName != masjid.nameKey) {
+    if (dynamicName.isNotEmpty) {
       return dynamicName;
+    }
+    if (overrideLang != null) {
+      if (overrideLang.toLowerCase() == 'urdu') {
+        return masjid.getNameFor('urdu');
+      } else if (overrideLang.toLowerCase() == 'english') {
+        return masjid.nameKey;
+      }
     }
     return settings.translate(
       masjid.nameKey,
@@ -369,8 +379,12 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     );
   }
 
-  String _getMasjidAddress(SettingsProvider settings, JamaatMasjidInfo masjid) {
-    final lang = settings.language;
+  String _getMasjidAddress(SettingsProvider settings, JamaatMasjidInfo masjid, [String? overrideLang]) {
+    final lang = overrideLang ?? settings.language;
+    final dynamicAddress = masjid.getAddressFor(lang);
+    if (dynamicAddress.isNotEmpty && dynamicAddress != masjid.addressKey) {
+      return dynamicAddress;
+    }
     final extraMap = additionalTranslations[lang];
     if (extraMap != null && extraMap.containsKey(masjid.addressKey)) {
       return extraMap[masjid.addressKey]!;
@@ -379,9 +393,15 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     if (map != null && map.containsKey(masjid.addressKey)) {
       return map[masjid.addressKey]!;
     }
-    final dynamicAddress = masjid.getAddressFor(lang);
-    if (dynamicAddress.isNotEmpty && dynamicAddress != masjid.addressKey) {
+    if (dynamicAddress.isNotEmpty) {
       return dynamicAddress;
+    }
+    if (overrideLang != null) {
+      if (overrideLang.toLowerCase() == 'urdu') {
+        return masjid.getAddressFor('urdu');
+      } else if (overrideLang.toLowerCase() == 'english') {
+        return masjid.addressKey;
+      }
     }
     return settings.translate(
       masjid.addressKey,
@@ -2833,11 +2853,12 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     JamaatMasjidInfo masjid,
     JamaatTiming timing,
   ) async {
-    final masjidName = _getMasjidName(settings, masjid);
-    final masjidAddress = _getMasjidAddress(settings, masjid);
+    final lang = settings.language.toLowerCase().trim();
+    // Urdu, Sindhi, and Arabic all generate Urdu WhatsApp message as requested; other languages in English
+    final isUrduFamily = lang == 'urdu' || lang == 'sindhi' || lang == 'arabic' || lang == 'ur' || lang == 'sd' || lang == 'ar';
 
-    final lang = settings.language.toLowerCase();
-    final isUrduFamily = lang == 'urdu' || lang == 'sindhi' || lang == 'arabic';
+    final masjidName = _getMasjidName(settings, masjid, isUrduFamily ? 'urdu' : 'english');
+    final masjidAddress = _getMasjidAddress(settings, masjid, isUrduFamily ? 'urdu' : 'english');
 
     String formatTime(String time) {
       final t = time.trim();

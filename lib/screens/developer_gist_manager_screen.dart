@@ -185,6 +185,8 @@ class _DeveloperGistManagerScreenState extends State<DeveloperGistManagerScreen>
     final res = await DeveloperGistService.instance.updateGistFiles(
       hijriCalendarContent: content,
     );
+    // Simultaneously sync to Cloud Firestore for 0-second instant propagation to all users
+    await DeveloperGistService.instance.syncHijriCalendarToFirestore(sortedMap);
 
     setState(() => _isSaving = false);
     if (mounted) {
@@ -233,6 +235,8 @@ class _DeveloperGistManagerScreenState extends State<DeveloperGistManagerScreen>
     final res = await DeveloperGistService.instance.updateGistFiles(
       announcementContent: content,
     );
+    // Simultaneously sync to Cloud Firestore for 0-second instant popups on user devices
+    await DeveloperGistService.instance.syncAnnouncementsToFirestore(payload);
 
     setState(() => _isSaving = false);
     if (mounted) {
@@ -584,7 +588,7 @@ class _DeveloperGistManagerScreenState extends State<DeveloperGistManagerScreen>
               children: [
                 Switch(
                   value: isEnabled,
-                  activeColor: const Color(0xFF2E7D32),
+                  activeThumbColor: const Color(0xFF2E7D32),
                   activeTrackColor: const Color(0xFF2E7D32).withValues(alpha: 0.4),
                   onChanged: (val) {
                     setState(() => item['enabled'] = val);

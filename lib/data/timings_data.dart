@@ -283,18 +283,16 @@ class TimingsData {
   }
 
   Future<void> syncWorldTimingsToCache() async {
-    if (_prefs == null) return;
+    _prefs ??= await SharedPreferences.getInstance();
+    final lat = _prefs?.getDouble('latitude');
+    final lng = _prefs?.getDouble('longitude');
+    if (lat == null || lng == null) return;
+
     final now = DateTime.now();
     final monthsMap = <String, dynamic>{};
+    final y = now.year;
     
-    for (int i = 0; i < 2; i++) {
-      int m = now.month + i;
-      int y = now.year;
-      if (m > 12) {
-        m -= 12;
-        y += 1;
-      }
-      
+    for (int m = 1; m <= 12; m++) {
       final daysInMonth = DateTime(y, m + 1, 0).day;
       final List<Map<String, dynamic>> daysList = [];
       

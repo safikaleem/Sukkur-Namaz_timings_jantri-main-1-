@@ -37,8 +37,56 @@ class DeveloperGistService {
     }
   }
 
+  /// Fetches authoritative content of a Gist file directly via GitHub REST API if token available,
+  /// completely bypassing the 5-minute Fastly CDN cache on raw URLs.
+  Future<String?> fetchGistFileDirect(String fileName) async {
+    final token = await getGistToken();
+    if (token != null && token.isNotEmpty) {
+      try {
+        final url = Uri.parse('https://api.github.com/gists/$gistId');
+        final res = await http.get(
+          url,
+          headers: {
+            'Accept': 'application/vnd.github+json',
+            'Authorization': 'Bearer $token',
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+        ).timeout(const Duration(seconds: 8));
+        if (res.statusCode == 200) {
+          final decoded = jsonDecode(res.body);
+          if (decoded is Map<String, dynamic> && decoded.containsKey('files')) {
+            final files = decoded['files'] as Map<String, dynamic>;
+            if (files.containsKey(fileName)) {
+              final content = files[fileName]['content'] as String?;
+              if (content != null && content.isNotEmpty) {
+                return content;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // Fall back to raw URL
+      }
+    }
+    return null;
+  }
+
   /// Fetches raw JSON map of hijri_calendar.json
   Future<Map<String, String>> fetchHijriCalendar() async {
+    final direct = await fetchGistFileDirect('hijri_calendar.json');
+    if (direct != null) {
+      try {
+        final decoded = jsonDecode(direct);
+        if (decoded is Map<String, dynamic> && decoded['month_starts'] is Map) {
+          final Map<String, String> result = {};
+          (decoded['month_starts'] as Map).forEach((k, v) {
+            result[k.toString()] = v.toString();
+          });
+          return result;
+        }
+      } catch (_) {}
+    }
+
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final url = '$hijriCalendarRawUrl?t=$timestamp';
     final res = await http.get(Uri.parse(url));
@@ -57,6 +105,16 @@ class DeveloperGistService {
 
   /// Fetches raw announcement.json map
   Future<Map<String, dynamic>> fetchAnnouncements() async {
+    final direct = await fetchGistFileDirect('announcement.json');
+    if (direct != null) {
+      try {
+        final decoded = jsonDecode(direct);
+        if (decoded is Map<String, dynamic>) {
+          return decoded;
+        }
+      } catch (_) {}
+    }
+
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final url = '$announcementRawUrl?t=$timestamp';
     final res = await http.get(Uri.parse(url));
@@ -71,6 +129,16 @@ class DeveloperGistService {
 
   /// Fetches raw JSON map of jamaat_times.json from Gist
   Future<Map<String, dynamic>> fetchJamaatTimesJson() async {
+    final direct = await fetchGistFileDirect('jamaat_times.json');
+    if (direct != null) {
+      try {
+        final decoded = jsonDecode(direct);
+        if (decoded is Map<String, dynamic>) {
+          return decoded;
+        }
+      } catch (_) {}
+    }
+
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final url = '$jamaatTimesRawUrl?t=$timestamp';
     final res = await http.get(Uri.parse(url));
@@ -265,6 +333,59 @@ class DeveloperGistService {
         success: false,
         message: 'Network error communicating with GitHub: $e',
       );
+    }
+  }
+
+  static const String firestoreProjectId = 'sukkur-salah';
+
+  /// Syncs Hijri Calendar month starts directly to Cloud Firestore so changes propagate with 0-second delay to all users
+  Future<bool> syncHijriCalendarToFirestore(Map<String, String> monthStarts) async {
+    try {
+      final url = Uri.parse(
+        'https://firestore.googleapis.com/v1/projects/$firestoreProjectId/databases/(default)/documents/app_config/hijri_calendar',
+      );
+      final body = json.encode({
+        'fields': {
+          'data': {
+            'stringValue': json.encode({
+              'month_starts': monthStarts,
+              'updated_at': DateTime.now().toIso8601String(),
+            }),
+          }
+        }
+      });
+      final res = await http.patch(
+        url,
+        headers: const {'Content-Type': 'application/json'},
+        body: body,
+      ).timeout(const Duration(seconds: 8));
+      return res.statusCode >= 200 && res.statusCode < 300;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Syncs Announcement payload directly to Cloud Firestore so popups & banners appear with 0-second delay on user devices
+  Future<bool> syncAnnouncementsToFirestore(Map<String, dynamic> payload) async {
+    try {
+      final url = Uri.parse(
+        'https://firestore.googleapis.com/v1/projects/$firestoreProjectId/databases/(default)/documents/app_config/announcements',
+      );
+      final body = json.encode({
+        'fields': {
+          'data': {
+            'stringValue': json.encode(payload),
+          }
+        }
+      });
+      final res = await http.patch(
+        url,
+        headers: const {'Content-Type': 'application/json'},
+        body: body,
+      ).timeout(const Duration(seconds: 8));
+      return res.statusCode >= 200 && res.statusCode < 300;
+    } catch (e) {
+      return false;
     }
   }
 }

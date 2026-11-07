@@ -1005,6 +1005,14 @@ class SettingsProvider extends ChangeNotifier {
     HijriSyncService.syncFromNetwork().then((updated) {
       if (updated) notifyListeners();
     });
+
+    if (_locationMode == LocationMode.world && _latitude != null && _longitude != null) {
+      if (prefs.getString('world_timings_cache') == null) {
+        TimingsData.instance.syncWorldTimingsToCache().then((_) {
+          WidgetService.updateWidget();
+        });
+      }
+    }
   }
 
   // --- Quran Progress Tracking (per Quran type) ---

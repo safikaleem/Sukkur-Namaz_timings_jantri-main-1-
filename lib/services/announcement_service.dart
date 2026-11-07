@@ -335,6 +335,32 @@ class AnnouncementService {
           'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
     };
 
+    // 0. Primary: Fetch from Google Cloud Firestore (instant 0-second latency, zero CDN delay)
+    try {
+      const firestoreUrl =
+          'https://firestore.googleapis.com/v1/projects/sukkur-salah/databases/(default)/documents/app_config/announcements';
+      final fsRes = await http.get(
+        Uri.parse('$firestoreUrl?t=$timestamp'),
+        headers: headers,
+      ).timeout(const Duration(seconds: 6));
+
+      if (fsRes.statusCode == 200) {
+        final fsData = jsonDecode(fsRes.body);
+        if (fsData is Map<String, dynamic> &&
+            fsData['fields'] is Map &&
+            fsData['fields']['data'] is Map &&
+            fsData['fields']['data']['stringValue'] != null) {
+          final rawStr = fsData['fields']['data']['stringValue'].toString();
+          final decoded = jsonDecode(rawStr);
+          if (decoded is Map<String, dynamic> || decoded is List) {
+            return decoded;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Firestore announcement fetch fallback to Gist: $e');
+    }
+
     for (int attempt = 1; attempt <= 2; attempt++) {
       try {
         final sep = announcementUrl.contains('?') ? '&' : '?';

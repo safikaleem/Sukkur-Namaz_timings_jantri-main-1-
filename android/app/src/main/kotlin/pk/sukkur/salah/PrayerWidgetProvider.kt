@@ -234,14 +234,20 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
     // ── Data loading: read today's times from the bundled asset and compute
     //    the current prayer + countdown ourselves (never stale). ────────────
     protected fun loadPrayerData(context: Context, language: String): PrayerData {
+        var isWorldMode = false
         return try {
             val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
             val mode = prefs.getString("flutter.location_mode", "sukkur")
+            isWorldMode = (mode == "world")
             
-            val jsonText = if (mode == "world") {
-                prefs.getString("flutter.world_timings_cache", null) ?: java.io.InputStreamReader(context.assets.open("flutter_assets/assets/data/timings.json")).readText()
+            var jsonText = if (isWorldMode) {
+                prefs.getString("flutter.world_timings_cache", null)
             } else {
-                java.io.InputStreamReader(context.assets.open("flutter_assets/assets/data/timings.json")).readText()
+                null
+            }
+
+            if (jsonText.isNullOrEmpty()) {
+                jsonText = java.io.InputStreamReader(context.assets.open("flutter_assets/assets/data/timings.json")).readText()
             }
             
             val json   = JSONObject(jsonText)
@@ -249,16 +255,115 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             val month  = cal.get(Calendar.MONTH) + 1
             val day    = cal.get(Calendar.DAY_OF_MONTH)
 
-            val days = json.getJSONObject("months")
-                          .getJSONObject(month.toString())
-                          .getJSONArray("days")
+            val monthsObj = json.optJSONObject("months")
+            val monthObj = monthsObj?.optJSONObject(month.toString())
+            val days = monthObj?.optJSONArray("days")
 
             var d: JSONObject? = null
-            for (i in 0 until days.length()) {
-                val candidate = days.getJSONObject(i)
-                if (candidate.getInt("day") == day) { d = candidate; break }
+            if (days != null) {
+                for (i in 0 until days.length()) {
+                    val candidate = days.getJSONObject(i)
+                    if (candidate.getInt("day") == day) { d = candidate; break }
+                }
             }
-            if (d == null) return PrayerData.empty()
+
+            // Fallback for world mode: if JSON cache is missing or doesn't have today,
+            // read individual prayer times saved into HomeWidget data by Flutter.
+            if (d == null && isWorldMode) {
+                val widgetData = es.antonborri.home_widget.HomeWidgetPlugin.getData(context)
+                val wFajar = widgetData.getString("time_Fajar", null)
+                if (!wFajar.isNullOrEmpty()) {
+                    val wTulu = widgetData.getString("time_Tulu_Aftab", "") ?: ""
+                    val wZuhar = widgetData.getString("time_Zuhar", "") ?: ""
+                    val wAsr = widgetData.getString("time_Asr", "") ?: ""
+                    val wMaghrib = widgetData.getString("time_Maghrib", "") ?: ""
+                    val wIsha = widgetData.getString("time_Isha", "") ?: ""
+
+                    val nowMins = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
+                    val nowSecs = nowMins * 60 + cal.get(Calendar.SECOND)
+                    val is24 = resolveIs24(context)
+
+                    val fajarM = toMins(wFajar, false)
+                    val tuluM = toMins(wTulu, false)
+                    val zuharM = toMins(wZuhar, true)
+                    val asrM = toMins(wAsr, true)
+                    val maghribM = toMins(wMaghrib, true)
+                    val ishaM = toMins(wIsha, true)
+
+                    val state = computeCalculatedState(
+                        fajar = fajarM, tulu = tuluM, zuhar = zuharM,
+                        asr = asrM, maghrib = maghribM, isha = ishaM, now = nowMins
+                    )
+
+                    val stateName = translatePrayerName(state.displayName, language)
+                    val activeMins = when (state.highlightKey) {
+                        "Fajar" -> fajarM
+                        "Tulu" -> tuluM
+                        "Zuhar" -> zuharM
+                        "Asr" -> asrM
+                        "Maghrib" -> maghribM
+                        "Isha" -> ishaM
+                        else -> fajarM
+                    }
+                    val prayerTime = when (state.highlightKey) {
+                        "Fajar" -> fmt(wFajar, false, is24)
+                        "Tulu" -> fmt(wTulu, false, is24)
+                        "Zuhar" -> fmt(wZuhar, true, is24)
+                        "Asr" -> fmt(wAsr, true, is24)
+                        "Maghrib" -> fmt(wMaghrib, true, is24)
+                        "Isha" -> fmt(wIsha, true, is24)
+                        else -> "--:--"
+                    }
+                    val countdownStr = if (activeMins >= 0) {
+                        val targetSecs = activeMins * 60
+                        val diff = if (state.isElapsed) nowSecs - targetSecs else targetSecs - nowSecs
+                        val absDiff = if (diff >= 0) diff else 0
+                        formatCountdown(absDiff, state.isElapsed)
+                    } else "--:--:--"
+
+                    return PrayerData(
+                        stateName = stateName,
+                        prayerTime = prayerTime,
+                        gregorian = gregorianDate(language),
+                        countdown = countdownStr,
+                        isElapsed = state.isElapsed,
+                        mainKey = state.highlightKey,
+                        hijri = hijriDate(context, language, nowMins, maghribM),
+                        sunrise = fmt(wTulu, false, is24),
+                        subah = "",
+                        fajar = fmt(wFajar, false, is24),
+                        tulu = fmt(wTulu, false, is24),
+                        ishraq = "",
+                        zawal = "",
+                        zuhar = fmt(wZuhar, true, is24),
+                        misl = "",
+                        asr = fmt(wAsr, true, is24),
+                        maghrib = fmt(wMaghrib, true, is24),
+                        isha = fmt(wIsha, true, is24),
+                        relativeTimes = mapOf(
+                            "Fajar" to formatRelativeTime(fajarM, nowSecs),
+                            "Tulu" to formatRelativeTime(tuluM, nowSecs),
+                            "Zuhar" to formatRelativeTime(zuharM, nowSecs),
+                            "Asr" to formatRelativeTime(asrM, nowSecs),
+                            "Maghrib" to formatRelativeTime(maghribM, nowSecs),
+                            "Isha" to formatRelativeTime(ishaM, nowSecs)
+                        ),
+                        activeMins = activeMins,
+                        subahM = -1,
+                        fajarM = fajarM,
+                        tuluM = tuluM,
+                        ishraqM = -1,
+                        zawalM = -1,
+                        zuharM = zuharM,
+                        mislM = -1,
+                        asrM = asrM,
+                        maghribM = maghribM,
+                        ishaM = ishaM
+                    )
+                }
+            }
+
+            if (d == null) return PrayerData.empty(isWorldMode)
 
             val subahRaw   = d.optString("subah_sadiq", "")
             val tuluRaw    = d.optString("tulu_aftab", "")
@@ -412,7 +517,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
                 ishaM = ishaM
             )
         } catch (e: Exception) {
-            PrayerData.empty()
+            PrayerData.empty(isWorldMode)
         }
     }
 
@@ -433,10 +538,16 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
     private fun toMins(raw: String, isPm: Boolean): Int {
         if (raw.isEmpty()) return -1
         return try {
-            val parts = raw.split(":")
+            val clean = raw.trim()
+            val hasAm = clean.endsWith("AM", ignoreCase = true)
+            val hasPm = clean.endsWith("PM", ignoreCase = true)
+            val timePart = clean.replace("(?i)AM".toRegex(), "").replace("(?i)PM".toRegex(), "").trim()
+            val parts = timePart.split(":")
             var hour = parts[0].toInt()
             val minute = parts[1].toInt()
-            if (isPm && hour < 12) hour += 12
+            if (hasPm && hour < 12) hour += 12
+            else if (hasAm && hour == 12) hour = 0
+            else if (!hasAm && !hasPm && isPm && hour < 12) hour += 12
             hour * 60 + minute
         } catch (e: Exception) { -1 }
     }
@@ -1602,8 +1713,11 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         val ishaM: Int
     ) {
         companion object {
-            fun empty() = PrayerData(
-                "Intiha e Sehar", "--:--", "--:--", false, "Subah", "", "", "--:--",
+            fun empty(isWorld: Boolean = false) = PrayerData(
+                if (isWorld) "Fajar" else "Intiha e Sehar",
+                "--:--", "--:--", false,
+                if (isWorld) "Fajar" else "Subah",
+                "", "", "--:--",
                 "--:--", "--:--", "--:--", "--:--", "--:--", "--:--", "--:--", "--:--", "--:--", "--:--",
                 emptyMap(), -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
             )
