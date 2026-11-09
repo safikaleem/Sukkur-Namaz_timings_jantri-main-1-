@@ -86,6 +86,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    NotificationService.instance.init().then((_) {
+      if (mounted) _checkPermissions();
+    });
     _checkPermissions();
   }
 
@@ -128,7 +131,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
     await Future.delayed(const Duration(milliseconds: 150));
     if (_appState != AppLifecycleState.resumed) {
       _resumeCompleter = Completer<void>();
-      await _resumeCompleter!.future;
+      try {
+        await _resumeCompleter!.future.timeout(const Duration(seconds: 15));
+      } catch (_) {
+        // Timed out waiting for resume - proceed safely without freezing onboarding
+      }
       _resumeCompleter = null;
       await Future.delayed(const Duration(milliseconds: 100));
     }

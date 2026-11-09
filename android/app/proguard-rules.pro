@@ -1,43 +1,27 @@
-# Flutter-specific rules
--keep class io.flutter.** { *; }
--keep class io.flutter.plugins.** { *; }
-
-# Keep notification-related classes and Gson serialization
+# Flutter Local Notifications & Gson
 -keep class com.dexterous.flutterlocalnotifications.** { *; }
 -keep class com.google.gson.** { *; }
 -keep class com.google.gson.reflect.** { *; }
--keep class androidx.core.app.NotificationCompat** { *; }
--keep class androidx.core.app.NotificationManagerCompat** { *; }
--keep class androidx.core.app.AlarmManagerCompat** { *; }
 -dontwarn com.google.gson.**
 
-# Keep home widget classes
+# WorkManager background worker
+-keep class dev.fluttercommunity.workmanager.** { *; }
+
+# Home widget
 -keep class es.antonborri.home_widget.** { *; }
 
-# Keep native helper classes
--keep class pk.sukkur.salah.** { *; }
+# In-app updates
+-keep class com.google.android.play.core.appupdate.** { *; }
+-keep class com.google.android.play.core.install.** { *; }
+-dontwarn com.google.android.play.core.**
 
-# Timezone data
--keep class org.threeten.** { *; }
+# Native entry points & receivers
+-keep class pk.sukkur.salah.MainActivity { *; }
+-keep class pk.sukkur.salah.AutoSilentReceiver { *; }
+-keep class pk.sukkur.salah.BootReceiver { *; }
+-keep class pk.sukkur.salah.PrayerWidget*Provider { *; }
 
-# Keep WorkManager background worker classes
--keep class dev.fluttercommunity.workmanager.** { *; }
--keep class androidx.work.** { *; }
-
-# Keep Audioplayers classes
--keep class xyz.luan.audioplayers.** { *; }
-
-# Keep Geolocator and Geocoding classes
--keep class com.baseflow.geolocator.** { *; }
--keep class com.baseflow.geocoding.** { *; }
-
-# Keep SharedPreferences
--keep class io.flutter.plugins.sharedpreferences.** { *; }
-
-# Keep Image Cache & SQLite (used by cached_network_image)
+# SQLite & Net warnings
 -keep class com.tekartik.sqflite.** { *; }
 -dontwarn okio.**
 -dontwarn okhttp3.**
-
-# Ignore missing Play Core classes for deferred components
--dontwarn com.google.android.play.core.**

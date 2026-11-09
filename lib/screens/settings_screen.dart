@@ -190,6 +190,24 @@ class SettingsScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
                     ),
+                  ] else if (settings.isKarachi) ...[
+                    const SizedBox(height: 20),
+                    Center(
+                      child: Text(
+                        worldTranslations[settings.language]?['All timings calculated for Karachi with separate Jama\'at module'] ??
+                            settings.translate(
+                              'All timings calculated for Karachi with separate Jama\'at module',
+                              'کراچی کے اوقاتِ نماز اور الگ جماعت ماڈیول فعال ہے',
+                              'ڪراچي جا نماز جا وقت ۽ الڳ جماعت ماڊيول فعال آهي',
+                              'جميع الأوقات محسوبة لكراتشي مع وحدة صلاة جماعة منفصلة',
+                            ),
+                        style: TextStyle(
+                          fontSize: isRtl ? 14 : 12,
+                          color: isDark ? Colors.white30 : Colors.black38,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   ],
                   const SizedBox(height: 24),
                 ],

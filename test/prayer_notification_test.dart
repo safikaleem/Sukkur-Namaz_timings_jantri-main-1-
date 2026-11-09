@@ -19,21 +19,21 @@ String body((String, String) alert) => alert.$2.substring(1);
 String title((String, String) alert) => alert.$1.substring(1);
 
 void main() {
-  group('English keeps the Jantri wording only in Sukkur mode', () {
-    test('Sukkur mode keeps the Urdu suffix', () {
+  group('Sukkur mode prayer alerts across all languages', () {
+    test('English has proper English phrasing with Fajr advisory in Sukkur mode', () {
       expect(body(alertFor('english', sukkur: true)),
-          '<b>Fajar</b> | کا وقت شروع ہو گیا ہے');
+          '<b>Fajr</b> time has started\n(Fajr Azan should not be called before this time)');
     });
 
-    test('World mode is fully English', () {
+    test('World mode is fully English without Sukkur advisory', () {
       final b = body(alertFor('english', sukkur: false));
       expect(b, '<b>Fajar</b> time has started');
       expect(b, isNot(contains('کا وقت')));
     });
 
-    test('the special prayers follow the same rule', () {
+    test('the special prayers in English', () {
       expect(body(alertFor('english', sukkur: true, name: 'Tulu Aftab')),
-          contains('کا وقت شروع ہو گیا ہے'));
+          '<b>Sunrise</b> has occurred\n(Forbidden time for prayer)');
 
       final world = body(alertFor('english', sukkur: false, name: 'Tulu Aftab'));
       expect(world, '<b>Sunrise</b> time has started\n'
@@ -44,21 +44,28 @@ void main() {
     });
   });
 
-  group('the three original non-English languages are unchanged', () {
+  group('Sukkur mode notifications include advisories', () {
     test('Urdu', () {
-      for (final sukkur in [true, false]) {
-        expect(body(alertFor('urdu', sukkur: sukkur)),
-            '<b>فجر</b> کا وقت شروع ہو گیا ہے');
-      }
+      expect(body(alertFor('urdu', sukkur: true)),
+          '<b>فجر</b> کا وقت شروع ہو گیا ہے\n(فجر کی اذان اس وقت سے پہلے نہ دی جائے)');
+      expect(body(alertFor('urdu', sukkur: false)),
+          '<b>فجر</b> کا وقت شروع ہو گیا ہے');
     });
 
     test('Sindhi', () {
       expect(body(alertFor('sindhi', sukkur: true)),
-          '<b>فجر</b> جو وقت شروع ٿي ويو آهي');
+          '<b>فجر</b> جو وقت شروع ٿي ويو آهي\n(فجر جي اذان هن وقت کان اڳ نه ڏني وڃي)');
+      expect(body(alertFor('sindhi', sukkur: true, name: 'Maghrib')),
+          '<b>مغرب</b> جو وقت شروع ٿي ويو آهي');
+      expect(body(alertFor('sindhi', sukkur: true, name: 'Isha')),
+          '<b>عشاء</b> جو وقت شروع ٿي ويو آهي');
+      expect(body(alertFor('sindhi', sukkur: true, name: 'Misl Awwal')),
+          '<b>مثل اول</b> جو وقت شروع ٿي ويو آهي');
     });
 
-    test('Arabic keeps its verb-first word order', () {
-      expect(body(alertFor('arabic', sukkur: true)), 'بدأ وقت <b>الفجر</b>');
+    test('Arabic keeps its verb-first word order and adds advisory', () {
+      expect(body(alertFor('arabic', sukkur: true)),
+          'بدأ وقت <b>الفجر</b>\n(لا ينبغي رفع أذان الفجر قبل هذا الوقت)');
     });
   });
 

@@ -270,6 +270,7 @@ class JamaatMasjidInfo {
   final Map<String, String> localizedNames;
   final Map<String, String> localizedAddresses;
   final String? pin;
+  final String city;
 
   const JamaatMasjidInfo({
     required this.id,
@@ -280,7 +281,101 @@ class JamaatMasjidInfo {
     this.localizedNames = const {},
     this.localizedAddresses = const {},
     this.pin,
+    this.city = 'sukkur',
   });
+
+  static String resolveCity({
+    required String id,
+    required String address,
+    String? city,
+    String? name,
+    Map<dynamic, dynamic>? addresses,
+    Map<dynamic, dynamic>? names,
+  }) {
+    final cleanCity = city?.trim().toLowerCase() ?? '';
+    const karachiMarkers = ['karachi', 'کراچی', 'ڪراچي', 'كراتشي'];
+    const sukkurMarkers = ['sukkur', 'سکھر', 'سکر'];
+
+    // 1. Explicit city field takes highest priority
+    if (cleanCity.isNotEmpty) {
+      for (final m in karachiMarkers) {
+        if (cleanCity.contains(m)) return 'karachi';
+      }
+      for (final m in sukkurMarkers) {
+        if (cleanCity.contains(m)) return 'sukkur';
+      }
+    }
+
+    final lowerId = id.trim().toLowerCase();
+    // 2. Exact city suffix in ID takes priority
+    if (lowerId.endsWith('_karachi') || lowerId.endsWith('karachi')) {
+      return 'karachi';
+    }
+    if (lowerId.endsWith('_sukkur') || lowerId.endsWith('sukkur')) {
+      return 'sukkur';
+    }
+
+    // 3. Check for markers in ID, name, address, and localized dictionaries
+    bool hasKarachiMarker = false;
+    bool hasSukkurMarker = false;
+
+    void inspect(String? text) {
+      if (text == null || text.isEmpty) return;
+      final lower = text.trim().toLowerCase();
+      for (final m in karachiMarkers) {
+        if (lower.contains(m)) hasKarachiMarker = true;
+      }
+      for (final m in sukkurMarkers) {
+        if (lower.contains(m)) hasSukkurMarker = true;
+      }
+    }
+
+    inspect(lowerId);
+    inspect(name);
+    inspect(address);
+
+    if (names != null) {
+      for (final val in names.values) {
+        inspect(val?.toString());
+      }
+    }
+    if (addresses != null) {
+      for (final val in addresses.values) {
+        inspect(val?.toString());
+      }
+    }
+
+    // If both markers are found (e.g. "Karachi Road, Sukkur"), Sukkur takes priority as host city
+    if (hasKarachiMarker && !hasSukkurMarker) {
+      return 'karachi';
+    }
+
+    return 'sukkur';
+  }
+
+  JamaatMasjidInfo copyWith({
+    String? id,
+    String? nameKey,
+    String? addressKey,
+    JamaatTiming? defaultTimings,
+    bool? isHidden,
+    Map<String, String>? localizedNames,
+    Map<String, String>? localizedAddresses,
+    String? pin,
+    String? city,
+  }) {
+    return JamaatMasjidInfo(
+      id: id ?? this.id,
+      nameKey: nameKey ?? this.nameKey,
+      addressKey: addressKey ?? this.addressKey,
+      defaultTimings: defaultTimings ?? this.defaultTimings,
+      isHidden: isHidden ?? this.isHidden,
+      localizedNames: localizedNames ?? this.localizedNames,
+      localizedAddresses: localizedAddresses ?? this.localizedAddresses,
+      pin: pin ?? this.pin,
+      city: city ?? this.city,
+    );
+  }
 
   String getNameFor(String language) {
     final lang = language.toLowerCase();
@@ -2763,16 +2858,7 @@ class JamaatTimesService extends ChangeNotifier {
       final idx = _dynamicMasjids.indexWhere((m) => m.id == masjidId);
       if (idx >= 0) {
         final m = _dynamicMasjids[idx];
-        _dynamicMasjids[idx] = JamaatMasjidInfo(
-          id: m.id,
-          nameKey: m.nameKey,
-          addressKey: m.addressKey,
-          defaultTimings: effective,
-          isHidden: m.isHidden,
-          localizedNames: m.localizedNames,
-          localizedAddresses: m.localizedAddresses,
-          pin: m.pin,
-        );
+        _dynamicMasjids[idx] = m.copyWith(defaultTimings: effective);
       }
     }
   }
@@ -2860,17 +2946,61 @@ class JamaatTimesService extends ChangeNotifier {
     _gistRawUrl = url;
   }
 
+  String _selectedCity = 'sukkur';
+  String get selectedCity => _selectedCity;
+  void setSelectedCity(String city) {
+    final lower = city.trim().toLowerCase();
+    if (_selectedCity != lower) {
+      _selectedCity = lower;
+      notifyListeners();
+    }
+  }
+
+  /// Finds a masjid across all sources (dynamic & built-in)
+  JamaatMasjidInfo? findMasjidById(String masjidId) {
+    if (_deletedMasjidIds.contains(masjidId)) return null;
+    for (final m in _dynamicMasjids) {
+      if (m.id == masjidId && !_deletedMasjidIds.contains(m.id)) return m;
+    }
+    for (final m in sukkurMasjids) {
+      if (m.id == masjidId && !_deletedMasjidIds.contains(m.id)) return m;
+    }
+    return null;
+  }
+
   /// Returns list of masjids. By default (includeHidden: false), filters out hidden masjids for regular users.
   /// When includeHidden is true (Developer/Admin mode), returns all masjids with their isHidden flag intact.
-  List<JamaatMasjidInfo> getMasjidList({bool includeHidden = false}) {
-    final List<JamaatMasjidInfo> list = List.from(sukkurMasjids);
+  /// If [city] or [_selectedCity] is 'karachi', Sukkur masjids are never returned; only Karachi masjids are returned.
+  List<JamaatMasjidInfo> getMasjidList({bool includeHidden = false, String? city}) {
+    final targetCity = (city ?? _selectedCity).trim().toLowerCase();
+    final bool isKarachi = targetCity == 'karachi';
+    final bool isAll = targetCity == 'all';
+
+    final List<JamaatMasjidInfo> list = isKarachi ? [] : List.from(sukkurMasjids);
+    list.removeWhere((m) => _deletedMasjidIds.contains(m.id));
+
     for (final remote in _dynamicMasjids) {
+      if (_deletedMasjidIds.contains(remote.id)) continue;
+      final remoteCity = JamaatMasjidInfo.resolveCity(
+        id: remote.id,
+        address: remote.addressKey,
+        city: remote.city,
+        name: remote.nameKey,
+        addresses: remote.localizedAddresses,
+        names: remote.localizedNames,
+      );
+      if (isKarachi) {
+        if (remoteCity != 'karachi') continue;
+      } else if (!isAll) {
+        if (remoteCity == 'karachi') continue;
+      }
+
       final index = list.indexWhere((m) => m.id == remote.id);
       if (remote.isHidden) {
         if (includeHidden) {
           if (index >= 0) {
             final local = list[index];
-            list[index] = JamaatMasjidInfo(
+            list[index] = local.copyWith(
               id: remote.id,
               nameKey: remote.nameKey.isNotEmpty ? remote.nameKey : local.nameKey,
               addressKey: remote.addressKey.isNotEmpty ? remote.addressKey : local.addressKey,
@@ -2879,9 +3009,10 @@ class JamaatTimesService extends ChangeNotifier {
               localizedNames: remote.localizedNames.isNotEmpty ? remote.localizedNames : local.localizedNames,
               localizedAddresses: remote.localizedAddresses.isNotEmpty ? remote.localizedAddresses : local.localizedAddresses,
               pin: remote.pin ?? _masjidPins[remote.id] ?? local.pin,
+              city: remoteCity,
             );
           } else {
-            list.add(remote);
+            list.add(remote.copyWith(city: remoteCity));
           }
         } else {
           if (index >= 0) {
@@ -2891,7 +3022,7 @@ class JamaatTimesService extends ChangeNotifier {
       } else {
         if (index >= 0) {
           final local = list[index];
-          list[index] = JamaatMasjidInfo(
+          list[index] = local.copyWith(
             id: remote.id,
             nameKey: remote.nameKey.isNotEmpty ? remote.nameKey : local.nameKey,
             addressKey: remote.addressKey.isNotEmpty ? remote.addressKey : local.addressKey,
@@ -2900,9 +3031,10 @@ class JamaatTimesService extends ChangeNotifier {
             localizedNames: remote.localizedNames.isNotEmpty ? remote.localizedNames : local.localizedNames,
             localizedAddresses: remote.localizedAddresses.isNotEmpty ? remote.localizedAddresses : local.localizedAddresses,
             pin: remote.pin ?? _masjidPins[remote.id] ?? local.pin,
+            city: remoteCity,
           );
         } else {
-          list.add(remote);
+          list.add(remote.copyWith(city: remoteCity));
         }
       }
     }
@@ -2918,25 +3050,13 @@ class JamaatTimesService extends ChangeNotifier {
     final index = _dynamicMasjids.indexWhere((m) => m.id == masjidId);
     if (index >= 0) {
       final m = _dynamicMasjids[index];
-      _dynamicMasjids[index] = JamaatMasjidInfo(
-        id: m.id,
-        nameKey: m.nameKey,
-        addressKey: m.addressKey,
-        defaultTimings: m.defaultTimings,
-        isHidden: hide,
-        localizedNames: m.localizedNames,
-        localizedAddresses: m.localizedAddresses,
-        pin: m.pin,
-      );
+      _dynamicMasjids[index] = m.copyWith(isHidden: hide);
     } else {
       // Find in built-in list
       final builtInList = sukkurMasjids.where((m) => m.id == masjidId).toList();
       if (builtInList.isNotEmpty) {
         final b = builtInList.first;
-        _dynamicMasjids.add(JamaatMasjidInfo(
-          id: b.id,
-          nameKey: b.nameKey,
-          addressKey: b.addressKey,
+        _dynamicMasjids.add(b.copyWith(
           defaultTimings: _remoteCache[masjidId] ?? b.defaultTimings,
           isHidden: hide,
           localizedNames: b.localizedNames,
@@ -2953,23 +3073,26 @@ class JamaatTimesService extends ChangeNotifier {
     } catch (_) {}
 
     // 3. Prepare payload for Gist
-    final list = getMasjidList(includeHidden: true);
-    final masjid = list.firstWhere(
-      (m) => m.id == masjidId,
-      orElse: () => sukkurMasjids.firstWhere((m) => m.id == masjidId),
-    );
-    final activeTiming = _remoteCache[masjidId] ?? masjid.defaultTimings;
+    final masjid = findMasjidById(masjidId);
+    final activeTiming = _remoteCache[masjidId] ?? masjid?.defaultTimings ?? const JamaatTiming(fajr: '', zuhar: '', asar: '', maghrib: 'Sunset', isha: '', jummah: '');
     final jsonMap = activeTiming.toJson();
-    jsonMap['id'] = masjid.id;
-    jsonMap['name'] = masjid.nameKey;
-    jsonMap['address'] = masjid.addressKey;
+    jsonMap['id'] = masjidId;
+    if (masjid != null) {
+      jsonMap['name'] = masjid.nameKey;
+      jsonMap['address'] = masjid.addressKey;
+      jsonMap['city'] = masjid.city;
+      if (masjid.localizedNames.isNotEmpty) jsonMap['names'] = masjid.localizedNames;
+      if (masjid.localizedAddresses.isNotEmpty) jsonMap['addresses'] = masjid.localizedAddresses;
+    } else {
+      jsonMap['name'] = masjidId;
+      jsonMap['address'] = '';
+      jsonMap['city'] = JamaatMasjidInfo.resolveCity(id: masjidId, address: '');
+    }
     jsonMap['hidden'] = hide;
     final pin = getMasjidPin(masjidId);
     if (pin != null && pin.isNotEmpty) {
       jsonMap['pin'] = pin;
     }
-    if (masjid.localizedNames.isNotEmpty) jsonMap['names'] = masjid.localizedNames;
-    if (masjid.localizedAddresses.isNotEmpty) jsonMap['addresses'] = masjid.localizedAddresses;
 
     final res = await DeveloperGistService.instance.saveMasjidToGist(jsonMap);
     return res;
@@ -3033,7 +3156,11 @@ class JamaatTimesService extends ChangeNotifier {
           dynamicMaghrib = format12HourEnglish(baseTime, defaultPm: true);
         }
       } else {
-        dynamicMaghrib = format12HourEnglish(base.maghrib, defaultPm: true);
+        if (dynamicMaghrib.toLowerCase().contains('sunset')) {
+          dynamicMaghrib = '06:15 PM';
+        } else {
+          dynamicMaghrib = format12HourEnglish(base.maghrib, defaultPm: true);
+        }
       }
     } else {
       dynamicMaghrib = format12HourEnglish(dynamicMaghrib, defaultPm: true);
@@ -3069,16 +3196,15 @@ class JamaatTimesService extends ChangeNotifier {
   /// Returns effective timing for a masjid by its String ID
   JamaatTiming? getTimingForId(String id) {
     if (_remoteCache.containsKey(id)) return _remoteCache[id];
-    final list = getMasjidList(includeHidden: true);
-    for (final m in list) {
-      if (m.id == id) return getTimingFor(m);
-    }
+    final m = findMasjidById(id);
+    if (m != null) return getTimingFor(m);
     return null;
   }
 
   static const String prefKeyJamaatCache = 'cached_jamaat_times_json';
   static const String prefKeyFirestoreCache = 'cached_firestore_jamaat_times_json';
   static const String prefKeyPendingUpdates = 'pending_jamaat_firestore_updates_json';
+  static const Set<String> _deletedMasjidIds = {'masjid_jallal'};
 
   /// Loads cached timings from SharedPreferences so updated times are available
   /// immediately even if the device is offline or on slow network.
@@ -3128,9 +3254,16 @@ class JamaatTimesService extends ChangeNotifier {
         _parseAndApplyJson(cached, isFromLocalCache: true);
       } else {
         for (final id in {..._firestoreTimings.keys, ..._pendingLocalTimings.keys}) {
-          _recomputeEffectiveTiming(id);
+          if (!_deletedMasjidIds.contains(id)) {
+            _recomputeEffectiveTiming(id);
+          }
         }
       }
+      _dynamicMasjids.removeWhere((m) => _deletedMasjidIds.contains(m.id));
+      _firestoreTimings.removeWhere((k, _) => _deletedMasjidIds.contains(k));
+      _remoteCache.removeWhere((k, _) => _deletedMasjidIds.contains(k));
+      _gistTimings.removeWhere((k, _) => _deletedMasjidIds.contains(k));
+      _masjidPins.removeWhere((k, _) => _deletedMasjidIds.contains(k));
       notifyListeners();
     } catch (e) {
       debugPrint('Failed to load local cached Jamaat times: $e');
@@ -3183,15 +3316,36 @@ class JamaatTimesService extends ChangeNotifier {
   bool _parseAndApplyJson(String jsonStr, {bool isFromLocalCache = false}) {
     try {
       final data = json.decode(jsonStr);
-      if (data is Map<String, dynamic> && data.containsKey('masjids')) {
+      if (data is Map<String, dynamic> && (data.containsKey('masjids') || data.containsKey('karachi_masjids'))) {
         if (data['master_pin'] != null && data['master_pin'].toString().trim().isNotEmpty) {
           _masterAdminPin = data['master_pin'].toString().trim();
         }
-        final masjids = data['masjids'] as List;
+        final List<Map<String, dynamic>> allItems = [];
+        if (data['masjids'] is List) {
+          for (final item in (data['masjids'] as List)) {
+            if (item is Map<String, dynamic>) {
+              allItems.add(Map<String, dynamic>.from(item));
+            }
+          }
+        }
+        // Ingest dedicated Karachi masjids section (forward-compatible with 1.4.8+)
+        if (data['karachi_masjids'] is List) {
+          for (final item in (data['karachi_masjids'] as List)) {
+            if (item is Map<String, dynamic>) {
+              final copy = Map<String, dynamic>.from(item);
+              copy['city'] = 'karachi';
+              // Karachi section takes precedence over legacy entries in masjids
+              allItems.removeWhere((existing) => existing['id']?.toString() == copy['id']?.toString());
+              allItems.add(copy);
+            }
+          }
+        }
+
         final List<JamaatMasjidInfo> fetchedList = [];
-        for (final item in masjids) {
-          if (item is Map<String, dynamic> && item.containsKey('id')) {
+        for (final item in allItems) {
+          if (item.containsKey('id')) {
             final id = item['id'].toString();
+            if (_deletedMasjidIds.contains(id)) continue;
             final pin = item['pin']?.toString().trim();
             if (pin != null && pin.isNotEmpty) {
               _masjidPins[id] = pin;
@@ -3202,6 +3356,14 @@ class JamaatTimesService extends ChangeNotifier {
             final timing = JamaatTiming.fromJson(item);
             final localizedNames = _extractLocalizedStrings(item, 'name');
             final localizedAddresses = _extractLocalizedStrings(item, 'address');
+            final String city = JamaatMasjidInfo.resolveCity(
+              id: id,
+              address: address,
+              city: item['city']?.toString(),
+              name: name,
+              addresses: localizedAddresses,
+              names: localizedNames,
+            );
 
             // Store Gist baseline without destroying newer Firestore or pending Imam updates
             if (!isFromLocalCache || !_gistTimings.containsKey(id)) {
@@ -3222,6 +3384,7 @@ class JamaatTimesService extends ChangeNotifier {
               localizedNames: localizedNames,
               localizedAddresses: localizedAddresses,
               pin: pin,
+              city: city,
             ));
           }
         }
@@ -3236,8 +3399,7 @@ class JamaatTimesService extends ChangeNotifier {
               mergedMap[local.id] = local;
             } else if (_locallyUpdatedMasjidIds.contains(local.id)) {
               final remote = mergedMap[local.id]!;
-              mergedMap[local.id] = JamaatMasjidInfo(
-                id: local.id,
+              mergedMap[local.id] = local.copyWith(
                 nameKey: local.nameKey.isNotEmpty ? local.nameKey : remote.nameKey,
                 addressKey: local.addressKey.isNotEmpty ? local.addressKey : remote.addressKey,
                 defaultTimings: remote.defaultTimings,
@@ -3245,10 +3407,11 @@ class JamaatTimesService extends ChangeNotifier {
                 localizedNames: local.localizedNames.isNotEmpty ? local.localizedNames : remote.localizedNames,
                 localizedAddresses: local.localizedAddresses.isNotEmpty ? local.localizedAddresses : remote.localizedAddresses,
                 pin: local.pin ?? remote.pin,
+                city: local.city.isNotEmpty ? local.city : remote.city,
               );
             }
           }
-          _dynamicMasjids = mergedMap.values.toList();
+          _dynamicMasjids = mergedMap.values.where((m) => !_deletedMasjidIds.contains(m.id)).toList();
           return true;
         }
       }
@@ -3706,31 +3869,21 @@ class JamaatTimesService extends ChangeNotifier {
       final index = _dynamicMasjids.indexWhere((m) => m.id == masjidId);
       if (index >= 0) {
         final m = _dynamicMasjids[index];
-        _dynamicMasjids[index] = JamaatMasjidInfo(
-          id: m.id,
-          nameKey: m.nameKey,
-          addressKey: m.addressKey,
-          defaultTimings: effective,
-          isHidden: m.isHidden,
-          localizedNames: m.localizedNames,
-          localizedAddresses: m.localizedAddresses,
-          pin: m.pin,
-        );
+        _dynamicMasjids[index] = m.copyWith(defaultTimings: effective);
       } else {
-        final local = sukkurMasjids.firstWhere(
-          (m) => m.id == masjidId,
-          orElse: () => sukkurMasjids.first,
-        );
-        _dynamicMasjids.add(JamaatMasjidInfo(
-          id: local.id,
-          nameKey: local.nameKey,
-          addressKey: local.addressKey,
-          defaultTimings: effective,
-          isHidden: local.isHidden,
-          localizedNames: local.localizedNames,
-          localizedAddresses: local.localizedAddresses,
-          pin: _masjidPins[local.id],
-        ));
+        final existing = findMasjidById(masjidId);
+        if (existing != null) {
+          _dynamicMasjids.add(existing.copyWith(defaultTimings: effective));
+        } else {
+          final resolvedCity = JamaatMasjidInfo.resolveCity(id: masjidId, address: '');
+          _dynamicMasjids.add(JamaatMasjidInfo(
+            id: masjidId,
+            nameKey: masjidId,
+            addressKey: resolvedCity == 'karachi' ? 'Karachi' : 'Sukkur',
+            defaultTimings: effective,
+            city: resolvedCity,
+          ));
+        }
       }
 
       notifyListeners();
@@ -3792,25 +3945,28 @@ class JamaatTimesService extends ChangeNotifier {
       );
     }
     try {
-      final list = getMasjidList();
-      final masjid = list.firstWhere(
-        (m) => m.id == masjidId,
-        orElse: () => sukkurMasjids.firstWhere((m) => m.id == masjidId),
-      );
-      final activeTiming = timing ?? (_remoteCache[masjidId] ?? masjid.defaultTimings);
+      final masjid = findMasjidById(masjidId);
+      final activeTiming = timing ?? (_remoteCache[masjidId] ?? masjid?.defaultTimings ?? const JamaatTiming(fajr: '', zuhar: '', asar: '', maghrib: 'Sunset', isha: '', jummah: ''));
       final jsonMap = activeTiming.toJson();
-      jsonMap['id'] = masjid.id;
-      jsonMap['name'] = masjid.nameKey;
-      jsonMap['address'] = masjid.addressKey;
-      final pin = _masjidPins[masjid.id] ?? masjid.pin;
-      if (pin != null && pin.isNotEmpty) {
-        jsonMap['pin'] = pin;
-      }
-      if (masjid.localizedNames.isNotEmpty) {
-        jsonMap['names'] = masjid.localizedNames;
-      }
-      if (masjid.localizedAddresses.isNotEmpty) {
-        jsonMap['addresses'] = masjid.localizedAddresses;
+      jsonMap['id'] = masjidId;
+      if (masjid != null) {
+        jsonMap['name'] = masjid.nameKey;
+        jsonMap['address'] = masjid.addressKey;
+        jsonMap['city'] = masjid.city;
+        final pin = _masjidPins[masjid.id] ?? masjid.pin;
+        if (pin != null && pin.isNotEmpty) {
+          jsonMap['pin'] = pin;
+        }
+        if (masjid.localizedNames.isNotEmpty) {
+          jsonMap['names'] = masjid.localizedNames;
+        }
+        if (masjid.localizedAddresses.isNotEmpty) {
+          jsonMap['addresses'] = masjid.localizedAddresses;
+        }
+      } else {
+        jsonMap['name'] = masjidId;
+        jsonMap['address'] = '';
+        jsonMap['city'] = JamaatMasjidInfo.resolveCity(id: masjidId, address: '');
       }
 
       final result = await DeveloperGistService.instance.saveMasjidToGist(jsonMap);
@@ -3853,19 +4009,22 @@ class JamaatTimesService extends ChangeNotifier {
     }
 
     try {
-      final list = getMasjidList();
-      final masjid = list.firstWhere(
-        (m) => m.id == masjidId,
-        orElse: () => sukkurMasjids.firstWhere((m) => m.id == masjidId),
-      );
-      final activeTiming = _remoteCache[masjidId] ?? masjid.defaultTimings;
+      final masjid = findMasjidById(masjidId);
+      final activeTiming = _remoteCache[masjidId] ?? masjid?.defaultTimings ?? const JamaatTiming(fajr: '', zuhar: '', asar: '', maghrib: 'Sunset', isha: '', jummah: '');
       final jsonMap = activeTiming.toJson();
-      jsonMap['id'] = masjid.id;
-      jsonMap['name'] = masjid.nameKey;
-      jsonMap['address'] = masjid.addressKey;
+      jsonMap['id'] = masjidId;
+      if (masjid != null) {
+        jsonMap['name'] = masjid.nameKey;
+        jsonMap['address'] = masjid.addressKey;
+        jsonMap['city'] = masjid.city;
+        if (masjid.localizedNames.isNotEmpty) jsonMap['names'] = masjid.localizedNames;
+        if (masjid.localizedAddresses.isNotEmpty) jsonMap['addresses'] = masjid.localizedAddresses;
+      } else {
+        jsonMap['name'] = masjidId;
+        jsonMap['address'] = '';
+        jsonMap['city'] = JamaatMasjidInfo.resolveCity(id: masjidId, address: '');
+      }
       jsonMap['pin'] = cleanPin;
-      if (masjid.localizedNames.isNotEmpty) jsonMap['names'] = masjid.localizedNames;
-      if (masjid.localizedAddresses.isNotEmpty) jsonMap['addresses'] = masjid.localizedAddresses;
 
       final res = await DeveloperGistService.instance.saveMasjidToGist(jsonMap);
       if (res.success) {
@@ -3924,17 +4083,20 @@ class JamaatTimesService extends ChangeNotifier {
       timingMap['pin'] = pin;
     }
     // Include full masjid metadata so new masjids and name/address changes propagate instantly in 0s
-    final allMasajid = getMasjidList(includeHidden: true);
-    final masjidInfo = allMasajid.firstWhere(
-      (m) => m.id == masjidId,
-      orElse: () => sukkurMasjids.firstWhere((m) => m.id == masjidId, orElse: () => allMasajid.first),
-    );
+    final masjidInfo = findMasjidById(masjidId);
     timingMap['id'] = masjidId;
-    timingMap['name'] = masjidInfo.nameKey;
-    timingMap['address'] = masjidInfo.addressKey;
-    if (masjidInfo.isHidden) timingMap['hidden'] = true;
-    if (masjidInfo.localizedNames.isNotEmpty) timingMap['names'] = masjidInfo.localizedNames;
-    if (masjidInfo.localizedAddresses.isNotEmpty) timingMap['addresses'] = masjidInfo.localizedAddresses;
+    if (masjidInfo != null) {
+      timingMap['name'] = masjidInfo.nameKey;
+      timingMap['address'] = masjidInfo.addressKey;
+      timingMap['city'] = masjidInfo.city;
+      if (masjidInfo.isHidden) timingMap['hidden'] = true;
+      if (masjidInfo.localizedNames.isNotEmpty) timingMap['names'] = masjidInfo.localizedNames;
+      if (masjidInfo.localizedAddresses.isNotEmpty) timingMap['addresses'] = masjidInfo.localizedAddresses;
+    } else {
+      timingMap['name'] = masjidId;
+      timingMap['address'] = '';
+      timingMap['city'] = JamaatMasjidInfo.resolveCity(id: masjidId, address: '');
+    }
 
     final bundleBody = json.encode({
       'fields': {
@@ -3989,23 +4151,27 @@ class JamaatTimesService extends ChangeNotifier {
     if (_firestoreTimings.isEmpty) return;
     try {
       final Map<String, dynamic> fields = {};
-      final allMasajid = getMasjidList(includeHidden: true);
       _firestoreTimings.forEach((masjidId, timing) {
+        if (_deletedMasjidIds.contains(masjidId)) return;
         final map = timing.toJson();
         final pin = _masjidPins[masjidId];
         if (pin != null && pin.isNotEmpty) {
           map['pin'] = pin;
         }
-        final m = allMasajid.firstWhere(
-          (x) => x.id == masjidId,
-          orElse: () => sukkurMasjids.firstWhere((x) => x.id == masjidId, orElse: () => allMasajid.first),
-        );
+        final m = findMasjidById(masjidId);
         map['id'] = masjidId;
-        map['name'] = m.nameKey;
-        map['address'] = m.addressKey;
-        if (m.isHidden) map['hidden'] = true;
-        if (m.localizedNames.isNotEmpty) map['names'] = m.localizedNames;
-        if (m.localizedAddresses.isNotEmpty) map['addresses'] = m.localizedAddresses;
+        if (m != null) {
+          map['name'] = m.nameKey;
+          map['address'] = m.addressKey;
+          map['city'] = m.city;
+          if (m.isHidden) map['hidden'] = true;
+          if (m.localizedNames.isNotEmpty) map['names'] = m.localizedNames;
+          if (m.localizedAddresses.isNotEmpty) map['addresses'] = m.localizedAddresses;
+        } else {
+          map['name'] = masjidId;
+          map['address'] = '';
+          map['city'] = JamaatMasjidInfo.resolveCity(id: masjidId, address: '');
+        }
 
         fields[masjidId] = {'stringValue': json.encode(map)};
       });
@@ -4017,6 +4183,15 @@ class JamaatTimesService extends ChangeNotifier {
           )
           .timeout(const Duration(seconds: 8));
       debugPrint('Seeded Firestore single-document bundle with ${fields.length} masjids');
+      for (final deletedId in _deletedMasjidIds) {
+        http
+            .patch(
+              Uri.parse('$_firestoreBundleUrl?updateMask.fieldPaths=${Uri.encodeQueryComponent(deletedId)}'),
+              headers: const {'Content-Type': 'application/json'},
+              body: json.encode({'fields': {}}),
+            )
+            .catchError((_) => http.Response('', 500));
+      }
     } catch (e) {
       debugPrint('Failed to seed Firestore bundle: $e');
     }
@@ -4035,14 +4210,28 @@ class JamaatTimesService extends ChangeNotifier {
       final List<Map<String, dynamic>> masjids = [];
       for (final item in (currentData['masjids'] as List)) {
         if (item is Map) {
+          final mId = item['id']?.toString().trim() ?? '';
+          if (_deletedMasjidIds.contains(mId)) continue;
           masjids.add(Map<String, dynamic>.from(item));
+        }
+      }
+
+      final rawKarachi = currentData['karachi_masjids'];
+      final List<Map<String, dynamic>> karachiMasjids = [];
+      if (rawKarachi is List) {
+        for (final item in rawKarachi) {
+          if (item is Map) {
+            final mId = item['id']?.toString().trim() ?? '';
+            if (_deletedMasjidIds.contains(mId)) continue;
+            karachiMasjids.add(Map<String, dynamic>.from(item));
+          }
         }
       }
 
       bool anyDiff = false;
       for (int i = 0; i < masjids.length; i++) {
         final id = masjids[i]['id']?.toString().trim() ?? '';
-        if (id.isEmpty || !_remoteCache.containsKey(id)) continue;
+        if (id.isEmpty || !_remoteCache.containsKey(id) || _deletedMasjidIds.contains(id)) continue;
         final effective = _remoteCache[id]!;
         final gistTiming = JamaatTiming.fromJson(masjids[i]);
         if (format12HourEnglish(effective.fajr) != format12HourEnglish(gistTiming.fajr) ||
@@ -4064,14 +4253,29 @@ class JamaatTimesService extends ChangeNotifier {
         }
       }
 
+      for (int i = 0; i < karachiMasjids.length; i++) {
+        final id = karachiMasjids[i]['id']?.toString().trim() ?? '';
+        if (id.isEmpty || !_remoteCache.containsKey(id) || _deletedMasjidIds.contains(id)) continue;
+        final effective = _remoteCache[id]!;
+        final updatedMap = Map<String, dynamic>.from(karachiMasjids[i]);
+        effective.toJson().forEach((k, v) {
+          updatedMap[k] = v;
+        });
+        karachiMasjids[i] = updatedMap;
+        anyDiff = true;
+      }
+
       // Ensure any locally registered dynamic masjids are retained in Gist
       for (final dyn in _dynamicMasjids) {
+        if (_deletedMasjidIds.contains(dyn.id)) continue;
+        final isKarachi = dyn.city == 'karachi';
         if (!masjids.any((m) => m['id']?.toString().trim() == dyn.id)) {
           final dynMap = {
             'id': dyn.id,
             'name': dyn.nameKey,
             'address': dyn.addressKey,
-            'hidden': dyn.isHidden,
+            'city': dyn.city,
+            'hidden': isKarachi ? true : dyn.isHidden,
             'pin': dyn.pin,
             'names': dyn.localizedNames,
             'addresses': dyn.localizedAddresses,
@@ -4080,11 +4284,29 @@ class JamaatTimesService extends ChangeNotifier {
           masjids.add(dynMap);
           anyDiff = true;
         }
+        if (isKarachi && !karachiMasjids.any((m) => m['id']?.toString().trim() == dyn.id)) {
+          final kMap = {
+            'id': dyn.id,
+            'name': dyn.nameKey,
+            'address': dyn.addressKey,
+            'city': 'karachi',
+            'hidden': dyn.isHidden,
+            'pin': dyn.pin,
+            'names': dyn.localizedNames,
+            'addresses': dyn.localizedAddresses,
+            ...dyn.defaultTimings.toJson(),
+          };
+          karachiMasjids.add(kMap);
+          anyDiff = true;
+        }
       }
 
       if (anyDiff) {
         final gistData = Map<String, dynamic>.from(currentData);
         gistData['masjids'] = masjids;
+        if (karachiMasjids.isNotEmpty) {
+          gistData['karachi_masjids'] = karachiMasjids;
+        }
         const encoder = JsonEncoder.withIndent('  ');
         await DeveloperGistService.instance.updateGistFiles(
           jamaatTimesContent: encoder.convert(gistData),
@@ -4131,7 +4353,8 @@ class JamaatTimesService extends ChangeNotifier {
 
   void _persistCacheAsync(String masjidId) async {
     try {
-      final activeList = getMasjidList(includeHidden: true);
+      final activeList = getMasjidList(includeHidden: true, city: 'all');
+      final karachiList = activeList.where((m) => m.city == 'karachi').toList();
       final Map<String, dynamic> exportData = {
         'master_pin': _masterAdminPin,
         'masjids': activeList.map((m) {
@@ -4140,7 +4363,8 @@ class JamaatTimesService extends ChangeNotifier {
           jsonMap['id'] = m.id;
           jsonMap['name'] = m.nameKey;
           jsonMap['address'] = m.addressKey;
-          if (m.isHidden) {
+          jsonMap['city'] = m.city;
+          if (m.isHidden || m.city == 'karachi') {
             jsonMap['hidden'] = true;
           }
           final pin = _masjidPins[m.id] ?? m.pin;
@@ -4151,6 +4375,25 @@ class JamaatTimesService extends ChangeNotifier {
           if (m.localizedAddresses.isNotEmpty) jsonMap['addresses'] = m.localizedAddresses;
           return jsonMap;
         }).toList(),
+        if (karachiList.isNotEmpty)
+          'karachi_masjids': karachiList.map((m) {
+            final t = _remoteCache[m.id] ?? m.defaultTimings;
+            final jsonMap = t.toJson();
+            jsonMap['id'] = m.id;
+            jsonMap['name'] = m.nameKey;
+            jsonMap['address'] = m.addressKey;
+            jsonMap['city'] = 'karachi';
+            if (m.isHidden) {
+              jsonMap['hidden'] = true;
+            }
+            final pin = _masjidPins[m.id] ?? m.pin;
+            if (pin != null && pin.isNotEmpty) {
+              jsonMap['pin'] = pin;
+            }
+            if (m.localizedNames.isNotEmpty) jsonMap['names'] = m.localizedNames;
+            if (m.localizedAddresses.isNotEmpty) jsonMap['addresses'] = m.localizedAddresses;
+            return jsonMap;
+          }).toList(),
       };
 
       final Map<String, dynamic> fsExport = {};
@@ -4203,6 +4446,7 @@ class JamaatTimesService extends ChangeNotifier {
           bool anyApplied = false;
           for (final entry in fields.entries) {
             final masjidId = entry.key;
+            if (_deletedMasjidIds.contains(masjidId)) continue;
             final valMap = entry.value;
             if (valMap is Map && valMap['stringValue'] != null) {
               try {
@@ -4224,19 +4468,27 @@ class JamaatTimesService extends ChangeNotifier {
                     final isHidden = rawMap['hidden'] == true;
                     final localizedNames = _extractLocalizedStrings(rawMap, 'name');
                     final localizedAddresses = _extractLocalizedStrings(rawMap, 'address');
+                    final String city = JamaatMasjidInfo.resolveCity(
+                      id: masjidId,
+                      address: address,
+                      city: rawMap['city']?.toString(),
+                      name: name,
+                      addresses: localizedAddresses,
+                      names: localizedNames,
+                    );
 
                     final dynIdx = _dynamicMasjids.indexWhere((m) => m.id == masjidId);
                     if (dynIdx >= 0) {
                       if (!_locallyUpdatedMasjidIds.contains(masjidId)) {
-                        _dynamicMasjids[dynIdx] = JamaatMasjidInfo(
-                          id: masjidId,
+                        _dynamicMasjids[dynIdx] = _dynamicMasjids[dynIdx].copyWith(
                           nameKey: name,
                           addressKey: address,
                           defaultTimings: _remoteCache[masjidId] ?? timing,
                           isHidden: isHidden,
                           localizedNames: localizedNames.isNotEmpty ? localizedNames : _dynamicMasjids[dynIdx].localizedNames,
                           localizedAddresses: localizedAddresses.isNotEmpty ? localizedAddresses : _dynamicMasjids[dynIdx].localizedAddresses,
-                          pin: _masjidPins[masjidId],
+                          pin: _masjidPins[masjidId] ?? _dynamicMasjids[dynIdx].pin,
+                          city: city,
                         );
                       }
                     } else if (!sukkurMasjids.any((m) => m.id == masjidId)) {
@@ -4249,6 +4501,7 @@ class JamaatTimesService extends ChangeNotifier {
                         localizedNames: localizedNames,
                         localizedAddresses: localizedAddresses,
                         pin: _masjidPins[masjidId],
+                        city: city,
                       ));
                     }
                   }
@@ -4302,6 +4555,7 @@ class JamaatTimesService extends ChangeNotifier {
                   doc.containsKey('fields')) {
                 final name = doc['name'].toString();
                 final masjidId = name.split('/').last;
+                if (_deletedMasjidIds.contains(masjidId)) continue;
                 final fields = doc['fields'] as Map<String, dynamic>? ?? {};
                 if (fields.containsKey('pin')) {
                   final p = fields['pin'];
@@ -4426,7 +4680,8 @@ class JamaatTimesService extends ChangeNotifier {
   /// Exports the entire database of all registered masajid and their current active timings
   /// formatted as valid JSON matching the GitHub Gist structure.
   String exportRawGistJson() {
-    final activeList = getMasjidList(includeHidden: true);
+    final activeList = getMasjidList(includeHidden: true, city: 'all');
+    final karachiList = activeList.where((m) => m.city == 'karachi').toList();
     final Map<String, dynamic> exportData = {
       'master_pin': _masterAdminPin,
       'masjids': activeList.map((m) {
@@ -4435,7 +4690,8 @@ class JamaatTimesService extends ChangeNotifier {
         jsonMap['id'] = m.id;
         jsonMap['name'] = m.nameKey;
         jsonMap['address'] = m.addressKey;
-        if (m.isHidden) {
+        jsonMap['city'] = m.city;
+        if (m.isHidden || m.city == 'karachi') {
           jsonMap['hidden'] = true;
         }
         final pin = _masjidPins[m.id] ?? m.pin;
@@ -4446,6 +4702,25 @@ class JamaatTimesService extends ChangeNotifier {
         if (m.localizedAddresses.isNotEmpty) jsonMap['addresses'] = m.localizedAddresses;
         return jsonMap;
       }).toList(),
+      if (karachiList.isNotEmpty)
+        'karachi_masjids': karachiList.map((m) {
+          final t = _remoteCache[m.id] ?? m.defaultTimings;
+          final jsonMap = t.toJson();
+          jsonMap['id'] = m.id;
+          jsonMap['name'] = m.nameKey;
+          jsonMap['address'] = m.addressKey;
+          jsonMap['city'] = 'karachi';
+          if (m.isHidden) {
+            jsonMap['hidden'] = true;
+          }
+          final pin = _masjidPins[m.id] ?? m.pin;
+          if (pin != null && pin.isNotEmpty) {
+            jsonMap['pin'] = pin;
+          }
+          if (m.localizedNames.isNotEmpty) jsonMap['names'] = m.localizedNames;
+          if (m.localizedAddresses.isNotEmpty) jsonMap['addresses'] = m.localizedAddresses;
+          return jsonMap;
+        }).toList(),
     };
     const encoder = JsonEncoder.withIndent('  ');
     return encoder.convert(exportData);
@@ -4511,7 +4786,9 @@ class JamaatTimesService extends ChangeNotifier {
     final monthStr = monthKeys[now.month - 1].toUpperCase();
     final todayStamp = '$dayStr $monthStr ${now.year}';
 
-    final allMasajid = getMasjidList(includeHidden: false);
+    final allMasajid = targetMasjidIds != null
+        ? getMasjidList(includeHidden: true, city: 'all')
+        : getMasjidList(includeHidden: false, city: 'all');
     int count = 0;
 
     for (final m in allMasajid) {

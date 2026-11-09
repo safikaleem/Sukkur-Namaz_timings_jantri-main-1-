@@ -242,8 +242,10 @@ class _RemindersScreenState extends State<RemindersScreen> {
             const SizedBox(height: 8),
             const Center(child: DrSloganHeader()),
             const SizedBox(height: 10),
-            _buildJamaatSection(context, settings),
-            const SizedBox(height: 8),
+            if (settings.hasJamaatModule) ...[
+              _buildJamaatSection(context, settings),
+              const SizedBox(height: 8),
+            ],
             Expanded(
               child: !_loaded
                   ? Center(child: CircularProgressIndicator(color: AppTheme.accent))
@@ -309,12 +311,12 @@ class _RemindersScreenState extends State<RemindersScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isRtl = settings.isRtl;
 
-    final masjidList = JamaatTimesService.instance.getMasjidList();
+    final masjidList = JamaatTimesService.instance.getMasjidList(city: settings.isKarachi ? 'karachi' : 'sukkur');
     final bool hasFavorite = settings.favoriteMasjidId.isNotEmpty;
-    final favMasjid = hasFavorite
-        ? masjidList.firstWhere(
-            (m) => m.id == settings.favoriteMasjidId,
-            orElse: () => masjidList.first,
+    final favMasjid = (hasFavorite && masjidList.isNotEmpty)
+        ? masjidList.cast<JamaatMasjidInfo?>().firstWhere(
+            (m) => m?.id == settings.favoriteMasjidId,
+            orElse: () => null,
           )
         : null;
 

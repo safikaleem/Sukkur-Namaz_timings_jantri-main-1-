@@ -107,9 +107,13 @@ class WidgetService {
 
       // Save all prayer times with AM/PM
       for (final p in today.allTimings) {
-        await HomeWidget.saveWidgetData(
-            'time_${p.name.replaceAll(' ', '_')}',
-            '${p.displayTime} ${p.displayIsPm ? 'PM' : 'AM'}');
+        final val = '${p.displayTime} ${p.displayIsPm ? 'PM' : 'AM'}';
+        final key = p.name.replaceAll(' ', '_');
+        await HomeWidget.saveWidgetData('time_$key', val);
+        if (p.name == 'Asr Hanafi' || p.name == 'Asr') {
+          await HomeWidget.saveWidgetData('time_Asr', val);
+          await HomeWidget.saveWidgetData('time_Asr_Hanafi', val);
+        }
       }
 
       // Notify every registered widget provider

@@ -58,6 +58,24 @@ class NotificationHealth {
 
   bool get isHealthy => blockers.isEmpty;
 
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NotificationHealth &&
+          runtimeType == other.runtimeType &&
+          notificationsAllowed == other.notificationsAllowed &&
+          exactAlarmsAllowed == other.exactAlarmsAllowed &&
+          batteryUnrestricted == other.batteryUnrestricted &&
+          hasAutoStartScreen == other.hasAutoStartScreen;
+
+  @override
+  int get hashCode => Object.hash(
+        notificationsAllowed,
+        exactAlarmsAllowed,
+        batteryUnrestricted,
+        hasAutoStartScreen,
+      );
+
   /// Nothing will arrive at all - worth saying plainly, because it is a
   /// different message from "these will be late".
   bool get isSilenced => !notificationsAllowed;

@@ -308,6 +308,7 @@ class TimingsData {
             'zawal_aftab': timing.zawalAftab,
             'misl_e_awwal': timing.mislEAwwal,
             'asr_hanafi': timing.asrHanafi,
+            'asr': timing.asrHanafi,
             'maghrib': timing.maghrib,
             'isha': timing.isha,
           });

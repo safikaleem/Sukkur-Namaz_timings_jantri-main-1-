@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io' as io;
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -17,6 +18,7 @@ class MunajatDownloadService {
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
   final StreamController<double> _progressController = StreamController<double>.broadcast();
+  final List<Completer<Uint8List?>> _activeCompleters = [];
 
   Stream<double> get progressStream => _progressController.stream;
   double get currentProgress => _downloadProgress;
@@ -37,9 +39,7 @@ class MunajatDownloadService {
     try {
       final assetData = await rootBundle.load('assets/quran_pdfs/MUNAJAT_E_MAQBOOL.pdf');
       if (assetData.lengthInBytes > 0) {
-        if (kIsWeb) {
-          _cachedBytes = assetData.buffer.asUint8List(assetData.offsetInBytes, assetData.lengthInBytes);
-        }
+        _cachedBytes = assetData.buffer.asUint8List(assetData.offsetInBytes, assetData.lengthInBytes);
         return true;
       }
     } catch (e) {
@@ -96,7 +96,9 @@ class MunajatDownloadService {
     if (!kIsWeb) {
       final local = await getExistingLocalFile();
       if (local != null) {
-        return await local.readAsBytes();
+        final bytes = await local.readAsBytes();
+        _cachedBytes = bytes;
+        return bytes;
       }
     }
     if (await isMunajatAvailable()) {
@@ -117,26 +119,28 @@ class MunajatDownloadService {
     void Function(int downloaded, int total, double progress)? onProgress,
   }) async {
     if (_cachedBytes != null && _cachedBytes!.isNotEmpty) {
-      onProgress?.call(1, 1, 1.0);
-      return _cachedBytes;
-    }
-
-    if (await isMunajatAvailable()) {
       onProgress?.call(_cachedBytes!.length, _cachedBytes!.length, 1.0);
       return _cachedBytes;
     }
 
+    if (await isMunajatAvailable()) {
+      final bytes = await getPdfBytes();
+      if (bytes != null && bytes.isNotEmpty) {
+        onProgress?.call(bytes.length, bytes.length, 1.0);
+        return bytes;
+      }
+    }
+
     if (_isDownloading) {
       final completer = Completer<Uint8List?>();
-      late StreamSubscription sub;
-      sub = progressStream.listen((p) async {
+      _activeCompleters.add(completer);
+      StreamSubscription? sub;
+      sub = progressStream.listen((p) {
         onProgress?.call((p * 100).toInt(), 100, p);
-        if (p >= 1.0) {
-          sub.cancel();
-          completer.complete(await getPdfBytes());
-        }
       });
-      return completer.future;
+      return completer.future.whenComplete(() {
+        sub?.cancel();
+      });
     }
 
     _isDownloading = true;
@@ -144,68 +148,115 @@ class MunajatDownloadService {
     _progressController.add(0.05);
     onProgress?.call(5, 100, 0.05);
 
-    const primaryUrlStr = '$baseUrl$munajatFileName';
-    final List<String> urlsToTry = kIsWeb
-        ? [
-            'https://corsproxy.io/?${Uri.encodeComponent(primaryUrlStr)}',
-            'https://api.allorigins.win/raw?url=${Uri.encodeComponent(primaryUrlStr)}',
-            primaryUrlStr,
-          ]
-        : [
-            primaryUrlStr,
-          ];
+    Uint8List? resultBytes;
+    try {
+      const primaryUrlStr = '$baseUrl$munajatFileName';
+      final List<String> urlsToTry = kIsWeb
+          ? [
+              'https://corsproxy.io/?${Uri.encodeComponent(primaryUrlStr)}',
+              'https://api.allorigins.win/raw?url=${Uri.encodeComponent(primaryUrlStr)}',
+              primaryUrlStr,
+            ]
+          : [
+              primaryUrlStr,
+            ];
 
-    for (final urlStr in urlsToTry) {
-      try {
-        debugPrint('Downloading Munajat PDF from: $urlStr');
+      for (final urlStr in urlsToTry) {
         final client = http.Client();
-        final request = http.Request('GET', Uri.parse(urlStr));
-        final response = await client.send(request).timeout(const Duration(seconds: 20));
+        try {
+          debugPrint('Downloading Munajat PDF from: $urlStr');
+          final request = http.Request('GET', Uri.parse(urlStr));
+          final response = await client.send(request).timeout(const Duration(seconds: 25));
 
-        if (response.statusCode != 200 && response.statusCode != 302 && response.statusCode != 301) {
-          continue;
-        }
+          if (response.statusCode != 200 && response.statusCode != 302 && response.statusCode != 301) {
+            continue;
+          }
 
-        final totalBytes = response.contentLength ?? (28 * 1024 * 1024);
-        int downloadedBytes = 0;
-        final List<int> bytesList = [];
-
-        await for (final chunk in response.stream.timeout(const Duration(seconds: 40))) {
-          bytesList.addAll(chunk);
-          downloadedBytes += chunk.length;
-          double p = totalBytes > 0 ? (downloadedBytes / totalBytes) : 0.1;
-          if (p > 0.99) p = 0.99;
-          _downloadProgress = p;
-          _progressController.add(p);
-          onProgress?.call(downloadedBytes, totalBytes, p);
-        }
-
-        final bytes = Uint8List.fromList(bytesList);
-        if (bytes.isNotEmpty) {
-          _cachedBytes = bytes;
-          _downloadProgress = 1.0;
-          _progressController.add(1.0);
-          onProgress?.call(bytes.length, bytes.length, 1.0);
+          final totalBytes = response.contentLength ?? (28 * 1024 * 1024);
+          int downloadedBytes = 0;
 
           if (!kIsWeb) {
+            final file = await getLocalFile();
+            final partFile = io.File('${file.path}.part');
+            if (await partFile.exists()) {
+              await partFile.delete();
+            }
+            final sink = partFile.openWrite();
             try {
-              final file = await getLocalFile();
-              await file.writeAsBytes(bytes);
+              await for (final chunk in response.stream.timeout(const Duration(seconds: 40))) {
+                sink.add(chunk);
+                downloadedBytes += chunk.length;
+                double p = totalBytes > 0 ? (downloadedBytes / totalBytes) : 0.1;
+                if (p > 0.99) p = 0.99;
+                _downloadProgress = p;
+                _progressController.add(p);
+                onProgress?.call(downloadedBytes, totalBytes, p);
+              }
+              await sink.flush();
+              await sink.close();
+
+              if (await partFile.length() > 0) {
+                if (await file.exists()) {
+                  await file.delete();
+                }
+                await partFile.rename(file.path);
+                final bytes = await file.readAsBytes();
+                if (bytes.isNotEmpty) {
+                  _cachedBytes = bytes;
+                  resultBytes = bytes;
+                  break;
+                }
+              }
             } catch (e) {
-              debugPrint('Error saving file to disk: $e');
+              await sink.close();
+              if (await partFile.exists()) {
+                await partFile.delete();
+              }
+              rethrow;
+            }
+          } else {
+            final builder = BytesBuilder(copy: false);
+            await for (final chunk in response.stream.timeout(const Duration(seconds: 40))) {
+              builder.add(chunk);
+              downloadedBytes += chunk.length;
+              double p = totalBytes > 0 ? (downloadedBytes / totalBytes) : 0.1;
+              if (p > 0.99) p = 0.99;
+              _downloadProgress = p;
+              _progressController.add(p);
+              onProgress?.call(downloadedBytes, totalBytes, p);
+            }
+            final bytes = builder.takeBytes();
+            if (bytes.isNotEmpty) {
+              _cachedBytes = bytes;
+              resultBytes = bytes;
+              break;
             }
           }
-          _isDownloading = false;
-          return bytes;
+        } catch (e) {
+          debugPrint('Download error for $urlStr: $e');
+        } finally {
+          client.close();
         }
-      } catch (e) {
-        debugPrint('Download error for $urlStr: $e');
+      }
+    } finally {
+      _isDownloading = false;
+      if (resultBytes != null && resultBytes.isNotEmpty) {
+        _downloadProgress = 1.0;
+        _progressController.add(1.0);
+        onProgress?.call(resultBytes.length, resultBytes.length, 1.0);
+      } else {
+        _downloadProgress = 0.0;
+        _progressController.add(0.0);
+      }
+      final completers = List<Completer<Uint8List?>>.from(_activeCompleters);
+      _activeCompleters.clear();
+      for (final c in completers) {
+        if (!c.isCompleted) {
+          c.complete(resultBytes);
+        }
       }
     }
 
-    _isDownloading = false;
-    _downloadProgress = 0.0;
-    _progressController.add(0.0);
-    return null;
+    return resultBytes;
   }
 }

@@ -27,20 +27,50 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _mainScrollController = ScrollController();
+  bool _showFloatingSearchBar = false;
   Timer? _liveSyncTimer;
 
   List<String> _pinnedMasjidIds = [];
-  static const String _pinnedPrefsKey = 'pinned_jamaat_masjid_ids';
+  static const String _legacyPinnedPrefsKey = 'pinned_jamaat_masjid_ids';
+  String? _lastCity;
+
+  String _getPinnedPrefsKey([String? city]) {
+    final c = city ?? (mounted ? Provider.of<SettingsProvider>(context, listen: false).currentCity : 'sukkur');
+    return 'pinned_jamaat_masjid_ids_$c';
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final settings = Provider.of<SettingsProvider>(context);
+    final city = settings.isKarachi ? 'karachi' : 'sukkur';
+    if (_lastCity != city) {
+      _lastCity = city;
+      JamaatTimesService.instance.setSelectedCity(city);
+      _loadPinnedMasajid(city);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     JamaatTimesService.instance.addListener(_onServiceUpdated);
+    _mainScrollController.addListener(_onMainScroll);
     _loadPinnedMasajid();
     _loadRemoteTimings();
     if (widget.isActive) {
       _startLiveSyncTimer();
+    }
+  }
+
+  void _onMainScroll() {
+    if (!_mainScrollController.hasClients) return;
+    final shouldShow = _mainScrollController.offset > 340;
+    if (shouldShow != _showFloatingSearchBar) {
+      setState(() {
+        _showFloatingSearchBar = shouldShow;
+      });
     }
   }
 
@@ -75,10 +105,11 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     }
   }
 
-  Future<void> _loadPinnedMasajid() async {
+  Future<void> _loadPinnedMasajid([String? city]) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final saved = prefs.getStringList(_pinnedPrefsKey) ?? [];
+      final key = _getPinnedPrefsKey(city);
+      final saved = prefs.getStringList(key) ?? (city == 'karachi' ? [] : (prefs.getStringList(_legacyPinnedPrefsKey) ?? []));
       if (mounted) {
         setState(() {
           _pinnedMasjidIds = saved;
@@ -89,10 +120,11 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     }
   }
 
-  Future<void> _savePinnedMasajid() async {
+  Future<void> _savePinnedMasajid([String? city]) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList(_pinnedPrefsKey, _pinnedMasjidIds);
+      final key = _getPinnedPrefsKey(city);
+      await prefs.setStringList(key, _pinnedMasjidIds);
     } catch (e) {
       debugPrint('Error saving pinned masajid: $e');
     }
@@ -309,6 +341,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
   void dispose() {
     _stopLiveSyncTimer();
     JamaatTimesService.instance.removeListener(_onServiceUpdated);
+    _mainScrollController.removeListener(_onMainScroll);
     _searchController.dispose();
     _mainScrollController.dispose();
     WidgetsBinding.instance.removeObserver(this);
@@ -565,7 +598,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
       case 'persian':
         return 'در تمام ۱۰ زبان با نام یا منطقه مسجد را جستجو کنید، یا برای مشاهده اوقات در زیر ضربه بزنید.';
       case 'turkish':
-        return 'Sukkur camilerini 10 dilde ad veya bölge ile arayın veya vakitleri görmek için dokunun.';
+        return 'Camileri 10 dilde ad veya bölge ile arayın veya vakitleri görmek için dokunun.';
       case 'french':
         return 'Recherchez une mosquée dans les 10 langues par nom ou quartier, ou appuyez ci-dessous.';
       case 'indonesian':
@@ -3150,15 +3183,17 @@ JazakAllah Khair''';
         elevation: 0,
         backgroundColor: Colors.transparent,
       ),
-      body: RefreshIndicator(
-        color: const Color(0xFF1B4332),
-        onRefresh: () => _loadRemoteTimings(force: true),
-        child: SingleChildScrollView(
-          key: const PageStorageKey<String>('jamaat_main_scroll_view'),
-          controller: _mainScrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            color: const Color(0xFF1B4332),
+            onRefresh: () => _loadRemoteTimings(force: true),
+            child: SingleChildScrollView(
+              key: const PageStorageKey<String>('jamaat_main_scroll_view'),
+              controller: _mainScrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              child: Column(
           children: [
             // ── Main Header Card ──────────────────────────────────────
             Container(
@@ -3182,14 +3217,16 @@ JazakAllah Khair''';
               ),
               child: Column(
                 children: [
-                  // Lansdowne Bridge Featured Image
+                  // Featured Header Image
                   Container(
                     height: 120,
                     width: double.infinity,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      image: const DecorationImage(
-                        image: AssetImage('assets/images/landsdowne_bridge.jpg'),
+                      image: DecorationImage(
+                        image: AssetImage(settings.isKarachi
+                            ? 'assets/images/masjid_2.jpg'
+                            : 'assets/images/landsdowne_bridge.jpg'),
                         fit: BoxFit.cover,
                       ),
                       boxShadow: [
@@ -3207,13 +3244,21 @@ JazakAllah Khair''';
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    _t(
-                      settings,
-                      'Masajid Jama\'at Times (Sukkur)',
-                      'اوقاتِ جماعتِ مساجد (سکھر)',
-                      'مساجدن جي جماعت جا وقت (سکر)',
-                      'مواقيت الجماعة للمساجد (سَكَر)',
-                    ),
+                    settings.isKarachi
+                        ? _t(
+                            settings,
+                            'Masajid Jama\'at Times (Karachi)',
+                            'اوقاتِ جماعتِ مساجد (کراچی)',
+                            'مساجدن جي جماعت جا وقت (ڪراچي)',
+                            'مواقيت الجماعة للمساجد (كراتشي)',
+                          )
+                        : _t(
+                            settings,
+                            'Masajid Jama\'at Times (Sukkur)',
+                            'اوقاتِ جماعتِ مساجد (سکھر)',
+                            'مساجدن جي جماعت جا وقت (سکر)',
+                            'مواقيت الجماعة للمساجد (سَكَر)',
+                          ),
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -3355,6 +3400,34 @@ JazakAllah Khair''';
         ),
       ),
       ),
+          Positioned(
+            top: 10,
+            left: 16,
+            right: 16,
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOutCubic,
+              offset: _showFloatingSearchBar
+                  ? Offset.zero
+                  : const Offset(0, -1.5),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _showFloatingSearchBar ? 1.0 : 0.0,
+                child: IgnorePointer(
+                  ignoring: !_showFloatingSearchBar,
+                  child: _buildSearchBar(
+                    context,
+                    settings,
+                    isDark,
+                    lang,
+                    isFloating: true,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -3454,8 +3527,9 @@ JazakAllah Khair''';
     BuildContext context,
     SettingsProvider settings,
     bool isDark,
-    String lang,
-  ) {
+    String lang, {
+    bool isFloating = false,
+  }) {
     final isRtl = settings.isRtl;
 
     String getPlaceholder() {
@@ -3485,21 +3559,27 @@ JazakAllah Khair''';
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: EdgeInsets.only(bottom: isFloating ? 0 : 14),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E2628) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _searchQuery.isNotEmpty
               ? const Color(0xFF1B4332)
-              : (isDark ? Colors.white12 : const Color(0xFFE0E0E0)),
-          width: 1.2,
+              : (isFloating
+                  ? const Color(0xFF1B4332).withValues(alpha: isDark ? 0.6 : 0.4)
+                  : (isDark ? Colors.white12 : const Color(0xFFE0E0E0))),
+          width: isFloating ? 1.5 : 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(
+              alpha: isFloating
+                  ? (isDark ? 0.45 : 0.15)
+                  : (isDark ? 0.2 : 0.04),
+            ),
+            blurRadius: isFloating ? 12 : 8,
+            offset: Offset(0, isFloating ? 4 : 2),
           ),
         ],
       ),
@@ -3549,7 +3629,33 @@ JazakAllah Khair''';
     bool isDark,
     String lang,
   ) {
+    final bool isKarachiWelcome = _searchQuery.isEmpty && settings.isKarachi;
+
     String getEmptyTitle() {
+      if (isKarachiWelcome) {
+        switch (lang) {
+          case 'urdu':
+            return 'کراچی کی مساجد';
+          case 'sindhi':
+            return 'ڪراچي جون مسجدون';
+          case 'arabic':
+            return 'مساجد كراتشي';
+          case 'hindi':
+            return 'कराची की मस्जिदें';
+          case 'bengali':
+            return 'করাচির মসজিদসমূহ';
+          case 'persian':
+            return 'مساجد کراچی';
+          case 'turkish':
+            return 'Karaçi Camileri';
+          case 'french':
+            return 'Mosquées de Karachi';
+          case 'indonesian':
+            return 'Masjid-masjid Karachi';
+          default:
+            return 'Karachi Masajid';
+        }
+      }
       switch (lang) {
         case 'urdu':
           return 'کوئی مسجد نہیں ملی';
@@ -3575,6 +3681,30 @@ JazakAllah Khair''';
     }
 
     String getEmptySubtitle() {
+      if (isKarachiWelcome) {
+        switch (lang) {
+          case 'urdu':
+            return 'کراچی ماڈیول فعال ہے۔ مساجد کے باجماعت اوقات جلد شامل کیے جائیں گے۔';
+          case 'sindhi':
+            return 'ڪراچي ماڊيول فعال آهي. مسجدن جا باجماعت وقت جلد شامل ڪيا ويندا.';
+          case 'arabic':
+            return 'وحدة كراتشي مفعلة. ستتم إضافة مواقيت جماعة المساجد قريباً.';
+          case 'hindi':
+            return 'कराची मॉड्यूल सक्रिय है। मस्जिदों के जमाअत के समय जल्द जोड़े जाएंगे।';
+          case 'bengali':
+            return 'করাচি মডিউল সক্রিয় রয়েছে। মসজিদের জামায়াত সময়সূচি শীঘ্রই যুক্ত করা হবে।';
+          case 'persian':
+            return 'ماژول کراچی فعال است. اوقات جماعت مساجد به زودی اضافه خواهد شد.';
+          case 'turkish':
+            return 'Karaçi modülü aktif. Cami cemaat vakitleri yakında eklenecektir.';
+          case 'french':
+            return 'Module Karachi actif. Les horaires de jama\'at des mosquées seront bientôt ajoutés.';
+          case 'indonesian':
+            return 'Modul Karachi aktif. Jadwal jamaah masjid akan segera ditambahkan.';
+          default:
+            return 'Karachi module is active. Mosque Jama\'at times will be added soon.';
+        }
+      }
       switch (lang) {
         case 'urdu':
           return 'براہ کرم کوئی دوسرا نام یا علاقہ تلاش کریں۔';
@@ -3622,7 +3752,7 @@ JazakAllah Khair''';
               shape: BoxShape.circle,
             ),
             child: Icon(
-              Icons.search_off_rounded,
+              isKarachiWelcome ? Icons.mosque_rounded : Icons.search_off_rounded,
               size: 40,
               color:
                   isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
@@ -3775,7 +3905,7 @@ JazakAllah Khair''';
     bool isDark,
     String lang,
   ) {
-    final all = JamaatTimesService.instance.getMasjidList();
+    final all = JamaatTimesService.instance.getMasjidList(city: settings.isKarachi ? 'karachi' : 'sukkur');
     final list = all.where((m) => _masjidMatchesSearch(m, _searchQuery)).toList();
 
     // Preserve 100% exact original order, only placing pinned masajid on top
@@ -3831,7 +3961,7 @@ JazakAllah Khair''';
     String lang,
   ) {
     final allMasajid = JamaatTimesService.instance
-        .getMasjidList()
+        .getMasjidList(city: settings.isKarachi ? 'karachi' : 'sukkur')
         .where((m) => _masjidMatchesSearch(m, _searchQuery))
         .toList();
     if (allMasajid.isEmpty) {

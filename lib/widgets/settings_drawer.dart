@@ -21,10 +21,16 @@ import '../services/update_service.dart';
 import 'widget_selection_sheet.dart';
 class SettingsDrawer extends StatefulWidget {
   final VoidCallback? onTapSukkur;
+  final VoidCallback? onTapKarachi;
   /// Fired once the world screen has actually settled on a city, so the shell
   /// can drop the user on the Times tab for it.
   final VoidCallback? onWorldCitySelected;
-  const SettingsDrawer({super.key, this.onTapSukkur, this.onWorldCitySelected});
+  const SettingsDrawer({
+    super.key,
+    this.onTapSukkur,
+    this.onTapKarachi,
+    this.onWorldCitySelected,
+  });
 
   @override
   State<SettingsDrawer> createState() => _SettingsDrawerState();
@@ -80,7 +86,33 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                       'حضرت ڊاڪٽر حفيظ الله صاحب قدس الله سره جي جنتري مطابق',
                       'بناءً على تقويم الشيخ الدكتور حفيظ الله قدس الله سره',
                     )})',
+                    trailing: settings.isSukkur
+                        ? const Icon(Icons.check_circle_rounded, color: Color(0xFF2E7D32), size: 18)
+                        : null,
                     onTap: widget.onTapSukkur,
+                  ),
+                  // ── Karachi ─────────────────────────────────
+                  _DrawerItem(
+                    icon: Icons.location_city_rounded,
+                    label: settings.translate('Karachi', 'کراچی', 'ڪراچي', 'كراتشي'),
+                    subtitle: '(${settings.translate(
+                      'Karachi Prayer Timings & Masajid',
+                      'کراچی کے اوقاتِ نماز اور مساجد',
+                      'ڪراچي جي نمازن جا وقت ۽ مسجدون',
+                      'أوقات الصلاة والمساجد في كراتشي',
+                    )})',
+                    trailing: settings.isKarachi
+                        ? const Icon(Icons.check_circle_rounded, color: Color(0xFF2E7D32), size: 18)
+                        : null,
+                    onTap: () async {
+                      if (widget.onTapKarachi != null) {
+                        widget.onTapKarachi!();
+                      } else {
+                        Navigator.pop(context);
+                        await settings.useKarachiCity();
+                        widget.onWorldCitySelected?.call();
+                      }
+                    },
                   ),
                   _DrawerItem(
                     icon: Icons.public_rounded,
@@ -262,7 +294,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Current Version ───────────────────────────
                   _DrawerItem(
                     icon: Icons.new_releases_rounded,
-                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.4.7'}',
+                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.4.8'}',
                     onTap: () => _handleVersionTap(context),
                     onLongPress: () => _showDeveloperLoginDialog(context),
                   ),
@@ -503,7 +535,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.4.7';
+    final versionStr = _version.isNotEmpty ? _version : '1.4.8';
 
     showDialog(
       context: context,
@@ -548,7 +580,18 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          settings.translate("What's New", 'نئے فیچرز', 'نوان فيچرز', 'ما الجديد'),
+                          _getLocalizedText(settings, {
+                            'english': "What's New",
+                            'urdu': 'نئے فیچرز',
+                            'sindhi': 'نوان فيچرز',
+                            'arabic': 'ما الجديد',
+                            'bengali': 'নতুন কি',
+                            'hindi': 'नया क्या है',
+                            'turkish': 'Yenilikler',
+                            'indonesian': 'Apa yang Baru',
+                            'french': 'Quoi de neuf',
+                            'persian': 'تازه‌ها',
+                          }),
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -598,103 +641,39 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── 1. Pin Masajid to Top (All 10 Languages) ──────────────
+                  // ── 1. Karachi Masajid & 1-Tap Quick Switch (All 10 Languages) ─────────────
                   _buildNewFeatureItem(
                     context,
                     settings,
                     _getLocalizedText(settings, {
-                      'english': '📌 Pin Favorite Masajid to Top',
-                      'urdu': '📌 پسندیدہ مساجد کو سب سے اوپر پن کریں',
-                      'sindhi': '📌 پسنديده مسجدون سڀ کان مٿي پن ڪريو',
-                      'arabic': '📌 تثبيت المساجد المفضلة في الأعلى',
-                      'bengali': '📌 পছন্দের মসজিদ শীর্ষে পিন করুন',
-                      'hindi': '📌 पसंदीदा मस्जिदों को सबसे ऊपर पिन करें',
-                      'turkish': '📌 Favori Camileri Başa Sabitle',
-                      'indonesian': '📌 Sematkan Masjid Favorit di Atas',
-                      'french': '📌 Épingler les mosquées favorites en haut',
-                      'persian': '📌 پین کردن مساجد برگزیده در بالا',
+                      'english': '🕌 Karachi Masajid & Quick Switch',
+                      'urdu': '🕌 کراچی مساجد اور فوری سوئچ',
+                      'sindhi': '🕌 ڪراچي مسجدون ۽ ترت سوئچ',
+                      'arabic': '🕌 مساجد كراتشي والتبديل السريع',
+                      'bengali': '🕌 করাচি মসজিদ ও দ্রুত পরিবর্তন',
+                      'hindi': '🕌 कराची मस्जिदें और त्वरित स्विच',
+                      'turkish': '🕌 Karaçi Camileri ve Hızlı Geçiş',
+                      'indonesian': '🕌 Masjid Karachi & Peralihan Cepat',
+                      'french': '🕌 Mosquées de Karachi et changement rapide',
+                      'persian': '🕌 مساجد کراچی و جابجایی سریع',
                     }),
                     _getLocalizedText(settings, {
-                      'english': 'Pin up to 3 favorite masajid to the top of the Jama\'at list for instant, effortless timing access.',
-                      'urdu': 'اپنی روزمرہ کی ۳ مساجد کو باجماعت لسٹ میں سب سے اوپر پن کریں تاکہ تلاش کیے بغیر فوری اوقات دیکھ سکیں۔',
-                      'sindhi': 'پنهنجي روزاني جي ۳ مسجدن کي باجماعت لسٽ ۾ سڀ کان مٿي پن ڪريو ته جيئن ڳولڻ کان سواءِ فوري وقت ڏسي سگهو.',
-                      'arabic': 'قم بتثبيت حتى 3 مساجد مفضلة في أعلى قائمة صلاة الجماعة للوصول السريع إلى المواقيت دون بحث.',
-                      'bengali': 'জামাত তালিকার শীর্ষে আপনার পছন্দের ৩টি মসজিদ পিন করুন যাতে কোনো অনুসন্ধান ছাড়াই তাত্ক্ষণিক সময় দেখতে পারেন।',
-                      'hindi': 'त्वरित पहुंच के लिए अपनी 3 पसंदीदा मस्जिदों को जमाअत सूची में सबसे ऊपर पिन करें।',
-                      'turkish': 'Hızlı ve zahmetsiz erişim için en çok gittiğiniz 3 camiyi cemaat vakitleri listesinin en başına sabitleyin.',
-                      'indonesian': 'Sematkan hingga 3 masjid favorit di bagian atas daftar jamaah untuk akses jadwal instan tanpa mencari.',
-                      'french': 'Épinglez jusqu\'à 3 mosquées favorites en haut de la liste pour un accès instantané aux horaires de prière.',
-                      'persian': 'تا ۳ مسجد مورد علاقه خود را در بالای لیست جماعت پین کنید تا بدون جستجو سریعاً به اوقات دسترسی داشته باشید.',
+                      'english': 'Switch between Sukkur (68 Masajid) and Karachi Masajid with 1 tap directly from the drawer.',
+                      'urdu': 'سائیڈ مینو سے صرف ایک ٹچ پر سکھر (68 مساجد) اور کراچی کی مساجد کے درمیان باآسانی سوئچ کریں۔',
+                      'sindhi': 'سائيڊ مينيو مان رڳو هڪ ٽچ تي سکر (68 مسجدون) ۽ ڪراچي جي مسجدن وچ ۾ آسانيءَ سان سوئچ ڪريو.',
+                      'arabic': 'التبديل بين مساجد سكر (68 مسجداً) ومساجد كراتشي بلمسة واحدة من القائمة الجانبية.',
+                      'bengali': 'ড্রয়ার থেকে মাত্র এক ট্যাপে সুক্কুর (৬৮ মসজিদ) এবং করাচি মসজিদের মধ্যে সহজে পরিবর্তন করুন।',
+                      'hindi': 'साइड मेनू से सिर्फ 1 टैप में सख्खर (68 मस्जिदें) और कराची की मस्जिदों के बीच आसानी से स्विच करें।',
+                      'turkish': 'Çekmeceden tek dokunuşla Sukkur (68 Cami) ve Karaçi Camileri arasında kolayca geçiş yapın.',
+                      'indonesian': 'Beralih antara Sukkur (68 Masjid) dan Masjid Karachi hanya dengan 1 ketukan dari laci samping.',
+                      'french': 'Basculez entre les mosquées de Sukkur (68 mosquées) et celles de Karachi en un seul clic.',
+                      'persian': 'جابجایی میان مساجد سوکور (۶۸ مسجد) و کراچی تنها با یک لمس از منوی کناری.',
                     }),
-                    icon: Icons.push_pin_rounded,
-                    iconColor: const Color(0xFFE5A00D),
+                    icon: Icons.location_city_rounded,
+                    iconColor: const Color(0xFF00796B),
                   ),
 
-                  // ── 2. 1-Tap WhatsApp Timing Report (All 10 Languages) ─────
-                  _buildNewFeatureItem(
-                    context,
-                    settings,
-                    _getLocalizedText(settings, {
-                      'english': '💬 1-Tap WhatsApp Timing Report',
-                      'urdu': '💬 واٹس ایپ پر اوقات کے فرق کی رپورٹ',
-                      'sindhi': '💬 واٽس ايپ تي وقت جي فرق جي رپورٽ',
-                      'arabic': '💬 إبلاغ عن فرق المواقيت عبر واتساب',
-                      'bengali': '💬 ১-ট্যাপে হোয়াটসঅ্যাপে সময় রিপোর্ট',
-                      'hindi': '💬 1-टैप व्हाट्सएप टाइमिंग रिपोर्ट',
-                      'turkish': '💬 WhatsApp ile Vakit Farkı Bildir',
-                      'indonesian': '💬 Lapor Beda Waktu via WhatsApp',
-                      'french': '💬 Signalement d\'horaires par WhatsApp',
-                      'persian': '💬 گزارش مغایرت اوقات در واتس‌اپ',
-                    }),
-                    _getLocalizedText(settings, {
-                      'english': 'Easily share mosque clock photos or report timing differences to the admin with a pre-filled WhatsApp message.',
-                      'urdu': 'مسجد کے اصل اوقات اور ایپ کے اوقات میں فرق ہونے پر ۱ ٹیپ میں گھڑی کی تصویر یا نیا وقت واٹس ایپ پر ایڈمن کو بھیجیں۔',
-                      'sindhi': 'مسجد جي اصل وقت ۽ ايپ جي وقت ۾ فرق هجڻ تي ۱ ٽيپ ۾ ڪلاڪ جي تصوير يا نئون وقت واٽس ايپ تي ايڊمن ڏانهن موڪليو.',
-                      'arabic': 'شارك صورة ساعة المسجد أو أبلغ عن أي اختلاف في المواقيت بنقرة واحدة برسالة واتساب جاهزة للمسؤول.',
-                      'bengali': 'মসজিদের ঘড়ির ছবি বা সময়ের পার্থক্য থাকলে ১ ট্যাপে প্রস্তুতকৃত বার্তাসহ অ্যাডমিনকে হোয়াটসঅ্যাপে জানান।',
-                      'hindi': 'मस्जिद की घड़ी की फोटो या समय का अंतर 1-टैप में तैयार संदेश के साथ एडमिन को व्हाट्सएप पर भेजें।',
-                      'turkish': 'Cami saatinin fotoğrafını veya vakit farkını hazır WhatsApp şablonu ile yöneticiye tek tıkla iletin.',
-                      'indonesian': 'Bagikan foto jam masjid atau laporkan perbedaan waktu ke admin via WhatsApp hanya dengan 1 ketukan.',
-                      'french': 'Partagez facilement la photo de l\'horloge ou signalez un décalage d\'horaires à l\'administrateur via WhatsApp.',
-                      'persian': 'عکس ساعت مسجد یا مغایرت زمانی را با یک کلیک و پیام آماده به مدیر در واتس‌اپ ارسال نمایید.',
-                    }),
-                    icon: Icons.chat_rounded,
-                    iconColor: const Color(0xFF25D366),
-                  ),
-
-                  // ── 3. Custom Silent Window (All 10 Languages) ─────────────
-                  _buildNewFeatureItem(
-                    context,
-                    settings,
-                    _getLocalizedText(settings, {
-                      'english': '⏰ Custom Silent Window',
-                      'urdu': '⏰ کسٹم سائلنٹ دورانیہ',
-                      'sindhi': '⏰ ڪسٽم سائلنٽ دورانيو',
-                      'arabic': '⏰ فترة الصامت المخصصة',
-                      'bengali': '⏰ কাস্টম সাইলেন্ট উইন্ডো',
-                      'hindi': '⏰ कस्टम साइलेंट विंडो',
-                      'turkish': '⏰ Özel Sessiz Mod Aralığı',
-                      'indonesian': '⏰ Jendela Hening Kustom',
-                      'french': '⏰ Période de silence personnalisée',
-                      'persian': '⏰ بازه بی‌صدا سفارشی',
-                    }),
-                    _getLocalizedText(settings, {
-                      'english': 'Set custom silent hours & minutes to automatically mute your phone during meetings, study, or rest.',
-                      'urdu': 'نماز کے علاوہ اپنے مخصوص اوقات (میٹنگ، مطالعہ یا آرام) کے دوران فون کو خودکار سائلنٹ کرنے کی سہولت۔',
-                      'sindhi': 'نماز کانسواءِ پنهنجي مقرر ڪيل ڪلاڪن ۽ منٽن (ميٽنگ، پڙهائي يا آرام) دوران فون کي پاڻمرادو سائلنٽ ڪريو.',
-                      'arabic': 'حدد ساعات ودقائق مخصصة لكتم صوت هاتفك تلقائياً أثناء الاجتماعات أو الدراسة أو الراحة.',
-                      'bengali': 'নামাজের বাইরেও মিটিং, পড়াশোনা বা বিশ্রামের জন্য নিজের পছন্দমতো সময়ে ফোন স্বয়ংক্রিয়ভাবে সাইলেন্ট করুন।',
-                      'hindi': 'नमाज़ के अलावा मीटिंग, अध्ययन या आराम के लिए अपने तय समय पर फोन को स्वचालित रूप से साइलेंट करें।',
-                      'turkish': 'Namaz vakitleri dışında toplantı, ders veya dinlenme için belirlediğiniz saatlerde telefonu otomatik sessize alın.',
-                      'indonesian': 'Atur jam & menit kustom untuk membisukan ponsel secara otomatis saat rapat, belajar, atau istirahat.',
-                      'french': 'Définissez des plages horaires personnalisées pour mettre votre téléphone en sourdine pendant les réunions ou le repos.',
-                      'persian': 'تنظیم ساعات و دقایق دلخواه برای بی‌صدا کردن خودکار گوشی هنگام جلسات، مطالعه یا استراحت.',
-                    }),
-                    icon: Icons.more_time_rounded,
-                    iconColor: AppTheme.accent,
-                  ),
-
-                  // ── 4. Bug Fixes & Improvements (All 10 Languages) ─────────
+                  // ── 2. Bug Fixes & Improvements (All 10 Languages) ─────────
                   _buildNewFeatureItem(
                     context,
                     settings,
@@ -743,7 +722,18 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   ),
                   onPressed: () => Navigator.pop(dialogContext),
                   child: Text(
-                    settings.translate('Close', 'بند کریں', 'بند ڪريو', 'إغلاق'),
+                    _getLocalizedText(settings, {
+                      'english': 'Close',
+                      'urdu': 'بند کریں',
+                      'sindhi': 'بند ڪريو',
+                      'arabic': 'إغلاق',
+                      'bengali': 'বন্ধ করুন',
+                      'hindi': 'बंद करें',
+                      'turkish': 'Kapat',
+                      'indonesian': 'Tutup',
+                      'french': 'Fermer',
+                      'persian': 'بستن',
+                    }),
                     style: TextStyle(
                       fontSize: settings.isRtl ? 16 : 14,
                       fontWeight: FontWeight.bold,

@@ -239,6 +239,9 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
             val mode = prefs.getString("flutter.location_mode", "sukkur")
             isWorldMode = (mode == "world")
+            val cal = Calendar.getInstance()
+            val month = cal.get(Calendar.MONTH) + 1
+            val day = cal.get(Calendar.DAY_OF_MONTH)
             
             var jsonText = if (isWorldMode) {
                 prefs.getString("flutter.world_timings_cache", null)
@@ -246,25 +249,26 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
                 null
             }
 
-            if (jsonText.isNullOrEmpty()) {
+            if (jsonText.isNullOrEmpty() && !isWorldMode) {
                 jsonText = java.io.InputStreamReader(context.assets.open("flutter_assets/assets/data/timings.json")).readText()
             }
             
-            val json   = JSONObject(jsonText)
-            val cal    = Calendar.getInstance()
-            val month  = cal.get(Calendar.MONTH) + 1
-            val day    = cal.get(Calendar.DAY_OF_MONTH)
-
-            val monthsObj = json.optJSONObject("months")
-            val monthObj = monthsObj?.optJSONObject(month.toString())
-            val days = monthObj?.optJSONArray("days")
-
             var d: JSONObject? = null
-            if (days != null) {
-                for (i in 0 until days.length()) {
-                    val candidate = days.getJSONObject(i)
-                    if (candidate.getInt("day") == day) { d = candidate; break }
+            var src24 = false
+            if (!jsonText.isNullOrEmpty()) {
+                val json = JSONObject(jsonText)
+
+                val monthsObj = json.optJSONObject("months")
+                val monthObj = monthsObj?.optJSONObject(month.toString())
+                val days = monthObj?.optJSONArray("days")
+
+                if (days != null) {
+                    for (i in 0 until days.length()) {
+                        val candidate = days.getJSONObject(i)
+                        if (candidate.getInt("day") == day) { d = candidate; break }
+                    }
                 }
+                src24 = json.optBoolean("is_24h", false)
             }
 
             // Fallback for world mode: if JSON cache is missing or doesn't have today,
@@ -275,7 +279,10 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
                 if (!wFajar.isNullOrEmpty()) {
                     val wTulu = widgetData.getString("time_Tulu_Aftab", "") ?: ""
                     val wZuhar = widgetData.getString("time_Zuhar", "") ?: ""
-                    val wAsr = widgetData.getString("time_Asr", "") ?: ""
+                    val wAsr = (widgetData.getString("time_Asr", null)
+                        ?: widgetData.getString("time_Asr_Hanafi", null)
+                        ?: widgetData.getString("time_asr", null)
+                        ?: "")
                     val wMaghrib = widgetData.getString("time_Maghrib", "") ?: ""
                     val wIsha = widgetData.getString("time_Isha", "") ?: ""
 
@@ -363,6 +370,23 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
                 }
             }
 
+            if (d == null) {
+                try {
+                    val fallbackJsonText = java.io.InputStreamReader(context.assets.open("flutter_assets/assets/data/timings.json")).readText()
+                    val fallbackJson = JSONObject(fallbackJsonText)
+                    val monthsObj = fallbackJson.optJSONObject("months")
+                    val monthObj = monthsObj?.optJSONObject(month.toString())
+                    val days = monthObj?.optJSONArray("days")
+                    if (days != null) {
+                        for (i in 0 until days.length()) {
+                            val candidate = days.getJSONObject(i)
+                            if (candidate.getInt("day") == day) { d = candidate; break }
+                        }
+                    }
+                    src24 = false
+                } catch (_: Exception) {}
+            }
+
             if (d == null) return PrayerData.empty(isWorldMode)
 
             val subahRaw   = d.optString("subah_sadiq", "")
@@ -370,14 +394,9 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             val ishraqRaw  = d.optString("ishraq", "")
             val zawalRaw   = d.optString("zawal_aftab", d.optString("zawal", ""))
             val mislRaw    = d.optString("misl_e_awwal", "")
-            val asrRaw     = d.optString("asr_hanafi", "")
+            val asrRaw     = d.optString("asr_hanafi", d.optString("asr", ""))
             val maghribRaw = d.optString("maghrib", "")
             val ishaRaw    = d.optString("isha", "")
-
-            // A world-city cache is written in 24-hour form and says so. Two
-            // Jantri conventions have to stand down for it, both of which would
-            // otherwise put the widget minutes or hours away from the app.
-            val src24 = json.optBoolean("is_24h", false)
 
             // "+6" and "+5" are Sukkur conventions; a calculated city already
             // holds its own Fajr and Zuhr, exactly as DayTiming.worldTimings does.

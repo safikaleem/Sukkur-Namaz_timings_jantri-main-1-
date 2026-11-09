@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../utils/url_helper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
 import '../l10n/world_translations.dart';
@@ -25,7 +26,24 @@ class AnnouncementService {
   static const String announcementUrl =
       'https://gist.githubusercontent.com/safikaleem/2afecaa5e4b86ab5227ee00a7416646a/raw/announcement.json';
 
+  static const String _cachedAnnouncementKey = 'cached_remote_announcement_json';
+  static dynamic _cachedAnnouncementData;
+  static bool _hasLoadedLocalCache = false;
   static bool _isDialogOpen = false;
+  static BuildContext? _activeDialogContext;
+  static String? _activeAnnouncementId;
+  static final Set<String> _dismissedAnnouncementIds = {};
+  static final Set<String> _shownInCurrentSession = {};
+
+  /// Clears in-memory session tracking for testing.
+  @visibleForTesting
+  static void resetSessionState() {
+    _dismissedAnnouncementIds.clear();
+    _shownInCurrentSession.clear();
+    _isDialogOpen = false;
+    _activeDialogContext = null;
+    _activeAnnouncementId = null;
+  }
 
   /// Known city aliases for robust matching across English and Urdu inputs.
   static const Map<String, List<String>> _cityAliases = {
@@ -42,14 +60,28 @@ class AnnouncementService {
     'larkana': ['larkana', 'لاڑکانہ'],
   };
 
-  /// Checks if there is a new remote announcement/pamphlet and shows it in a popup.
-  /// If remote announcement is not active, falls back to the local Ramzan pamphlet.
-  static Future<void> checkForAnnouncement(BuildContext context) async {
-    if (_isDialogOpen) return;
+  /// Loads cached announcement JSON from SharedPreferences at startup for 0ms instant display.
+  static Future<void> loadLocalCache() async {
+    if (_hasLoadedLocalCache) return;
     try {
-      final dynamic fetchedData = await _fetchAnnouncement();
-      if (fetchedData == null) return;
-      if (!context.mounted || _isDialogOpen) return;
+      final prefs = await SharedPreferences.getInstance();
+      final cachedRaw = prefs.getString(_cachedAnnouncementKey);
+      if (cachedRaw != null && cachedRaw.isNotEmpty) {
+        _cachedAnnouncementData = jsonDecode(cachedRaw);
+      }
+      _hasLoadedLocalCache = true;
+    } catch (e) {
+      debugPrint('Error loading cached announcement: $e');
+    }
+  }
+
+  /// Checks if there is an announcement and shows it in a popup.
+  /// Shows cached announcement INSTANTLY (0 ms latency), while silently syncing in the background.
+  static Future<void> checkForAnnouncement(BuildContext context) async {
+    try {
+      if (!_hasLoadedLocalCache) {
+        await loadLocalCache();
+      }
 
       final settings = Provider.of<SettingsProvider>(context, listen: false);
       final String userCity = (settings.locationMode == LocationMode.sukkur ||
@@ -68,23 +100,131 @@ class AnnouncementService {
         debugPrint('Could not retrieve package version for announcement check: $e');
       }
 
-      final announcement = selectAnnouncementForUser(
+      // ── STEP 1: INSTANT LOCAL DISPLAY (0 ms latency) ─────────────────────────
+      if (_cachedAnnouncementData != null) {
+        final cachedMatch = selectAnnouncementForUser(
+          _cachedAnnouncementData,
+          userCity,
+          currentVersion: currentVersion,
+        );
+
+        if (cachedMatch != null) {
+          final bool enabled = cachedMatch['enabled'] as bool? ?? false;
+          final String? id = cachedMatch['id'] as String?;
+          if (enabled &&
+              id != null &&
+              id.isNotEmpty &&
+              !_isDialogOpen &&
+              !_dismissedAnnouncementIds.contains(id) &&
+              !_shownInCurrentSession.contains(id)) {
+            // Precache image for instant zero-flicker render
+            final String? imgUrl = cachedMatch['imageUrl'] as String?;
+            if (imgUrl != null && imgUrl.isNotEmpty && context.mounted) {
+              precacheImage(
+                CachedNetworkImageProvider(
+                  imgUrl,
+                  cacheKey: '${imgUrl}_$id',
+                  headers: const {
+                    'User-Agent':
+                        'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+                    'Accept': 'image/jpeg,image/png,image/*,*/*;q=0.8',
+                  },
+                ),
+                context,
+              );
+            }
+
+            if (context.mounted && !_isDialogOpen) {
+              _shownInCurrentSession.add(id);
+              _activeAnnouncementId = id;
+              _showAnnouncementDialog(context, id, cachedMatch, isLocal: false);
+            }
+          }
+        }
+      }
+
+      // ── STEP 2: SILENT BACKGROUND SYNC (Non-blocking) ───────────────────────
+      _syncRemoteAnnouncement(context, userCity, currentVersion);
+    } catch (e) {
+      debugPrint('Failed in checkForAnnouncement: $e');
+    }
+  }
+
+  /// Silently checks remote Firestore / Gist in the background without delaying UI.
+  static void _syncRemoteAnnouncement(
+    BuildContext context,
+    String userCity,
+    String? currentVersion,
+  ) async {
+    try {
+      final dynamic fetchedData = await _fetchAnnouncement();
+      if (fetchedData == null) return;
+
+      // Update local storage for future instant 0ms launches
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_cachedAnnouncementKey, jsonEncode(fetchedData));
+        _cachedAnnouncementData = fetchedData;
+      } catch (e) {
+        debugPrint('Could not save announcement cache: $e');
+      }
+
+      final freshMatch = selectAnnouncementForUser(
         fetchedData,
         userCity,
         currentVersion: currentVersion,
       );
-      if (announcement != null) {
-        final bool enabled = announcement['enabled'] as bool? ?? false;
-        final String? id = announcement['id'] as String?;
-        if (enabled && id != null && id.isNotEmpty) {
-          if (context.mounted && !_isDialogOpen) {
-            await _showAnnouncementDialog(context, id, announcement, isLocal: false);
-          }
-          return;
+
+      final bool enabled = freshMatch != null && (freshMatch['enabled'] as bool? ?? false);
+      final String? freshId = freshMatch != null ? freshMatch['id'] as String? : null;
+
+      // If remote announcement was disabled, dismiss dialog
+      if (!enabled || freshId == null || freshId.isEmpty) {
+        if (_isDialogOpen && _activeDialogContext != null && _activeDialogContext!.mounted) {
+          Navigator.of(_activeDialogContext!).pop();
+          _isDialogOpen = false;
         }
+        return;
+      }
+
+      // If this announcement was already dismissed or shown in the current session, do not re-show!
+      if (_dismissedAnnouncementIds.contains(freshId) || _shownInCurrentSession.contains(freshId)) {
+        return;
+      }
+
+      // Precache fresh image
+      final String? freshImgUrl = freshMatch['imageUrl'] as String?;
+      if (freshImgUrl != null && freshImgUrl.isNotEmpty && context.mounted) {
+        precacheImage(
+          CachedNetworkImageProvider(
+            freshImgUrl,
+            cacheKey: '${freshImgUrl}_$freshId',
+            headers: const {
+              'User-Agent':
+                  'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+              'Accept': 'image/jpeg,image/png,image/*,*/*;q=0.8',
+            },
+          ),
+          context,
+        );
+      }
+
+      // If dialog is not open yet (e.g. cold start with empty cache or fresh unseen announcement), show it now!
+      if (!_isDialogOpen && context.mounted) {
+        _shownInCurrentSession.add(freshId);
+        _activeAnnouncementId = freshId;
+        await _showAnnouncementDialog(context, freshId, freshMatch, isLocal: false);
+      } else if (_isDialogOpen && _activeAnnouncementId != freshId && context.mounted) {
+        // If announcement changed while open, refresh to the new one
+        if (_activeDialogContext != null && _activeDialogContext!.mounted) {
+          Navigator.of(_activeDialogContext!).pop();
+        }
+        _shownInCurrentSession.add(freshId);
+        _activeAnnouncementId = freshId;
+        await _showAnnouncementDialog(context, freshId, freshMatch, isLocal: false);
       }
     } catch (e) {
-      debugPrint('Failed to check remote announcement: $e');
+      debugPrint('Background announcement sync error: $e');
     }
   }
 
@@ -601,6 +741,7 @@ class AnnouncementService {
         context: context,
         barrierDismissible: false,
         builder: (BuildContext dialogContext) {
+          _activeDialogContext = dialogContext;
           int reloadCount = 0;
 
           return StatefulBuilder(
@@ -895,7 +1036,10 @@ class AnnouncementService {
       },
     );
     } finally {
+      _dismissedAnnouncementIds.add(announcementId);
       _isDialogOpen = false;
+      _activeDialogContext = null;
+      _activeAnnouncementId = null;
     }
   }
 }

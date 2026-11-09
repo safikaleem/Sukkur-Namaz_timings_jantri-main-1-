@@ -90,8 +90,6 @@ void main() {
     await Future.wait([
       settings.loadFromPrefs().catchError((e, s) => _reportError(e, s)),
       TimingsData.instance.load().catchError((e, s) => _reportError(e, s)),
-      JamaatTimesService.instance.loadLocalCache().catchError((e, s) => _reportError(e, s)),
-      NotificationService.instance.init().catchError((e, s) => _reportError(e, s)),
     ]);
     runApp(
       ChangeNotifierProvider.value(
@@ -177,6 +175,7 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   int _currentIndex = 0;
+  final Set<int> _visitedIndices = {0};
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   DateTime? _lastScheduled;
   DateTime? _lastSyncTime;
@@ -198,8 +197,17 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     try {
       final settings = Provider.of<SettingsProvider>(context, listen: false);
       settings.syncHijriCalendar();
+
+      // Load cached startup data and initialize notification service after first frame
+      await Future.wait([
+        NotificationService.instance.init().catchError((e, s) => _reportError(e, s)),
+        JamaatTimesService.instance.loadLocalCache().catchError((e, s) => _reportError(e, s)),
+        AnnouncementService.loadLocalCache().catchError((e, s) => _reportError(e, s)),
+      ]);
+
       JamaatTimesService.instance.fetchRemoteGistTimings();
       if (settings.notificationsEnabled) {
+        _lastScheduled = DateTime.now();
         // Fire-and-forget: scheduling ~140 alarms is heavy, don't block startup.
         NotificationService.instance.scheduleWeeklyNotifications();
       }
@@ -250,7 +258,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     if (kIsWeb) return;
     final health = await NotificationHealth.check();
     if (!mounted) return;
-    setState(() => _notifHealth = health);
+    if (_notifHealth != health) {
+      setState(() => _notifHealth = health);
+    }
   }
 
   @override
@@ -266,14 +276,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     // reminders firing for users who leave the app open for a long stretch
     // without changing anything. No new dependencies; safe no-op on web.
     //
-    // Time-gate: only reschedule if more than 1 hour has passed since the last
-    // schedule, so opening and closing the app repeatedly does not churn the
-    // whole batch. Rescheduling no longer clears the queue first - each id is
-    // overwritten in place - so there is no window with nothing pending.
+    // Time-gate: only reschedule if more than 24 hours have passed since the last
+    // schedule, since WorkManager keeps it updated every 6 hours and notifications
+    // are scheduled 14 days ahead.
     if (state == AppLifecycleState.resumed && !kIsWeb) {
       final now = DateTime.now();
       final lastSched = _lastScheduled;
-      if (lastSched == null || now.difference(lastSched).inMinutes >= 60) {
+      if (lastSched == null || now.difference(lastSched).inHours >= 24) {
         _lastScheduled = now;
         NotificationService.instance.scheduleWeeklyNotifications();
       }
@@ -322,7 +331,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       QiblaScreen(isActive: _currentIndex == 7), // 7 - Qibla (8)
       // Hidayat belongs to the Jantri, so it follows the timings actually in
       // use rather than the radio button.
-      if (!settings.usesCalculatedTimings)
+      if (settings.hasJamaatModule)
         JamaatTimesScreen(isActive: _currentIndex == 8), // 8 - Jama'at Times (9)
     ];
 
@@ -330,6 +339,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     if (safeIndex >= screens.length) {
       safeIndex = screens.length - 1;
     }
+    _visitedIndices.add(safeIndex);
 
     return Scaffold(
       key: _scaffoldKey,
@@ -343,21 +353,41 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
         onTapSukkur: () {
           Navigator.pop(context);
           settings.useSukkurJantri();
-          setState(() => _currentIndex = 0);
+          setState(() {
+            _visitedIndices.add(0);
+            _currentIndex = 0;
+          });
+        },
+        onTapKarachi: () async {
+          Navigator.pop(context);
+          await settings.useKarachiCity();
+          setState(() {
+            _visitedIndices.add(0);
+            _currentIndex = 0;
+          });
         },
         // Picking a world city lands on that city's timings, same as Sukkur.
         onWorldCitySelected: () {
-          if (mounted) setState(() => _currentIndex = 0);
+          if (mounted) {
+            setState(() {
+              _visitedIndices.add(0);
+              _currentIndex = 0;
+            });
+          }
         },
       ),
       body: SafeArea(
         bottom: false,
         child: Stack(
           children: [
-              // All screens
+              // All screens (lazy-instantiated: unvisited tabs use SizedBox.shrink to save memory)
               IndexedStack(
                 index: safeIndex,
-                children: screens,
+                children: List.generate(screens.length, (index) {
+                  return _visitedIndices.contains(index)
+                      ? screens[index]
+                      : const SizedBox.shrink();
+                }),
               ),
 
               // Persistent hamburger overlay on screens that don't have one
@@ -445,7 +475,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
         ),
       bottomNavigationBar: _SukkurNavBar(
         currentIndex: safeIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
+        onTap: (i) => setState(() {
+          _visitedIndices.add(i);
+          _currentIndex = i;
+        }),
       ),
     );
   }
@@ -533,13 +566,13 @@ class _SukkurNavBar extends StatelessWidget {
       _NavItem(icon: Icons.view_list_rounded,             label: settings.translate('Monthly', 'ماہانہ', 'مهينو', 'شهري')),    // 2
       _NavItem(icon: Icons.notifications_active_rounded,  label: settings.translate('Reminders', 'اطلاعات', 'اطلاعون', 'تنبيهات')), // 3
       _NavItem(icon: Icons.menu_book,                     label: settings.translate('Quran', 'قرآن', 'قرآن', 'القرآن')),         // 4
-      _NavItem(icon: Icons.auto_stories_outlined,         label: settings.translate('Munajat', 'مناجات', 'مناجات', 'مناجاة')),   // 5
+      _NavItem(icon: Icons.auto_stories_outlined,         label: settings.translate('Books', 'کتب', 'ڪتاب', 'الكتب')),   // 5
       _NavItem(
         customIconBuilder: (color) => TasbeehBeadIcon(color: color, size: 23),
         label: settings.translate('Tasbeeh', 'تسبیح', 'تسبیح', 'التسبيح'),
       ), // 6
       _NavItem(icon: Icons.explore_rounded,               label: settings.translate('Qibla', 'قبلہ', 'قبلو', 'القبلة')),        // 7
-      if (!settings.usesCalculatedTimings)
+      if (settings.hasJamaatModule)
         _NavItem(icon: Icons.mosque_rounded,               label: settings.translate('Jama\'at', 'جماعت', 'جماعت', 'الجماعة')),     // 8
     ];
 

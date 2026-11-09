@@ -195,7 +195,7 @@ class _DeveloperTimingsLogScreenState extends State<DeveloperTimingsLogScreen> {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final allMasajid = JamaatTimesService.instance.getMasjidList(includeHidden: true);
+    final allMasajid = JamaatTimesService.instance.getMasjidList(includeHidden: true, city: 'all');
     final bool useUrdu = ['urdu', 'sindhi', 'arabic', 'persian'].contains(settings.language);
     String t(String en, String ur) => useUrdu ? ur : en;
     final urduFont = useUrdu ? AppTheme.getFontForLanguage(context, 'urdu') : null;

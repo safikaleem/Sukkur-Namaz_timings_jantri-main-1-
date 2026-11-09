@@ -43,6 +43,8 @@ enum UnifiedTheme {
 
 enum LocationMode { sukkur, world }
 
+enum QuranTranslationMode { urdu, english, both }
+
 /// Sukkur has its own Jantri, which is more accurate than anything the world
 /// calculation can produce, so Sukkur must never be stored as a world city -
 /// not under its own name, and not by coordinates. This lives here rather than
@@ -109,6 +111,35 @@ class SukkurLocation {
   }
 }
 
+class KarachiLocation {
+  static const lat = 24.8608;
+  static const lng = 67.0104;
+
+  /// 60 km covers Karachi division and adjoining metropolitan areas.
+  static const radiusMetres = 60000.0;
+
+  static const _names = [
+    'karachi', 'کراچی', 'ڪراچي', 'كراتشي',
+  ];
+
+  static bool matchesName(String? name) {
+    if (name == null) return false;
+    final n = name.trim().toLowerCase();
+    final words = n.split(RegExp(r'[\s,._\-/]+'));
+    return words.any((w) => _names.contains(w));
+  }
+
+  static bool isNear(double latitude, double longitude) =>
+      SukkurLocation._distanceMetres(latitude, longitude, lat, lng) <= radiusMetres;
+
+  static bool covers(double? latitude, double? longitude, String? city) {
+    if (latitude != null && longitude != null) {
+      return isNear(latitude, longitude);
+    }
+    return matchesName(city);
+  }
+}
+
 class SettingsProvider extends ChangeNotifier {
   DarkModeOption _darkModeOption = DarkModeOption.auto;
   String _language = 'english';
@@ -124,6 +155,7 @@ class SettingsProvider extends ChangeNotifier {
   int _tasbeehThemeIndex = 0; // default is 0 (gray)
   String _circleWidgetStyle = 'digital';
   String _quranType = '16_line';
+  QuranTranslationMode? _quranTranslationMode;
 
   LocationMode _locationMode = LocationMode.sukkur;
   double? _latitude;
@@ -264,6 +296,11 @@ class SettingsProvider extends ChangeNotifier {
   int get tasbeehThemeIndex => _tasbeehThemeIndex;
   String get circleWidgetStyle => _circleWidgetStyle;
   String get quranType => _quranType;
+  QuranTranslationMode get quranTranslationMode =>
+      _quranTranslationMode ??
+      (_language == 'english'
+          ? QuranTranslationMode.english
+          : QuranTranslationMode.urdu);
 
   /// The mode the app is *actually* running in, which is not the same as the
   /// stored one. World mode with no city behind it resolves to Sukkur, because
@@ -276,6 +313,27 @@ class SettingsProvider extends ChangeNotifier {
   /// columns silently shift.
   LocationMode get locationMode =>
       usesCalculatedTimings ? LocationMode.world : LocationMode.sukkur;
+
+  bool get isKarachi =>
+      _locationMode == LocationMode.world &&
+      KarachiLocation.covers(_latitude, _longitude, _cityName);
+
+  bool get isSukkur =>
+      _locationMode == LocationMode.sukkur || !usesCalculatedTimings;
+
+  bool get hasJamaatModule =>
+      !usesCalculatedTimings || isKarachi;
+
+  String get currentCity => isKarachi ? 'karachi' : 'sukkur';
+
+  Future<bool> useKarachiCity() async {
+    final ok = await setLocation(KarachiLocation.lat, KarachiLocation.lng, 'Karachi');
+    if (!ok) return false;
+    await setLocationMode(LocationMode.world);
+    await setCalculationMethod('Karachi');
+    await setAsrMethod('Hanafi');
+    return true;
+  }
 
   double? get latitude => _latitude;
   double? get longitude => _longitude;
@@ -865,6 +923,13 @@ class SettingsProvider extends ChangeNotifier {
     _customSilentEndHour = prefs.getInt('custom_silent_end_hour') ?? 14;
     _customSilentEndMinute = prefs.getInt('custom_silent_end_minute') ?? 0;
     _quranType = prefs.getString('quran_type') ?? '16_line';
+    final transModeRaw = prefs.getString('quran_translation_mode');
+    if (transModeRaw != null) {
+      _quranTranslationMode = QuranTranslationMode.values.cast<QuranTranslationMode?>().firstWhere(
+        (e) => e?.name == transModeRaw,
+        orElse: () => null,
+      );
+    }
 
     final locRaw = prefs.getString('location_mode');
     if (locRaw != null) {
@@ -962,14 +1027,11 @@ class SettingsProvider extends ChangeNotifier {
     _lastReadPage15 = prefs.getInt('last_read_page_15');
     _lastReadPage16 = prefs.getInt('last_read_page_16');
     _munajatLastPage = prefs.getInt('munajat_last_page');
+    _ahmiyatRamzanLastPage = prefs.getInt('ahmiyat_ramzan_last_page');
 
     // Migration: copy old shared keys to 16-line if per-type keys don't exist
-    if (_lastReadType16 == null) {
-      _lastReadType16 = prefs.getString('last_read_type');
-    }
-    if (_lastReadId16 == null) {
-      _lastReadId16 = prefs.getInt('last_read_id');
-    }
+    _lastReadType16 ??= prefs.getString('last_read_type');
+    _lastReadId16 ??= prefs.getInt('last_read_id');
 
     for (final key in prefs.getKeys()) {
       if (key.startsWith('surah_progress_15_')) {
@@ -1027,6 +1089,7 @@ class SettingsProvider extends ChangeNotifier {
   int? _lastReadPage15;
   int? _lastReadPage16;
   int? _munajatLastPage;
+  int? _ahmiyatRamzanLastPage;
 
   Map<int, int> get surahProgress => _quranType == '15_line' ? _surahProgress15 : _surahProgress16;
   Map<int, int> get parahProgress => _quranType == '15_line' ? _parahProgress15 : _parahProgress16;
@@ -1035,6 +1098,7 @@ class SettingsProvider extends ChangeNotifier {
   int? get lastReadPage15 => _lastReadPage15;
   int? get lastReadPage16 => _lastReadPage16;
   int? get munajatLastPage => _munajatLastPage;
+  int? get ahmiyatRamzanLastPage => _ahmiyatRamzanLastPage;
 
   Future<void> updateMunajatReadingPosition(int pageNumber) async {
     if (_munajatLastPage == pageNumber) return;
@@ -1042,6 +1106,14 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('munajat_last_page', pageNumber);
+  }
+
+  Future<void> updateAhmiyatRamzanReadingPosition(int pageNumber) async {
+    if (_ahmiyatRamzanLastPage == pageNumber) return;
+    _ahmiyatRamzanLastPage = pageNumber;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('ahmiyat_ramzan_last_page', pageNumber);
   }
 
   Future<void> updateReadingPosition({
@@ -1284,6 +1356,14 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setString('quran_type', value);
   }
 
+  Future<void> setQuranTranslationMode(QuranTranslationMode mode) async {
+    if (_quranTranslationMode == mode) return;
+    _quranTranslationMode = mode;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('quran_translation_mode', mode.name);
+  }
+
   Future<void> setPrayerEnabled(String prayer, bool value) async {
     if (_prayerToggles[prayer] == value) return;
     _prayerToggles[prayer] = value;
@@ -1436,6 +1516,7 @@ class SettingsProvider extends ChangeNotifier {
     _autoSilentEnabled = false;
     _autoSilentMode = 'vibrate';
     _liveCountdownEnabled = true;
+    _quranTranslationMode = null;
 
     final defaultOffsets = {'Fajar': 15, 'Zuhar': 15, 'Misl Awwal': 15, 'Asr Hanafi': 15, 'Maghrib': 5, 'Isha': 15};
     final defaultDurations = {'Fajar': 20, 'Zuhar': 20, 'Misl Awwal': 20, 'Asr Hanafi': 20, 'Maghrib': 15, 'Isha': 20};
@@ -1475,6 +1556,7 @@ class SettingsProvider extends ChangeNotifier {
       await prefs.remove('city_name');
       await prefs.setString('calculation_method', 'Karachi');
       await prefs.setString('asr_method', 'Hanafi');
+      await prefs.remove('quran_translation_mode');
 
       for (final key in _prayerToggles.keys) {
         final prefKey = _notifyPrefKeys[key];

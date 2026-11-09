@@ -391,7 +391,7 @@ class _DeveloperDashboardScreenState extends State<DeveloperDashboardScreen> {
   }
 
   Future<void> _exportNetworkReport() async {
-    final allMasajid = JamaatTimesService.instance.getMasjidList(includeHidden: true);
+    final allMasajid = JamaatTimesService.instance.getMasjidList(includeHidden: true, city: 'all');
     final now = DateTime.now();
     final dayStr = now.day.toString().padLeft(2, '0');
     final monthKeys = _monthMap.keys.toList();
@@ -819,7 +819,7 @@ class _DeveloperDashboardScreenState extends State<DeveloperDashboardScreen> {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final allMasajid = JamaatTimesService.instance.getMasjidList(includeHidden: true);
+    final allMasajid = JamaatTimesService.instance.getMasjidList(includeHidden: true, city: 'all');
     final bool useUrdu = ['urdu', 'sindhi', 'arabic', 'persian'].contains(settings.language);
     String t(String en, String ur) => useUrdu ? ur : en;
     final urduFont = useUrdu ? AppTheme.getFontForLanguage(context, 'urdu') : null;
@@ -959,7 +959,7 @@ class _DeveloperDashboardScreenState extends State<DeveloperDashboardScreen> {
                       ),
                       const Spacer(),
                       Text(
-                        t('v1.4.7 • Production', 'v1.4.7 • پروڈکشن'),
+                        t('v1.4.8 • Production', 'v1.4.8 • پروڈکشن'),
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 11.5,

@@ -76,6 +76,9 @@ class TranslationReader extends StatefulWidget {
   final int initialPage;
   final ValueChanged<int>? onParahChanged;
   final ValueChanged<int>? onSurahChanged;
+  final bool isChromeVisible;
+  final VoidCallback? onToggleChrome;
+  final VoidCallback? onKeepChromeVisible;
 
   const TranslationReader({
     super.key,
@@ -86,6 +89,9 @@ class TranslationReader extends StatefulWidget {
     this.initialPage = 1,
     this.onParahChanged,
     this.onSurahChanged,
+    this.isChromeVisible = true,
+    this.onToggleChrome,
+    this.onKeepChromeVisible,
   });
 
   @override
@@ -146,6 +152,7 @@ class _TranslationReaderState extends State<TranslationReader> {
   @override
   void initState() {
     super.initState();
+    widget.settings.addListener(_onSettingsChanged);
     _currentReportedSurah = widget.surahNumber;
     _currentReportedAyah = widget.initialAyah;
     _itemPositionsListener.itemPositions.addListener(_onScroll);
@@ -156,8 +163,13 @@ class _TranslationReaderState extends State<TranslationReader> {
     if (widget.surahNumber < 114) _loadSurahTranslation(widget.surahNumber + 1);
   }
 
+  void _onSettingsChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    widget.settings.removeListener(_onSettingsChanged);
     _itemPositionsListener.itemPositions.removeListener(_onScroll);
     _searchController.dispose();
     super.dispose();
@@ -201,6 +213,10 @@ class _TranslationReaderState extends State<TranslationReader> {
   @override
   void didUpdateWidget(TranslationReader oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.settings != widget.settings) {
+      oldWidget.settings.removeListener(_onSettingsChanged);
+      widget.settings.addListener(_onSettingsChanged);
+    }
     if (oldWidget.initialPage != widget.initialPage || oldWidget.surahNumber != widget.surahNumber) {
       final newIndex = _calculateInitialGlobalIndex();
       if (_itemScrollController.isAttached) {
@@ -247,7 +263,12 @@ class _TranslationReaderState extends State<TranslationReader> {
     // 1. Try bundled asset
     try {
       final raw = await rootBundle.loadString('assets/quran_translations/surah_$surahNum.json');
-      final decoded = await compute(_decodeCache, raw);
+      _Translations decoded;
+      try {
+        decoded = await compute(_decodeCache, raw);
+      } catch (_) {
+        decoded = _decodeCache(raw);
+      }
       if (mounted) {
         setState(() {
           _translationsCache[surahNum] = decoded;
@@ -397,8 +418,8 @@ class _TranslationReaderState extends State<TranslationReader> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -447,67 +468,97 @@ class _TranslationReaderState extends State<TranslationReader> {
 
     return Column(
       children: [
-        // Search Box
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
-          child: SizedBox(
-            height: 36,
-            child: TextField(
-              controller: _searchController,
-              keyboardType: TextInputType.text,
-              style: TextStyle(color: widget.isDark ? Colors.white : Colors.black87),
-              decoration: InputDecoration(
-                isDense: true,
-                hintText: widget.settings.translate(
-                    'Search Verse No. (e.g. 25 or 2:255)...',
-                    'آیت نمبر تلاش کریں (مثلاً 25 یا 2:255)...',
-                    'آيت نمبر ڳوليو (مثال 25 يا 2:255)...',
-                    'ابحث برقم الآية (مثلاً 25 أو 2:255)...'),
-                hintStyle: TextStyle(color: widget.isDark ? Colors.white54 : Colors.black54, fontSize: 13),
-                prefixIcon: Icon(Icons.search, color: AppTheme.accent, size: 20),
-                filled: true,
-                fillColor: widget.isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              onSubmitted: _jumpToVerse,
-            ),
-          ),
-        ),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOutCubic,
+          height: widget.isChromeVisible ? 138.0 : 0.0,
+          child: ClipRect(
+            child: OverflowBox(
+              alignment: Alignment.topCenter,
+              minHeight: 0,
+              maxHeight: 138.0,
+              child: SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Search Box
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 3),
+                      child: SizedBox(
+                        height: 36,
+                        child: TextField(
+                          controller: _searchController,
+                          keyboardType: TextInputType.text,
+                          onTap: widget.onKeepChromeVisible,
+                          style: TextStyle(color: widget.isDark ? Colors.white : Colors.black87),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            hintText: widget.settings.translate(
+                                'Search Verse No. (e.g. 25 or 2:255)...',
+                                'آیت نمبر تلاش کریں (مثلاً 25 یا 2:255)...',
+                                'آيت نمبر ڳوليو (مثال 25 يا 2:255)...',
+                                'ابحث برقم الآية (مثلاً 25 أو 2:255)...'),
+                            hintStyle: TextStyle(color: widget.isDark ? Colors.white54 : Colors.black54, fontSize: 13),
+                            prefixIcon: Icon(Icons.search, color: AppTheme.accent, size: 20),
+                            filled: true,
+                            fillColor: widget.isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          onSubmitted: _jumpToVerse,
+                        ),
+                      ),
+                    ),
 
-        // Fixed Translation Header Label
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-            decoration: BoxDecoration(
-              color: AppTheme.accent.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.accent.withValues(alpha: 0.2)),
-            ),
-            child: Text(
-              widget.settings.translate(
-                'Translation: Hazrat Mufti Taqi Usmani Hafizahullah',
-                'ترجمہ: حضرت مفتی تقی عثمانی حفظہ اللہ',
-                'ترجمو: حضرت مفتي تقي عثماني حفظه الله',
-                'الترجمة: الشيخ مفتي تقي عثماني حفظه الله',
-              ),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.accent,
+                    // 3-way Translation Mode Selector
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 3, 16, 3),
+                      child: _buildTranslationSelector(),
+                    ),
+
+                    // Fixed Translation Header Label
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 3, 16, 0),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accent.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppTheme.accent.withValues(alpha: 0.2)),
+                        ),
+                        child: Text(
+                          widget.settings.translate(
+                            'Translation: Hazrat Mufti Taqi Usmani Hafizahullah',
+                            'ترجمہ: حضرت مفتی تقی عثمانی حفظہ اللہ',
+                            'ترجمو: حضرت مفتي تقي عثماني حفظه الله',
+                            'الترجمة: الشيخ مفتي تقي عثماني حفظه الله',
+                          ),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.accent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
 
         Expanded(
-          child: ScrollablePositionedList.builder(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: widget.onToggleChrome,
+            child: ScrollablePositionedList.builder(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             itemCount: _allVerses.length,
             itemScrollController: _itemScrollController,
@@ -526,13 +577,17 @@ class _TranslationReaderState extends State<TranslationReader> {
               final urdu = translations?.urdu;
               final english = translations?.english;
 
-              String? translationText;
+              String? urduVerse;
+              String? englishVerse;
               if (urdu != null && english != null) {
                 final idx = item.ayahNumber - 1;
                 if (idx >= 0 && idx < urdu.length && idx < english.length) {
-                  translationText = isRtl ? urdu[idx] : english[idx];
+                  urduVerse = urdu[idx];
+                  englishVerse = english[idx];
                 }
               }
+
+              final currentTransMode = widget.settings.quranTranslationMode;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -622,18 +677,14 @@ class _TranslationReaderState extends State<TranslationReader> {
                           const SizedBox(height: 16),
 
                           // Translation Text
-                          if (translationText != null) ...[
+                          if (urduVerse != null && englishVerse != null) ...[
                             Divider(color: widget.isDark ? Colors.white10 : Colors.black12),
                             const SizedBox(height: 12),
-                            Text(
-                              translationText,
-                              textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
-                              style: TextStyle(
-                                fontSize: 16,
-                                height: 1.6,
-                                color: widget.isDark ? Colors.white70 : Colors.black87,
-                                fontFamily: isRtl ? 'Jameel Noori Nastaleeq' : null,
-                              ),
+                            _buildVerseTranslations(
+                              urduVerse: urduVerse,
+                              englishVerse: englishVerse,
+                              mode: currentTransMode,
+                              isRtl: isRtl,
                             ),
                           ] else if (_errors.containsKey(surahNum)) ...[
                             const SizedBox(height: 8),
@@ -666,8 +717,216 @@ class _TranslationReaderState extends State<TranslationReader> {
             },
           ),
         ),
-      ],
+      ),
+    ],
+  );
+  }
+
+  Widget _buildTranslationSelector() {
+    final currentMode = widget.settings.quranTranslationMode;
+    final urduLabel = widget.settings.translate('Urdu', 'اردو', 'اردو', 'الأردية');
+    final englishLabel = widget.settings.translate('English', 'انگریزی', 'انگريزي', 'الإنجليزية');
+    final bothLabel = widget.settings.translate('Both', 'دونوں', 'ٻئي', 'كلاهما');
+
+    return Container(
+      height: 32,
+      padding: const EdgeInsets.all(2.5),
+      decoration: BoxDecoration(
+        color: widget.isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.black.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: widget.isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : AppTheme.accent.withValues(alpha: 0.15),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        children: [
+          _buildSegment(QuranTranslationMode.urdu, urduLabel, currentMode == QuranTranslationMode.urdu),
+          const SizedBox(width: 3),
+          _buildSegment(QuranTranslationMode.english, englishLabel, currentMode == QuranTranslationMode.english),
+          const SizedBox(width: 3),
+          _buildSegment(QuranTranslationMode.both, bothLabel, currentMode == QuranTranslationMode.both),
+        ],
+      ),
     );
+  }
+
+  Widget _buildSegment(QuranTranslationMode targetMode, String label, bool isSelected) {
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          if (!isSelected) {
+            widget.settings.setQuranTranslationMode(targetMode);
+            if (mounted) setState(() {});
+          }
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOut,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.accent : Colors.transparent,
+            borderRadius: BorderRadius.circular(7.5),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppTheme.accent.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              color: isSelected
+                  ? Colors.white
+                  : (widget.isDark ? Colors.white70 : Colors.black87),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVerseTranslations({
+    required String urduVerse,
+    required String englishVerse,
+    required QuranTranslationMode mode,
+    required bool isRtl,
+  }) {
+    switch (mode) {
+      case QuranTranslationMode.urdu:
+        return Text(
+          urduVerse,
+          textDirection: TextDirection.rtl,
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            fontSize: 16.5,
+            height: 1.85,
+            color: widget.isDark ? Colors.white70 : Colors.black87,
+            fontFamily: AppTheme.urduFont,
+            fontFamilyFallback: const [
+              'Noto Nastaliq Urdu',
+              'Arial',
+              'sans-serif',
+            ],
+          ),
+        );
+      case QuranTranslationMode.english:
+        return Text(
+          englishVerse,
+          textDirection: TextDirection.ltr,
+          textAlign: TextAlign.left,
+          style: TextStyle(
+            fontSize: 15,
+            height: 1.5,
+            color: widget.isDark ? Colors.white70 : Colors.black87,
+          ),
+        );
+      case QuranTranslationMode.both:
+        final urduWidget = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                margin: const EdgeInsets.only(bottom: 6),
+                decoration: BoxDecoration(
+                  color: AppTheme.accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  widget.settings.translate('Urdu', 'اردو', 'اردو', 'الأردية'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.accent,
+                  ),
+                ),
+              ),
+            ),
+            Text(
+              urduVerse,
+              textDirection: TextDirection.rtl,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 16.5,
+                height: 1.85,
+                color: widget.isDark ? Colors.white70 : Colors.black87,
+                fontFamily: AppTheme.urduFont,
+                fontFamilyFallback: const [
+                  'Noto Nastaliq Urdu',
+                  'Arial',
+                  'sans-serif',
+                ],
+              ),
+            ),
+          ],
+        );
+
+        final englishWidget = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                margin: const EdgeInsets.only(bottom: 6),
+                decoration: BoxDecoration(
+                  color: AppTheme.accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  widget.settings.translate('English', 'انگریزی', 'انگريزي', 'الإنجليزية'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.accent,
+                  ),
+                ),
+              ),
+            ),
+            Text(
+              englishVerse,
+              textDirection: TextDirection.ltr,
+              textAlign: TextAlign.left,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: widget.isDark ? Colors.white70 : Colors.black87,
+              ),
+            ),
+          ],
+        );
+
+        final separator = Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Divider(
+            height: 1,
+            color: widget.isDark ? Colors.white10 : Colors.black12,
+          ),
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: isRtl
+              ? [urduWidget, separator, englishWidget]
+              : [englishWidget, separator, urduWidget],
+        );
+    }
   }
 }
 

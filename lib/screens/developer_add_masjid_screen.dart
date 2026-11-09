@@ -61,6 +61,7 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
   // ── Metadata Controllers ──────────────────────────────────────────────
   final _idController = TextEditingController();
   final _pinController = TextEditingController();
+  String _selectedCity = 'sukkur';
   bool _idManuallyEdited = false;
   bool _isSaving = false;
   bool _isTranslatingNames = false;
@@ -99,6 +100,7 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
       final m = widget.initialMasjid!;
       _idController.text = m.id;
       _idManuallyEdited = true;
+      _selectedCity = m.city.isNotEmpty ? m.city : 'sukkur';
 
       _nameEnController.text = m.localizedNames['english'] ?? m.nameKey;
       _nameUrController.text = m.localizedNames['urdu'] ?? '';
@@ -645,9 +647,20 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
 
       // ── Gist Payload Map ───────────────────────────────────────────
       final bool isHidden = widget.initialMasjid?.isHidden ?? false;
+      final String resolvedTargetCity = JamaatMasjidInfo.resolveCity(
+        id: id,
+        address: finalAddrEn.isNotEmpty ? finalAddrEn : finalAddrUr,
+        city: _selectedCity,
+        name: finalNameEn.isNotEmpty ? finalNameEn : finalNameUr,
+        addresses: addressesMap,
+        names: namesMap,
+      );
+      _selectedCity = resolvedTargetCity;
+
       final Map<String, dynamic> masjidGistMap = {
         'id': id,
         'pin': pin,
+        'city': resolvedTargetCity,
         'name': finalNameEn.isNotEmpty ? finalNameEn : finalNameUr,
         'address': finalAddrEn.isNotEmpty ? finalAddrEn : finalAddrUr,
         'hidden': isHidden,
@@ -671,12 +684,13 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
       final newMasjidInfo = JamaatMasjidInfo(
         id: id,
         nameKey: finalNameEn.isNotEmpty ? finalNameEn : finalNameUr,
-        addressKey: finalAddrEn.isNotEmpty ? finalAddrEn : 'Sukkur',
+        addressKey: finalAddrEn.isNotEmpty ? finalAddrEn : (resolvedTargetCity == 'karachi' ? 'Karachi' : 'Sukkur'),
         defaultTimings: timing,
         isHidden: isHidden,
         localizedNames: namesMap,
         localizedAddresses: addressesMap,
         pin: pin,
+        city: resolvedTargetCity,
       );
 
       await JamaatTimesService.instance.registerDynamicMasjid(newMasjidInfo);
@@ -1140,6 +1154,37 @@ class _DeveloperAddMasjidScreenState extends State<DeveloperAddMasjidScreen> {
                 isDark: isDark,
               ),
               const SizedBox(height: 10),
+
+              DropdownButtonFormField<String>(
+                value: _selectedCity,
+                decoration: InputDecoration(
+                  labelText: 'Target City *',
+                  helperText: 'Select which city this masjid belongs to',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.location_city_rounded),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'sukkur', child: Text('Sukkur (سکھر)')),
+                  DropdownMenuItem(value: 'karachi', child: Text('Karachi (کراچی)')),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _selectedCity = val;
+                      if (!isEditMode && !_idManuallyEdited) {
+                        if (val == 'karachi') {
+                          _addressEnController.text = 'Karachi';
+                          _addressUrController.text = 'کراچی';
+                        } else {
+                          _addressEnController.text = 'Sukkur';
+                          _addressUrController.text = 'سکھر';
+                        }
+                      }
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
 
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

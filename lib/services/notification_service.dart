@@ -77,6 +77,20 @@ class NotificationService {
     'Isha': 'العشاء',
   };
 
+  static const _sindhiNames = {
+    'Intiha e Sehar': 'انتهاءِ سحر',
+    'Fajar': 'فجر',
+    'Tulu Aftab': 'سج اڀرڻ',
+    'Ishraq': 'اشراق',
+    'Zawal': 'زوالِ آفتاب',
+    'Zuhar': 'ظھر',
+    'Misl Awwal': 'مثل اول',
+    'Asr Hanafi': 'عصر احناف',
+    'Asr': 'عصر',
+    'Maghrib': 'مغرب',
+    'Isha': 'عشاء',
+  };
+
   /// First notification id for each prayer; a day's alert is this plus its day
   /// offset, so consecutive entries must stay further apart than
   /// [scheduleHorizonDays]. Exposed so a test can prove that holds.
@@ -171,6 +185,11 @@ class NotificationService {
     final android = _plugin!.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     await _createChannels(android);
+    // Unawaited background cleanup: run legacy channel deletions and past due alarm cleanups
+    // in an unawaited background task rather than blocking the main isolate / startup.
+    unawaited(_deleteLegacyChannels(android));
+    unawaited(_purgePastDueTodayAlarms());
+
     final prefs = await SharedPreferences.getInstance();
     // One-time migration: enable the ongoing prayer countdown status bar by default
     // (like other prayer apps) so aggressive OEMs (Infinix XOS, Tecno HiOS, Vivo,
@@ -188,9 +207,6 @@ class NotificationService {
     } else {
       await cancelLiveCountdown();
     }
-    // Immediately cancel any past-due prayer alarm IDs from earlier today so
-    // opening the app never triggers a late burst of old notifications.
-    await _purgePastDueTodayAlarms();
   }
 
   /// Cancels any prayer notification IDs for today whose time has already passed
@@ -245,41 +261,44 @@ class NotificationService {
     await recreationChannels();
   }
 
+  Future<void> _deleteLegacyChannels(
+      AndroidFlutterLocalNotificationsPlugin? android) async {
+    if (android == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final bool alreadyCleaned = prefs.getBool('legacy_channels_deleted_v7') ?? false;
+
+      if (!alreadyCleaned) {
+        final oldChannels = [
+          'namaz_silent', 'namaz_silent_v2', 'namaz_silent_v3', 'namaz_silent_v4', 'namaz_silent_v5',
+          'namaz_silent_v6',
+          'namaz_vibrate', 'namaz_vibrate_v2', 'namaz_vibrate_v3', 'namaz_vibrate_v4', 'namaz_vibrate_v5',
+          'namaz_loud', 'namaz_loud_bell_v1', 'namaz_loud_bell_v2', 'namaz_loud_bell_v3', 'namaz_loud_bell_v4', 'namaz_loud_bell_v5',
+          'namaz_reminder', 'namaz_reminder_v1', 'namaz_reminder_v2', 'namaz_reminder_v3', 'namaz_reminder_v4', 'namaz_reminder_v5'
+        ];
+        for (final id in oldChannels) {
+          try {
+            await android.deleteNotificationChannel(id);
+          } catch (_) {}
+        }
+        for (int i = 0; i < azanTracks.length; i++) {
+          try {
+            await android.deleteNotificationChannel('namaz_azan_$i');
+            await android.deleteNotificationChannel('namaz_azan_v2_$i');
+            await android.deleteNotificationChannel('namaz_azan_v3_$i');
+            await android.deleteNotificationChannel('namaz_azan_v4_$i');
+            await android.deleteNotificationChannel('namaz_azan_v5_$i');
+          } catch (_) {}
+        }
+        await prefs.setBool('legacy_channels_deleted_v7', true);
+      }
+    } catch (_) {}
+  }
+
   Future<void> _createChannels(
       AndroidFlutterLocalNotificationsPlugin? android) async {
     if (android == null) return;
     const desc = 'سکھر کے نماز کے اوقات کی اطلاع';
-
-    // Delete legacy channels ONCE using a migration key in SharedPreferences.
-    // Executing 55+ deleteNotificationChannel IPC calls repeatedly on every launch/schedule
-    // causes "Slow Binder call" ANR on Android.
-    final prefs = await SharedPreferences.getInstance();
-    final bool alreadyCleaned = prefs.getBool('legacy_channels_deleted_v7') ?? false;
-
-    if (!alreadyCleaned) {
-      final oldChannels = [
-        'namaz_silent', 'namaz_silent_v2', 'namaz_silent_v3', 'namaz_silent_v4', 'namaz_silent_v5',
-        'namaz_silent_v6',
-        'namaz_vibrate', 'namaz_vibrate_v2', 'namaz_vibrate_v3', 'namaz_vibrate_v4', 'namaz_vibrate_v5',
-        'namaz_loud', 'namaz_loud_bell_v1', 'namaz_loud_bell_v2', 'namaz_loud_bell_v3', 'namaz_loud_bell_v4', 'namaz_loud_bell_v5',
-        'namaz_reminder', 'namaz_reminder_v1', 'namaz_reminder_v2', 'namaz_reminder_v3', 'namaz_reminder_v4', 'namaz_reminder_v5'
-      ];
-      for (final id in oldChannels) {
-        try {
-          await android.deleteNotificationChannel(id);
-        } catch (_) {}
-      }
-      for (int i = 0; i < azanTracks.length; i++) {
-        try {
-          await android.deleteNotificationChannel('namaz_azan_$i');
-          await android.deleteNotificationChannel('namaz_azan_v2_$i');
-          await android.deleteNotificationChannel('namaz_azan_v3_$i');
-          await android.deleteNotificationChannel('namaz_azan_v4_$i');
-          await android.deleteNotificationChannel('namaz_azan_v5_$i');
-        } catch (_) {}
-      }
-      await prefs.setBool('legacy_channels_deleted_v7', true);
-    }
 
     await android.createNotificationChannel(const AndroidNotificationChannel(
       _chSilent,
@@ -425,17 +444,28 @@ class NotificationService {
         _scheduledIdsKey, writtenIds.map((id) => '$id').toList());
   }
 
+  final List<Completer<void>> _pendingScheduleCompleters = [];
+
   /// Public entry-point: debounces by 500 ms so multiple calls within a short
   /// window (toggling several settings) are coalesced into a single batch.
   Future<void> scheduleWeeklyNotifications() async {
     if (kIsWeb || _plugin == null) return;
     _scheduleDebounce?.cancel();
     final completer = Completer<void>();
+    _pendingScheduleCompleters.add(completer);
     _scheduleDebounce = Timer(const Duration(milliseconds: 500), () async {
       try {
         await _doScheduleWeeklyNotifications();
+      } catch (e) {
+        debugPrint('Error in scheduleWeeklyNotifications: $e');
       } finally {
-        completer.complete();
+        final completers = List<Completer<void>>.from(_pendingScheduleCompleters);
+        _pendingScheduleCompleters.clear();
+        for (final c in completers) {
+          if (!c.isCompleted) {
+            c.complete();
+          }
+        }
       }
     });
     return completer.future;
@@ -1067,10 +1097,10 @@ class NotificationService {
 
   /// Title and body for a prayer-time alert.
   ///
-  /// English in Sukkur mode keeps its long-standing mixed format - the English
-  /// prayer name followed by the Urdu suffix - because that pairing belongs to
-  /// the Jantri. Every other combination, including English once a world city
-  /// is selected, is rendered wholly in the selected language.
+  /// In Sukkur mode, custom notifications are formatted across all 10 supported
+  /// languages with specific rulings and advisories (e.g. Zawal makruh warning,
+  /// Intiha-e-Sehar fasting closure, Fajr early azan advisory). In World mode,
+  /// standard localized prayer alerts are preserved.
   @visibleForTesting
   (String, String) prayerAlert({
     required PrayerTime prayer,
@@ -1091,15 +1121,9 @@ class NotificationService {
       'صلاة سكر',
     )} ($rawTime)';
 
-    if (language == 'english' && isSukkurMode) {
-      final legacy = switch (prayer.name) {
-        'Tulu Aftab' =>
-          '$mark<b>Sunrise</b> | کا وقت شروع ہو گیا ہے\n(نماز کا ممنوع وقت)',
-        'Ishraq' =>
-          '$mark<b>Ishraq</b> | کا وقت شروع ہو گیا ہے\n(اب نماز پڑھ سکتے ہیں)',
-        _ => '$mark<b>${prayer.name}</b> | کا وقت شروع ہو گیا ہے',
-      };
-      return (title, legacy);
+    if (isSukkurMode) {
+      final (startedText, suffixText) = _sukkurAlertContent(prayer.name, language);
+      return (title, '$mark$startedText$suffixText');
     }
 
     // Label key, not the preference key: a calculated city says "Asr" where
@@ -1140,6 +1164,161 @@ class NotificationService {
     };
 
     return (title, '$mark$started$suffix');
+  }
+
+  /// Sukkur-mode prayer alert phrasing and brackets in all 10 supported languages.
+  (String, String) _sukkurAlertContent(String prayerName, String lang) {
+    // 1. Specific rulings/brackets for Sukkur mode
+    final String suffix = switch (prayerName) {
+      'Zawal' => switch (lang) {
+          'urdu' => '\n(اس وقت سے 5 منٹ پہلے اور 5 منٹ بعد نماز پڑھنا مکروہ ہے)',
+          'sindhi' => '\n(هن وقت کان 5 منٽ اڳ ۽ 5 منٽ پوءِ نماز پڙهڻ مڪروهه آهي)',
+          'arabic' => '\n(يُكره أداء الصلاة قبل هذا الوقت بـ 5 دقائق وبعده بـ 5 دقائق)',
+          'persian' => '\n(خواندن نماز ۵ دقیقه قبل و ۵ دقیقه بعد از این زمان مکروه است)',
+          'hindi' => '\n(इस समय से 5 मिनट पहले और 5 मिनट बाद नमाज़ पढ़ना मकरूह है)',
+          'bengali' => '\n(এই সময়ের ৫ মিনিট আগে ও ৫ মিনিট পরে নামায পড়া মাকরূহ)',
+          'turkish' => '\n(Bu vakitten 5 dk önce ve 5 dk sonra namaz kılmak mekruhtur)',
+          'indonesian' => '\n(Makruh shalat 5 menit sebelum dan 5 menit sesudah waktu ini)',
+          'french' => '\n(Il est déconseillé de prier 5 min avant et 5 min après)',
+          _ => '\n(Praying is disliked 5 minutes before and 5 minutes after this time)',
+        },
+      'Intiha e Sehar' => switch (lang) {
+          'urdu' => '\n(روزہ بند کر لیجیے)',
+          'sindhi' => '\n(روزو بند ڪري وٺو)',
+          'arabic' => '\n(أمسكوا عن الطعام وبدء الصيام)',
+          'persian' => '\n(روزه را آغاز کرده و از خوردن دست بکشید)',
+          'hindi' => '\n(रोज़ा बंद कर लीजिए)',
+          'bengali' => '\n(রোজা শুরু করুন / সেহরি বন্ধ করুন)',
+          'turkish' => '\n(Oruca başlayınız / yemeyi kesiniz)',
+          'indonesian' => '\n(Hentikan makan / mulailah berpuasa)',
+          'french' => '\n(Arrêtez de manger / fermez le jeûne)',
+          _ => '\n(Please close your fast / stop eating)',
+        },
+      'Fajar' => switch (lang) {
+          'urdu' => '\n(فجر کی اذان اس وقت سے پہلے نہ دی جائے)',
+          'sindhi' => '\n(فجر جي اذان هن وقت کان اڳ نه ڏني وڃي)',
+          'arabic' => '\n(لا ينبغي رفع أذان الفجر قبل هذا الوقت)',
+          'persian' => '\n(اذان صبح نباید پیش از این زمان گفته شود)',
+          'hindi' => '\n(फ़ज्र की अज़ान इस समय से पहले न दी जाए)',
+          'bengali' => '\n(ফজরের আযান এই সময়ের পূর্বে যেন না দেওয়া হয়)',
+          'turkish' => '\n(Sabah ezanı bu vakitten önce okunmamalıdır)',
+          'indonesian' => '\n(Adzan Subuh tidak boleh dikumandangkan sebelum waktu ini)',
+          'french' => '\n(L\'Adhan de Fajr ne doit pas être prononcé avant cette heure)',
+          _ => '\n(Fajr Azan should not be called before this time)',
+        },
+      'Tulu Aftab' => switch (lang) {
+          'urdu' => '\n(نماز کا ممنوع وقت)',
+          'sindhi' => '\n(نماز جو ممنوع وقت)',
+          'arabic' => '\n(الوقت الممنوع للصلاة)',
+          'persian' => '\n(زمان ممنوع برای نماز)',
+          'hindi' => '\n(नमाज़ का मना किया गया समय)',
+          'bengali' => '\n(নামাযের নিষিদ্ধ সময়)',
+          'turkish' => '\n(Namaz için mekruh vakit)',
+          'indonesian' => '\n(Waktu terlarang untuk shalat)',
+          'french' => '\n(Temps interdit pour la prière)',
+          _ => '\n(Forbidden time for prayer)',
+        },
+      'Ishraq' => switch (lang) {
+          'urdu' => '\n(اب نماز پڑھ سکتے ہیں)',
+          'sindhi' => '\n(هاڻي نماز پڙهي سگهو ٿا)',
+          'arabic' => '\n(الآن يمكن أداء الصلاة)',
+          'persian' => '\n(اکنون می‌توانید نماز بخوانید)',
+          'hindi' => '\n(अब नमाज़ पढ़ सकते हैं)',
+          'bengali' => '\n(এখন নামায পড়া যাবে)',
+          'turkish' => '\n(Şimdi namaz kılabilirsiniz)',
+          'indonesian' => '\n(Sekarang boleh shalat)',
+          'french' => '\n(Vous pouvez prier maintenant)',
+          _ => '\n(You can pray now)',
+        },
+      _ => '',
+    };
+
+    // 2. Specific main sentences for Sukkur mode
+    final String started = switch (prayerName) {
+      'Tulu Aftab' => switch (lang) {
+          'urdu' => '<b>طلوع آفتاب</b> ہو گیا ہے',
+          'sindhi' => '<b>سج اڀرڻ</b> جو وقت ٿي ويو آهي',
+          'arabic' => '<b>شروق الشمس</b> قد حان',
+          'persian' => '<b>طلوع آفتاب</b> شد',
+          'hindi' => '<b>सूर्योदय</b> हो गया है',
+          'bengali' => '<b>সূর্যোদয়</b> হয়েছে',
+          'turkish' => '<b>Güneş doğuşu</b> gerçekleşti',
+          'indonesian' => '<b>Terbit matahari</b> telah tiba',
+          'french' => 'Le <b>lever du soleil</b> a eu lieu',
+          _ => '<b>Sunrise</b> has occurred',
+        },
+      'Ishraq' => switch (lang) {
+          'urdu' => '<b>اشراق</b> کا وقت ہو گیا ہے',
+          'sindhi' => '<b>اشراق</b> جو وقت ٿي ويو آهي',
+          'arabic' => 'حان وقت <b>الإشراق</b>',
+          'persian' => 'وقت <b>اشراق</b> فرا رسید',
+          'hindi' => '<b>इशराक़</b> का समय हो गया है',
+          'bengali' => '<b>ইশরাক</b> এর সময় হয়ে গেছে',
+          'turkish' => '<b>İşrak</b> vakti girdi',
+          'indonesian' => 'Waktu <b>Isyraq</b> telah tiba',
+          'french' => 'L\'heure d\'<b>Ishraq</b> est arrivée',
+          _ => '<b>Ishraq</b> time has arrived',
+        },
+      'Zawal' => switch (lang) {
+          'urdu' => '<b>زوال</b> کا وقت ہو گیا ہے',
+          'sindhi' => '<b>زوال</b> جو وقت ٿي ويو آهي',
+          'arabic' => 'حان وقت <b>الزوال</b>',
+          'persian' => 'وقت <b>زوال</b> فرا رسید',
+          'hindi' => '<b>ज़वाल</b> का समय हो गया है',
+          'bengali' => '<b>যাওয়াল</b> এর সময় হয়ে গেছে',
+          'turkish' => '<b>Zeval</b> vakti girdi',
+          'indonesian' => 'Waktu <b>Zawal</b> telah tiba',
+          'french' => 'L\'heure de <b>Zawal</b> est arrivée',
+          _ => '<b>Zawal</b> time has arrived',
+        },
+      'Intiha e Sehar' => switch (lang) {
+          'urdu' => '<b>انتہائے سحر</b> کا وقت ہو چکا ہے',
+          'sindhi' => '<b>انتہائے سحر</b> جو وقت ٿي چڪو آهي',
+          'arabic' => 'انتهى وقت <b>السحور</b>',
+          'persian' => 'زمان <b>پایان سحر</b> فرا رسید',
+          'hindi' => '<b>इंतिहा-ए-सहर</b> का समय समाप्त हो गया है',
+          'bengali' => '<b>সেহরির শেষ সময়</b> হয়ে গেছে',
+          'turkish' => '<b>İmsak / Sahur</b> vakti sona erdi',
+          'indonesian' => 'Waktu <b>Imsak / Akhir Sahur</b> telah berakhir',
+          'french' => 'La fin du <b>Sahur</b> est arrivée',
+          _ => '<b>Intiha-e-Sehar</b> time has ended',
+        },
+      'Fajar' => switch (lang) {
+          'urdu' => '<b>فجر</b> کا وقت شروع ہو گیا ہے',
+          'sindhi' => '<b>فجر</b> جو وقت شروع ٿي ويو آهي',
+          'arabic' => 'بدأ وقت <b>الفجر</b>',
+          'persian' => 'وقت <b>فجر</b> آغاز شد',
+          'hindi' => '<b>फ़ज्र</b> का समय शुरू हो गया है',
+          'bengali' => '<b>ফজর</b> এর সময় শুরু হয়েছে',
+          'turkish' => '<b>Sabah / Fecir</b> vakti başladı',
+          'indonesian' => 'Waktu <b>Subuh</b> telah dimulai',
+          'french' => 'L\'heure de <b>Fajr</b> a commencé',
+          _ => '<b>Fajr</b> time has started',
+        },
+      _ => () {
+          final localizedName = switch (lang) {
+            'urdu' => _urduNames[prayerName] ?? prayerName,
+            'sindhi' => _sindhiNames[prayerName] ?? prayerName,
+            'arabic' => _arabicNames[prayerName] ?? prayerName,
+            'english' => prayerName,
+            _ => worldTranslations[lang]?[prayerName] ?? prayerName,
+          };
+          return switch (lang) {
+            'urdu' => '<b>$localizedName</b> کا وقت شروع ہو گیا ہے',
+            'sindhi' => '<b>$localizedName</b> جو وقت شروع ٿي ويو آهي',
+            'arabic' => 'بدأ وقت <b>$localizedName</b>',
+            'persian' => 'وقت <b>$localizedName</b> آغاز شد',
+            'hindi' => '<b>$localizedName</b> का समय शुरू हो गया है',
+            'bengali' => '<b>$localizedName</b> এর সময় শুরু হয়েছে',
+            'turkish' => '<b>$localizedName</b> vakti başladı',
+            'indonesian' => 'Waktu <b>$localizedName</b> telah dimulai',
+            'french' => 'L\'heure de <b>$localizedName</b> a commencé',
+            _ => '<b>$localizedName</b> time has started',
+          };
+        }(),
+    };
+
+    return (started, suffix);
   }
 
   @visibleForTesting
@@ -1570,13 +1749,7 @@ class NotificationService {
       final int offsetMins = prefs.getInt('jamaat_reminder_offset_mins') ?? 15;
       final String language = prefs.getString('language_code') ?? 'english';
 
-      final masjidList = JamaatTimesService.instance.getMasjidList();
-      if (masjidList.isEmpty) return;
-
-      final masjid = masjidList.cast<dynamic>().firstWhere(
-        (m) => m.id == favoriteId,
-        orElse: () => null,
-      );
+      final masjid = JamaatTimesService.instance.findMasjidById(favoriteId);
       if (masjid == null) return;
 
       final timing = JamaatTimesService.instance.getTimingFor(masjid);

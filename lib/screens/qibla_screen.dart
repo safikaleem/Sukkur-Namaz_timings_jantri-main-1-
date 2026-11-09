@@ -6,7 +6,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_theme.dart';
-import '../widgets/dr_slogan_footer.dart';
 import '../widgets/dr_slogan_header.dart';
 
 // Kaaba, Mecca
@@ -226,7 +225,6 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
             // ── Body ────────────────────────────────────────────
             Expanded(child: _buildBody(isDark, settings)),
-            const DrSloganFooter(),
           ],
         ),
       ),

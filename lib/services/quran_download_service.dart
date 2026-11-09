@@ -31,8 +31,8 @@ class QuranDownloadService {
 
   /// Gets the local File object for a given PDF filename.
   Future<File> getLocalPdfFile(String fileName) async {
-    // Check local Downloads folder in debug mode for local testing
-    if (kDebugMode && !kIsWeb) {
+    // Check local Downloads folder on Windows in debug mode for local testing
+    if (kDebugMode && !kIsWeb && Platform.isWindows) {
       final localDownloadFile = File('C:\\Users\\Lenovo\\Downloads\\$fileName');
       if (await localDownloadFile.exists()) {
         return localDownloadFile;
@@ -69,7 +69,7 @@ class QuranDownloadService {
   }) async {
     try {
       final targetFile = await getLocalPdfFile(fileName);
-      if (await targetFile.exists()) {
+      if (await targetFile.exists() && (await targetFile.length()) > 0) {
         onProgress(1, 1, 1.0);
         return targetFile;
       }
@@ -77,6 +77,7 @@ class QuranDownloadService {
       final url = Uri.parse('$baseUrl$fileName');
       final client = HttpClient();
       final request = await client.getUrl(url);
+      request.headers.set('User-Agent', 'SukkurSalah-Android/1.4.8');
       final response = await request.close();
 
       if (response.statusCode != 200) {
@@ -85,6 +86,11 @@ class QuranDownloadService {
 
       final totalBytes = response.contentLength;
       int downloadedBytes = 0;
+
+      final parentDir = targetFile.parent;
+      if (!await parentDir.exists()) {
+        await parentDir.create(recursive: true);
+      }
 
       final tempFile = File('${targetFile.path}.part');
       final sink = tempFile.openWrite();
@@ -149,7 +155,7 @@ class QuranDownloadService {
     _isAutoDownloading = true;
 
     if (quranType == '15_line') {
-      final fileName = quran15LineFileName;
+      const fileName = quran15LineFileName;
       if (await isPdfAvailable(fileName)) {
         downloadStatus.value = const AutoDownloadStatus(
           isDownloading: false,
@@ -347,7 +353,7 @@ class _QuranDownloadDialogState extends State<QuranDownloadDialog> {
       backgroundColor: isDark ? const Color(0xFF2C2C3E) : Colors.white,
       title: Column(
         children: [
-          Icon(Icons.cloud_download_rounded, size: 44, color: const Color(0xFFD4A574)),
+          const Icon(Icons.cloud_download_rounded, size: 44, color: Color(0xFFD4A574)),
           const SizedBox(height: 12),
           Text(
             title,

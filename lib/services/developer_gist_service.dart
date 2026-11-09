@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'jamaat_times_service.dart';
 
 /// Service for managing GitHub Gist updates for Announcements & Hijri Calendar
 /// Exclusively used in Developer / Admin Mode.
@@ -187,45 +188,108 @@ class DeveloperGistService {
         return (success: false, message: 'Invalid masjid ID.');
       }
 
-      final existingIndex = masjids.indexWhere((m) => m['id']?.toString().trim() == newId);
-      if (existingIndex >= 0) {
-        final merged = Map<String, dynamic>.from(masjids[existingIndex]);
-        newMasjidMap.forEach((k, v) {
-          if (v != null) merged[k] = v;
+      Map<dynamic, dynamic>? addrMap;
+      if (newMasjidMap['addresses'] is Map) {
+        addrMap = newMasjidMap['addresses'] as Map;
+      }
+      Map<dynamic, dynamic>? nameMap;
+      if (newMasjidMap['names'] is Map) {
+        nameMap = newMasjidMap['names'] as Map;
+      }
+      final String resolvedCity = JamaatMasjidInfo.resolveCity(
+        id: newId,
+        address: newMasjidMap['address']?.toString() ?? '',
+        city: newMasjidMap['city']?.toString(),
+        name: newMasjidMap['name']?.toString(),
+        addresses: addrMap,
+        names: nameMap,
+      );
+      newMasjidMap['city'] = resolvedCity;
+      final bool isKarachiMasjid = resolvedCity == 'karachi';
+
+      // Keep flat keys synchronized with nested multi-language dictionaries
+      const langSuffixes = {
+        'urdu': 'ur',
+        'sindhi': 'sd',
+        'arabic': 'ar',
+        'hindi': 'hi',
+        'bengali': 'bn',
+        'persian': 'fa',
+        'turkish': 'tr',
+        'french': 'fr',
+        'indonesian': 'id',
+      };
+      if (newMasjidMap['names'] is Map) {
+        final nMap = newMasjidMap['names'] as Map;
+        langSuffixes.forEach((lang, suffix) {
+          if (nMap[lang] != null && nMap[lang].toString().trim().isNotEmpty) {
+            newMasjidMap['name_$suffix'] = nMap[lang].toString().trim();
+          }
         });
+      }
+      if (newMasjidMap['addresses'] is Map) {
+        final aMap = newMasjidMap['addresses'] as Map;
+        langSuffixes.forEach((lang, suffix) {
+          if (aMap[lang] != null && aMap[lang].toString().trim().isNotEmpty) {
+            newMasjidMap['address_$suffix'] = aMap[lang].toString().trim();
+          }
+        });
+      }
 
-        // Keep flat keys synchronized with nested multi-language dictionaries
-        const langSuffixes = {
-          'urdu': 'ur',
-          'sindhi': 'sd',
-          'arabic': 'ar',
-          'hindi': 'hi',
-          'bengali': 'bn',
-          'persian': 'fa',
-          'turkish': 'tr',
-          'french': 'fr',
-          'indonesian': 'id',
-        };
-        if (newMasjidMap['names'] is Map) {
-          final nMap = newMasjidMap['names'] as Map;
-          langSuffixes.forEach((lang, suffix) {
-            if (nMap[lang] != null && nMap[lang].toString().trim().isNotEmpty) {
-              merged['name_$suffix'] = nMap[lang].toString().trim();
-            }
-          });
+      final rawKarachiMasjids = gistData['karachi_masjids'];
+      final List<Map<String, dynamic>> karachiMasjids = [];
+      if (rawKarachiMasjids is List) {
+        for (final item in rawKarachiMasjids) {
+          if (item is Map) {
+            karachiMasjids.add(Map<String, dynamic>.from(item));
+          }
         }
-        if (newMasjidMap['addresses'] is Map) {
-          final aMap = newMasjidMap['addresses'] as Map;
-          langSuffixes.forEach((lang, suffix) {
-            if (aMap[lang] != null && aMap[lang].toString().trim().isNotEmpty) {
-              merged['address_$suffix'] = aMap[lang].toString().trim();
-            }
-          });
-        }
+      }
 
-        masjids[existingIndex] = merged;
+      if (isKarachiMasjid) {
+        // 1. Save to dedicated karachi_masjids section with real visibility
+        final kIndex = karachiMasjids.indexWhere((m) => m['id']?.toString().trim() == newId);
+        if (kIndex >= 0) {
+          final mergedK = Map<String, dynamic>.from(karachiMasjids[kIndex]);
+          newMasjidMap.forEach((k, v) {
+            if (v != null) mergedK[k] = v;
+          });
+          karachiMasjids[kIndex] = mergedK;
+        } else {
+          karachiMasjids.add(newMasjidMap);
+        }
+        gistData['karachi_masjids'] = karachiMasjids;
+
+        // 2. Backward compatibility for older v1.4.7 app clients:
+        // In legacy 'masjids' list, mark hidden: true so 1.4.7 NEVER displays it in Sukkur!
+        final legacyIndex = masjids.indexWhere((m) => m['id']?.toString().trim() == newId);
+        final legacyCopy = legacyIndex >= 0
+            ? Map<String, dynamic>.from(masjids[legacyIndex])
+            : <String, dynamic>{};
+        newMasjidMap.forEach((k, v) {
+          if (v != null) legacyCopy[k] = v;
+        });
+        legacyCopy['hidden'] = true;
+        if (legacyIndex >= 0) {
+          masjids[legacyIndex] = legacyCopy;
+        } else {
+          masjids.add(legacyCopy);
+        }
       } else {
-        masjids.add(newMasjidMap);
+        // Regular Sukkur masjid: remove from karachi_masjids if present
+        karachiMasjids.removeWhere((m) => m['id']?.toString().trim() == newId);
+        gistData['karachi_masjids'] = karachiMasjids;
+
+        final existingIndex = masjids.indexWhere((m) => m['id']?.toString().trim() == newId);
+        if (existingIndex >= 0) {
+          final merged = Map<String, dynamic>.from(masjids[existingIndex]);
+          newMasjidMap.forEach((k, v) {
+            if (v != null) merged[k] = v;
+          });
+          masjids[existingIndex] = merged;
+        } else {
+          masjids.add(newMasjidMap);
+        }
       }
 
       gistData['masjids'] = masjids;
