@@ -1,7 +1,11 @@
+# Preserve generic type signatures & annotations for Gson TypeToken under R8 fullMode
+-keepattributes Signature, InnerClasses, EnclosingMethod, *Annotation*
+
 # Flutter Local Notifications & Gson
 -keep class com.dexterous.flutterlocalnotifications.** { *; }
 -keep class com.google.gson.** { *; }
 -keep class com.google.gson.reflect.** { *; }
+-keep class * extends com.google.gson.reflect.TypeToken { *; }
 -dontwarn com.google.gson.**
 
 # WorkManager background worker
@@ -16,9 +20,13 @@
 -dontwarn com.google.android.play.core.**
 
 # Native entry points & receivers
+-keep class pk.sukkur.salah.MainApplication { *; }
 -keep class pk.sukkur.salah.MainActivity { *; }
 -keep class pk.sukkur.salah.AutoSilentReceiver { *; }
 -keep class pk.sukkur.salah.BootReceiver { *; }
+-keep class pk.sukkur.salah.PrayerAlarmReceiver { *; }
+-keep class pk.sukkur.salah.PrayerKeepAliveService { *; }
+-keep class pk.sukkur.salah.PrayerAlarmGuardian { *; }
 -keep class pk.sukkur.salah.PrayerWidget*Provider { *; }
 
 # SQLite & Net warnings

@@ -216,10 +216,17 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
     _disposed = true;
     _pageSearchController.dispose();
     _pageController?.dispose();
-    for (final document in _open.values) {
-      document.close();
-    }
+    final docsToClose = _open.values.toList();
     _open.clear();
+    // Native libpdfium crash prevention: wait for any active render queue
+    // to finish and close its pdfPage before closing documents.
+    _renderQueue.whenComplete(() {
+      for (final document in docsToClose) {
+        try {
+          document.close();
+        } catch (_) {}
+      }
+    });
     super.dispose();
   }
 
@@ -318,7 +325,11 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
     try {
       final document = await future;
       if (_disposed) {
-        await document.close();
+        _renderQueue.whenComplete(() {
+          try {
+            document.close();
+          } catch (_) {}
+        });
         return document;
       }
       _open[parah] = document;
@@ -337,7 +348,15 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
       // Drop its rendered pages too, or they would outlive the document they
       // came from and never be reachable again.
       _pages.removeWhere((page, _) => locationForPage(page, widget.settings.quranType).parah == oldest);
-      document?.close();
+      if (document != null) {
+        // Native libpdfium crash prevention: do not close document while
+        // an in-flight page render may still be closing its PdfPage.
+        _renderQueue.whenComplete(() {
+          try {
+            document.close();
+          } catch (_) {}
+        });
+      }
     }
   }
 
@@ -464,26 +483,82 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
 
   // ── Build ───────────────────────────────────────────────────────────────────
 
-  PhotoViewGalleryPageOptions _buildPage(BuildContext context, int index) {
+  PhotoViewGalleryPageOptions _buildPage(BuildContext context, int index, Size viewportSize) {
     final page = index + 1;
     final location = locationForPage(page, widget.settings.quranType);
     final is15Line = widget.settings.quranType == '15_line';
 
-    return PhotoViewGalleryPageOptions(
-      imageProvider: PdfPageImageProvider(
-        _pageImage(page),
-        page,
-        // Identity is (page, documentId); a stable per-juz string keeps the
-        // image cache keyed correctly across a document being reopened.
-        'juz-${location.parah}',
+    return PhotoViewGalleryPageOptions.customChild(
+      child: SizedBox(
+        width: viewportSize.width,
+        height: viewportSize.height,
+        child: Image(
+          image: PdfPageImageProvider(
+            _pageImage(page),
+            page,
+            // Identity is (page, documentId); a stable per-juz string keeps the
+            // image cache keyed correctly across a document being reopened.
+            'juz-${location.parah}',
+          ),
+          fit: BoxFit.fill,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (context, error, stackTrace) => GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => widget.onToggleChrome?.call(),
+            child: SizedBox.expand(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.menu_book_rounded,
+                        size: 56,
+                        color: is15Line ? const Color(0xFF4C6A75) : const Color(0xFF3F7A63),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        widget.settings.translate(
+                          'Quran file not found on device.',
+                          'قرآن کی فائل ڈیوائس پر موجود نہیں ہے۔',
+                          'قرآن جي فائل ڊوائيس تي موجود ناهي.',
+                          'ملف القرآن غير موجود على الجهاز.',
+                        ),
+                        style: TextStyle(
+                          color: widget.isDark ? Colors.white : Colors.black87,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      FilledButton.icon(
+                        icon: const Icon(Icons.download_rounded, size: 20),
+                        label: Text(widget.settings.translate('Download Now', 'ڈاؤنلوڈ کریں', 'ڊائونلوڊ ڪريو', 'تحميل الآن')),
+                        onPressed: () async {
+                          final ready = await QuranDownloadService.instance.ensureQuranReady(
+                            context,
+                            quranType: widget.settings.quranType,
+                            parahNumber: _currentParah,
+                          );
+                          if (ready && mounted) {
+                            setState(() {
+                              _errorMessage = null;
+                              _pages.clear();
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
-      // photo_view defaults to FilterQuality.none, i.e. nearest-neighbour, so
-      // the moment a page is scaled at all - which it always is, the scan never
-      // matches the screen exactly - the thin Arabic strokes and tajweed
-      // colouring break up into hard steps.
-      filterQuality: FilterQuality.high,
-      // Contained scale ensures the full page fits neatly without horizontal
-      // drag interception by PhotoView, enabling instant, buttery-smooth page turns.
+      childSize: viewportSize,
       minScale: PhotoViewComputedScale.contained * 1.0,
       maxScale: PhotoViewComputedScale.contained * 3.5,
       initialScale: PhotoViewComputedScale.contained * 1.0,
@@ -491,62 +566,8 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
       onTapUp: (context, details, controllerValue) {
         widget.onToggleChrome?.call();
       },
-      errorBuilder: (context, error, stackTrace) => GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => widget.onToggleChrome?.call(),
-        child: SizedBox.expand(
-          child: Center(
-            child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.menu_book_rounded,
-                size: 56,
-                color: is15Line ? const Color(0xFF4C6A75) : const Color(0xFF3F7A63),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                widget.settings.translate(
-                  'Quran file not found on device.',
-                  'قرآن کی فائل ڈیوائس پر موجود نہیں ہے۔',
-                  'قرآن جي فائل ڊوائيس تي موجود ناهي.',
-                  'ملف القرآن غير موجود على الجهاز.',
-                ),
-                style: TextStyle(
-                  color: widget.isDark ? Colors.white : Colors.black87,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                icon: const Icon(Icons.download_rounded, size: 20),
-                label: Text(widget.settings.translate('Download Now', 'ڈاؤنلوڈ کریں', 'ڊائونلوڊ ڪريو', 'تحميل الآن')),
-                onPressed: () async {
-                  final ready = await QuranDownloadService.instance.ensureQuranReady(
-                    context,
-                    quranType: widget.settings.quranType,
-                    parahNumber: _currentParah,
-                  );
-                  if (ready && mounted) {
-                    setState(() {
-                      _errorMessage = null;
-                      _pages.clear();
-                    });
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  ),
-);
-}
+    );
+  }
 
   Widget _buildErrorView() {
     final is15Line = widget.settings.quranType == '15_line';
@@ -688,27 +709,32 @@ class _PdfMushafReaderState extends State<PdfMushafReader> {
           Expanded(
             child: hasError
                 ? _buildErrorView()
-                : Directionality(
-              textDirection: TextDirection.ltr,
-              child: PhotoViewGallery.builder(
-                itemCount: widget.settings.quranType == '15_line' ? kQuran15LinePageCount : kQuranPageCount,
-                builder: _buildPage,
-                pageController: _pageController,
-                onPageChanged: _onPageChanged,
-                scrollDirection: Axis.horizontal,
-                reverse: true, // RTL reading direction
-                pageSnapping: true,
-                scrollPhysics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
-                backgroundDecoration: BoxDecoration(
-                  color: widget.isDark ? const Color(0xFF1E1E2E) : const Color(0xFFFDFBF7),
-                ),
-                loadingBuilder: (context, _) => Center(
-                  child: CircularProgressIndicator(
-                    color: widget.isDark ? Colors.white24 : Colors.black26,
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final viewportSize = Size(constraints.maxWidth, constraints.maxHeight);
+                      return Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: PhotoViewGallery.builder(
+                          itemCount: widget.settings.quranType == '15_line' ? kQuran15LinePageCount : kQuranPageCount,
+                          builder: (context, index) => _buildPage(context, index, viewportSize),
+                          pageController: _pageController,
+                          onPageChanged: _onPageChanged,
+                          scrollDirection: Axis.horizontal,
+                          reverse: true, // RTL reading direction
+                          pageSnapping: true,
+                          scrollPhysics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
+                          backgroundDecoration: BoxDecoration(
+                            color: widget.isDark ? const Color(0xFF1E1E2E) : const Color(0xFFFDFBF7),
+                          ),
+                          loadingBuilder: (context, _) => Center(
+                            child: CircularProgressIndicator(
+                              color: widget.isDark ? Colors.white24 : Colors.black26,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                ),
-              ),
-            ),
           ),
         ],
       ),

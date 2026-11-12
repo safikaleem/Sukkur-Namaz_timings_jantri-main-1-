@@ -38,17 +38,20 @@ void callbackDispatcher() {
     try {
       WidgetsFlutterBinding.ensureInitialized();
       await TimingsData.instance.load();
-      await NotificationService.instance.init();
+      await NotificationService.instance.init(isBackgroundWorker: true);
       final settings = SettingsProvider();
       await settings.loadFromPrefs();
       if (settings.notificationsEnabled) {
-        await NotificationService.instance.scheduleWeeklyNotifications();
+        await NotificationService.instance.scheduleWeeklyNotificationsIfNeeded();
       }
       if (settings.liveCountdownEnabled) {
         await NotificationService.instance.updateLiveCountdownNotification();
       } else {
         await NotificationService.instance.cancelLiveCountdown();
       }
+      // Allow native MainApplication's SharedPreferences listener coroutine to
+      // finish arming PrayerAlarmReceiver before WorkManager terminates the isolate.
+      await Future.delayed(const Duration(milliseconds: 600));
     } catch (e, s) {
       debugPrint('WorkManager task failed: $e\n$s');
     }
@@ -77,9 +80,7 @@ void main() {
           [DeviceOrientation.portraitUp]);
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.transparent,
         systemNavigationBarIconBrightness: Brightness.light,
       ));
     }
@@ -208,18 +209,19 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       JamaatTimesService.instance.fetchRemoteGistTimings();
       if (settings.notificationsEnabled) {
         _lastScheduled = DateTime.now();
-        // Fire-and-forget: scheduling ~140 alarms is heavy, don't block startup.
-        NotificationService.instance.scheduleWeeklyNotifications();
+        // Syncs via native PrayerAlarmGuardian if today's 14-day schedule is already fresh,
+        // or builds the full 14-day schedule if needed.
+        NotificationService.instance.scheduleWeeklyNotificationsIfNeeded();
       }
       WidgetService.updateWidget();
       Workmanager().initialize(
         callbackDispatcher,
-        isInDebugMode: false,
       );
       Workmanager().registerPeriodicTask(
         'prayer_notification_reschedule',
         'reschedule_weekly_notifications',
         frequency: const Duration(hours: 6),
+        existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
         constraints: Constraints(
           networkType: NetworkType.notRequired,
           requiresBatteryNotLow: false,
@@ -241,7 +243,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       _reportError(e, s);
     } finally {
       if (mounted) {
-        _refreshNotificationHealth();
+        // Defer health check slightly so cold start first-frame render is not delayed
+        Future.delayed(const Duration(milliseconds: 700), () {
+          if (mounted) _refreshNotificationHealth();
+        });
       }
     }
   }
@@ -276,19 +281,21 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     // reminders firing for users who leave the app open for a long stretch
     // without changing anything. No new dependencies; safe no-op on web.
     //
-    // Time-gate: only reschedule if more than 24 hours have passed since the last
-    // schedule, since WorkManager keeps it updated every 6 hours and notifications
-    // are scheduled 14 days ahead.
+    // Reschedule on resume if the calendar date changed or >= 12 hours have passed,
+    // ensuring upcoming prayer alarms are always fresh even if WorkManager was delayed by OEM battery managers.
     if (state == AppLifecycleState.resumed && !kIsWeb) {
       final now = DateTime.now();
       final lastSched = _lastScheduled;
-      if (lastSched == null || now.difference(lastSched).inHours >= 24) {
+      if (lastSched == null ||
+          now.day != lastSched.day ||
+          now.difference(lastSched).inHours >= 6) {
         _lastScheduled = now;
-        NotificationService.instance.scheduleWeeklyNotifications();
+        NotificationService.instance.scheduleWeeklyNotificationsIfNeeded();
       }
-      // The user may have just come back from the very settings page that fixes
-      // this, so re-read it rather than waiting for the next launch.
-      _refreshNotificationHealth();
+      // Defer health check so warm resume first-frame draw is instantaneous on budget devices
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted) _refreshNotificationHealth();
+      });
 
       // Cooldown-gated: only refresh remote Gist sync if at least 15 minutes passed,
       // avoiding duplicate network bursts and popup dialog clashes on rapid app switching.
@@ -580,10 +587,10 @@ class _SukkurNavBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: settings.displayThemeNavBar(isDark),
         border: Border(
-          top: BorderSide(color: isDark ? Colors.white.withOpacity(0.08) : Colors.black12, width: 0.5),
+          top: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black12, width: 0.5),
         ),
         boxShadow: isDark ? null : [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2))
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -2))
         ],
       ),
       child: SafeArea(

@@ -240,19 +240,28 @@ class _NotificationHealthScreenState extends State<NotificationHealthScreen>
         onFix: () => _fix(NotificationBlocker.batteryRestricted),
       ),
       if (health.hasAutoStartScreen) ...[
-        const Divider(height: 24),
-        Text(
-          settings.translate(
-            'This phone also has an Autostart list. Prayer alerts stop completely if the app is removed from recent apps, unless it is allowed there.',
-            'اس فون میں آٹو اسٹارٹ کی فہرست بھی ہے۔ اگر ایپ کو حالیہ ایپس سے ہٹا دیا جائے تو اطلاعات مکمل بند ہو جاتی ہیں، جب تک وہاں اجازت نہ ہو۔',
-            'هن فون ۾ آٽو اسٽارٽ لسٽ به آهي. جيڪڏهن ايپ کي تازين ايپس مان هٽايو ويو ته اطلاعون بلڪل بند ٿي وينديون، جيستائين اتي اجازت نه هجي.',
-            'يحتوي هذا الهاتف على قائمة التشغيل التلقائي. تتوقف التنبيهات تمامًا إذا أُزيل التطبيق من التطبيقات الأخيرة ما لم يُسمح له هناك.',
+        _row(
+          settings: settings,
+          textColor: textColor,
+          muted: muted,
+          ok: health.autoStartConfigured,
+          title: settings.translate(
+            'Allow Autostart / Background run',
+            'آٹو اسٹارٹ / پس منظر میں چلنے کی اجازت',
+            'آٽو اسٽارٽ / پس منظر ۾ هلڻ جي اجازت',
+            'السماح بالتشغيل التلقائي في الخلفية',
           ),
-          style: TextStyle(fontSize: 13, color: muted),
+          detail: settings.translate(
+            'Required on Infinix, Tecno, Vivo, Xiaomi & Oppo so swiping the app away does not delete prayer alarms.',
+            'انفنکس، ٹیکنو، ویوو، شاؤمی اور اوپو پر ضروری ہے تاکہ ایپ ہٹانے سے نماز کے الارم ختم نہ ہوں۔',
+            'انفنڪس، ٽيڪنو، ويوو، شائومي ۽ اوپو تي ضروري آهي ته جيئن ايپ هٽائڻ سان نماز جا الارم ختم نه ٿين.',
+            'مطلوب على هواتف Infinix وTecno وVivo وXiaomi وOppo حتى لا تُحذف منبهات الصلاة عند إغلاق التطبيق.',
+          ),
+          onFix: () => _fix(NotificationBlocker.autoStartNotConfigured),
         ),
-        const SizedBox(height: 8),
+        const Divider(height: 24),
         OutlinedButton.icon(
-          onPressed: NotificationHealth.openAutoStart,
+          onPressed: () => _fix(NotificationBlocker.autoStartNotConfigured),
           icon: const Icon(Icons.play_circle_outline),
           label: Text(settings.translate('Open Autostart settings',
               'آٹو اسٹارٹ سیٹنگز کھولیں', 'آٽو اسٽارٽ سيٽنگ کوليو',

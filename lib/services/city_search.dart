@@ -3,6 +3,7 @@ import 'package:flutter/services.dart' show rootBundle;
 
 import '../data/country_names.dart';
 import '../providers/settings_provider.dart' show SukkurLocation;
+import 'multilingual_city_aliases.dart';
 
 /// One place the user can pick.
 class CityResult {
@@ -75,6 +76,8 @@ class CitySearch {
   }
 
   /// Places whose name or country starts with or contains [query], best matches first.
+  /// Supports all 10 app languages: English, Urdu, Sindhi, Arabic, Hindi, Bengali,
+  /// Persian, Turkish, French, and Indonesian.
   ///
   /// Sukkur and its neighbours are dropped here rather than refused after the
   /// tap: the Jantri is the only correct source for them, so they must not be
@@ -82,11 +85,22 @@ class CitySearch {
   List<CityResult> search(String query, {int limit = defaultLimit}) {
     final cities = _cities;
     if (cities == null) return const [];
-    final q = query.trim().toLowerCase();
-    if (q.isEmpty) return const [];
+    final rawTrimmed = query.trim();
+    if (rawTrimmed.isEmpty) return const [];
 
+    final q = rawTrimmed.toLowerCase();
+    final qNorm = MultilingualCityAliases.normalize(rawTrimmed);
+
+    final aliasCities = MultilingualCityAliases.getMatchingEnglishCities(rawTrimmed);
+    final aliasTargetSet = aliasCities.map((e) => e.toLowerCase()).toSet();
+
+    final aliasCountries = MultilingualCityAliases.getMatchingCountries(rawTrimmed);
+    final countryTargetSet = aliasCountries.map((e) => e.toLowerCase()).toSet();
+
+    final aliasMatches = <CityResult>[];
     final prefixMatches = <CityResult>[];
     final substringMatches = <CityResult>[];
+    final countryMatches = <CityResult>[];
     final seen = <String>{};
 
     for (final city in cities) {
@@ -99,19 +113,41 @@ class CitySearch {
 
       if (seen.contains(key)) continue;
 
-      if (nameLower.startsWith(q)) {
+      if (aliasTargetSet.contains(nameLower)) {
+        seen.add(key);
+        aliasMatches.add(city);
+        if (aliasMatches.length >= limit) break;
+      } else if (nameLower.startsWith(q) || (qNorm.isNotEmpty && nameLower.startsWith(qNorm))) {
         seen.add(key);
         prefixMatches.add(city);
-        if (prefixMatches.length >= limit) break;
-      } else if (nameLower.contains(q) || countryLower.startsWith(q) || countryLower.contains(q)) {
+      } else if (nameLower.contains(q) ||
+          (qNorm.isNotEmpty && nameLower.contains(qNorm)) ||
+          countryLower.startsWith(q) ||
+          (qNorm.isNotEmpty && countryLower.startsWith(qNorm))) {
         seen.add(key);
         substringMatches.add(city);
+      } else if (countryTargetSet.contains(countryLower)) {
+        seen.add(key);
+        countryMatches.add(city);
       }
     }
 
-    final combined = [...prefixMatches];
+    final combined = <CityResult>[];
+    combined.addAll(aliasMatches);
+    if (combined.length < limit) {
+      for (final city in prefixMatches) {
+        combined.add(city);
+        if (combined.length >= limit) break;
+      }
+    }
     if (combined.length < limit) {
       for (final city in substringMatches) {
+        combined.add(city);
+        if (combined.length >= limit) break;
+      }
+    }
+    if (combined.length < limit) {
+      for (final city in countryMatches) {
         combined.add(city);
         if (combined.length >= limit) break;
       }

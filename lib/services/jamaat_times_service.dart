@@ -2643,8 +2643,8 @@ class JamaatTimesService extends ChangeNotifier {
         'indonesian': 'Perlintasan kereta api, New Goth, Sukkur',
       },
       defaultTimings: JamaatTiming(
-        fajr: '06:15 AM',
-        fajrUpdated: '05 Nov 2026',
+        fajr: '06:20 AM',
+        fajrUpdated: '12 Nov 2026',
         zuhar: '01:00 PM',
         asar: '04:30 PM',
         maghrib: 'Sunset',
@@ -2813,6 +2813,261 @@ class JamaatTimesService extends ChangeNotifier {
         jummah: '02:30 PM',
       ),
     ),
+    JamaatMasjidInfo(
+      id: 'jama_masjid_ibrahim_dehli_muslim_society_100_feet_road_sukkur',
+      nameKey: 'Jama Masjid Ibrahim',
+      addressKey: 'Dehli Muslim Society, 100 feet Road, Sukkur',
+      pin: '14441888',
+      city: 'sukkur',
+      localizedNames: {
+        'english': 'Jama Masjid Ibrahim',
+        'urdu': 'جامع مسجد ابراھیم',
+        'sindhi': 'جامع مسجد ابراهيم',
+        'arabic': 'جامع مسجد ابراهيم',
+        'hindi': 'जामा मस्जिद इब्राहीम',
+        'bengali': 'জামে মসজিদ ইব্রাহিম',
+        'persian': 'مسجد جامع ابراهیم',
+        'turkish': 'Jama Mescidi İbrahim',
+        'french': 'Jama Masjid Ibrahim',
+        'indonesian': 'Jamaah Masjid Ibrahim',
+      },
+      localizedAddresses: {
+        'english': 'Dehli Muslim Society, 100 feet Road, Sukkur',
+        'urdu': 'دہلی مسلم سوسائیٹی، سو (100) فٹ روڈ، سکھر',
+        'sindhi': 'دهلي مسلم سوسائٽي،سؤ (100) فوٽ روڊ، سکر',
+        'arabic': 'جمعية دلهي الإسلامية، طريق المائة (100) قدم، سوكور',
+        'hindi': 'देहली मुस्लिम सोसायटी, 100 फीट रोड, सुक्कुर',
+        'bengali': 'দেহলি মুসলিম সোসাইটি, 100 ফুট রোড, শুক্কুর',
+        'persian': 'جامعه مسلمانان دهلی، جاده صد (100) پا، سوکور',
+        'turkish': 'Dehli Müslüman Cemiyeti, 100 feet Yol, Sukkur',
+        'french': 'Société musulmane de Dehli, route de 100 pieds, Sukkur',
+        'indonesian': 'Masyarakat Muslim Dehli, Jalan 100 kaki, Sukkur',
+      },
+      defaultTimings: JamaatTiming(
+        fajr: '06:20 AM',
+        fajrUpdated: '08 Nov 2026',
+        zuhar: '01:15 PM',
+        asar: '04:30 PM',
+        asarUpdated: '08 Nov 2026',
+        maghrib: 'Sunset',
+        isha: '07:30 PM',
+        ishaUpdated: '08 Nov 2026',
+        jummah: '01:00 PM',
+      ),
+    ),
+    JamaatMasjidInfo(
+      id: 'masjid_noor_dawood_near_olpers_factory_khajoor_market_rohri',
+      nameKey: 'Masjid Noor Dawood',
+      addressKey: 'near Olpers factory, Khajoor Market, Rohri',
+      pin: '33443344',
+      city: 'sukkur',
+      localizedNames: {
+        'english': 'Masjid Noor Dawood',
+        'urdu': 'مسجد نور داؤد',
+        'sindhi': 'مسجد نور دائود',
+        'arabic': 'مسجد نور داود',
+        'hindi': 'नूर दाऊद मस्जिद',
+        'bengali': 'নূর দাউদ মসজিদ',
+        'persian': 'مسجد نور داود',
+        'turkish': 'Noor Davud Camii',
+        'french': 'Mosquée Noor Dawood',
+        'indonesian': 'Masjid Noor Dawood',
+      },
+      localizedAddresses: {
+        'english': 'near Olpers factory, Khajoor Market, Rohri',
+        'urdu': 'نزد اولپر فیکٹری، کھجور منڈی، روہڑی',
+        'sindhi': 'اولپر فيڪٽري جي ويجهو، کھجور منڊي، روهڙي',
+        'arabic': 'بالقرب من مصنع أولبار، خاجور ماندي، روهري',
+        'hindi': 'ओलपर्स फैक्ट्री के पास, खजूर मार्केट, रोहरी',
+        'bengali': 'ওলপারস কারখানার কাছে, খেজুর মার্কেট, রোহরি',
+        'persian': 'نزدیک کارخانه اولپار، خواجور مندی، روهری',
+        'turkish': 'Olpers fabrikası yakınında, Khajoor Pazarı, Rohri',
+        'french': 'près de l\'usine Olpers, marché de Khajoor, Rohri',
+        'indonesian': 'dekat pabrik Olpers, Pasar Khajoor, Rohri',
+      },
+      defaultTimings: JamaatTiming(
+        fajr: '06:20 AM',
+        fajrUpdated: '08 Nov 2026',
+        zuhar: '01:15 PM',
+        asar: '04:30 PM',
+        asarUpdated: '08 Nov 2026',
+        maghrib: 'Sunset',
+        isha: '07:15 PM',
+        ishaUpdated: '08 Nov 2026',
+        jummah: '02:00 PM',
+      ),
+    ),
+    JamaatMasjidInfo(
+      id: 'masjid_bilal_special_education_department_100_feet_road_sukkur',
+      nameKey: 'Masjid Bilal ( رضی اللہ عنہ)',
+      addressKey: 'Special education department, 100 feet road, Sukkur',
+      pin: '21102110',
+      city: 'sukkur',
+      localizedNames: {
+        'english': 'Masjid Bilal ( رضی اللہ عنہ)',
+        'urdu': 'مسجد بلال (رضی اللہ عنہ)',
+        'sindhi': 'بلال مسجد (رضی اللہ عنہ)',
+        'arabic': 'مسجد بلال (رضی اللہ عنہ)',
+        'hindi': 'मस्जिद बिलाल (आरए)',
+        'bengali': 'মসজিদে বিলাল (রাঃ)',
+        'persian': 'مسجد بلال (رضی اللہ عنہ)',
+        'turkish': 'Mescid-i Bilal (RA)',
+        'french': 'Masjid Bilal (RA)',
+        'indonesian': 'Masjid Bilal (RA)',
+      },
+      localizedAddresses: {
+        'english': 'Special education department, 100 feet road, Sukkur',
+        'urdu': 'اسپیشل ایجوکیشن ڈپارٹمنٹ، سو (100) فٹ روڈ، سکر',
+        'sindhi': 'اسپيشل ايجوڪيشن ڊپارٽمينٽ، سؤ فٹ (100) فوٽ روڊ، سکر',
+        'arabic': 'قسم التربية الخاصة، طريق المائة (100) قدم، سکر',
+        'hindi': 'विशेष शिक्षा विभाग, 100 फीट रोड, सुक्कुर',
+        'bengali': 'বিশেষ শিক্ষা বিভাগ, 100 ফুট রোড, শুক্কুর',
+        'persian': 'اداره آموزش ویژه، جاده صد (100) فوتی، سکر',
+        'turkish': 'Özel eğitim bölümü 100 metre yol Şükkur',
+        'french': 'Département d\'éducation spécialisée, route de 100 pieds, Sukkur',
+        'indonesian': 'Departemen Pendidikan Khusus, Jalan 100 Kaki, Sukkur',
+      },
+      defaultTimings: JamaatTiming(
+        fajr: '06:15 AM',
+        fajrUpdated: '09 Nov 2026',
+        zuhar: '01:00 PM',
+        asar: '04:30 PM',
+        asarUpdated: '09 Nov 2026',
+        maghrib: 'Sunset',
+        isha: '07:15 PM',
+        ishaUpdated: '09 Nov 2026',
+        jummah: '01:30 PM',
+      ),
+    ),
+    JamaatMasjidInfo(
+      id: 'jama_qadri_masjid_thalla_sukkur',
+      nameKey: 'Jama Qadri Masjid',
+      addressKey: 'Thalla, Sukkur',
+      pin: '52526262',
+      city: 'sukkur',
+      localizedNames: {
+        'english': 'Jama Qadri Masjid',
+        'urdu': 'جامع قادری مسجد',
+        'sindhi': 'جامع قادري مسجد',
+        'arabic': 'مسجد جامع قادري',
+        'hindi': 'जामा कादरी मस्जिद',
+        'bengali': 'জামে কাদরী মসজিদ',
+        'persian': 'جامع قادری مسجد',
+        'turkish': 'Jama Kadri Camii',
+        'french': 'Mosquée Jama Qadri',
+        'indonesian': 'Jama Qadri Masjid',
+      },
+      localizedAddresses: {
+        'english': 'Thalla, Sukkur',
+        'urdu': 'تھلہ، سکھر',
+        'sindhi': 'ٿلو، سکر',
+        'arabic': 'تَلَّة، سکر',
+        'hindi': 'थल्ला, सुक्कुर',
+        'bengali': 'থাল্লা, শুক্কুর',
+        'persian': 'ثلا، سکر',
+        'turkish': 'Thalla, Şükür',
+        'french': 'Thala, Sukkur',
+        'indonesian': 'Thalla, Sukkur',
+      },
+      defaultTimings: JamaatTiming(
+        fajr: '06:10 AM',
+        fajrUpdated: '09 Nov 2026',
+        zuhar: '01:15 PM',
+        asar: '04:30 PM',
+        asarUpdated: '09 Nov 2026',
+        maghrib: 'Sunset',
+        isha: '07:45 PM',
+        ishaUpdated: '09 Nov 2026',
+        jummah: '01:30 PM',
+      ),
+    ),
+    JamaatMasjidInfo(
+      id: 'jama_masjid_bait_ur_rehman_new_iron_market_golimar_sukkur',
+      nameKey: 'Jama Masjid Bait ur Rehman',
+      addressKey: 'New Iron Market, Golimar, Sukkur',
+      pin: '33669900',
+      localizedNames: {
+        'english': 'Jama Masjid Bait ur Rehman',
+        'urdu': 'جامع مسجد بیت الرحمٰن',
+        'sindhi': 'جامع مسجد بيت الرحمان',
+        'arabic': 'مسجد بيت الرحمن الجامع',
+        'hindi': 'जामा बैत उर रहमान मस्जिद',
+        'bengali': 'জামে বাইত উর রহমান মসজিদ',
+        'persian': 'مسجد جامع بیت الرحمن',
+        'turkish': 'Jama Bait ur Rehman Camii',
+        'french': 'Mosquée Jama Baitur Rehman',
+        'indonesian': 'Jama Masjid Bait ur Rehman',
+      },
+      localizedAddresses: {
+        'english': 'New Iron Market, Golimar, Sukkur',
+        'urdu': 'نیو آئرن مارکیٹ، گولیمار ، سکھر',
+        'sindhi': 'نيو آئرن مارڪيٽ، گوليمار، سکر',
+        'arabic': 'سوق الحديد الجديد، جوليمار، سکر',
+        'hindi': 'न्यू आयरन मार्केट, गोलीमार, सुक्कुर',
+        'bengali': 'নিউ আয়রন মার্কেট, গোলিমার, শুক্কুর',
+        'persian': 'بازار آهن جدید، گولیمار، سکر',
+        'turkish': 'Yeni Demir Pazarı, Golimar, Sukkur',
+        'french': 'Nouveau marché du fer, Golimar, Sukkur',
+        'indonesian': 'Pasar Besi Baru, Golimar, Sukkur',
+      },
+      defaultTimings: JamaatTiming(
+        fajr: '06:20 AM',
+        fajrUpdated: '10 Nov 2026',
+        zuhar: '01:00 PM',
+        asar: '04:30 PM',
+        asarUpdated: '10 Nov 2026',
+        maghrib: 'Sunset',
+        isha: '07:30 PM',
+        ishaUpdated: '10 Nov 2026',
+        jummah: '01:15 PM',
+      ),
+    ),
+  ];
+
+  // Pre-configured Karachi masjids list (built-in)
+  static const List<JamaatMasjidInfo> karachiMasjids = [
+    JamaatMasjidInfo(
+      id: 'jama_masjid_ghaforia_pakola_karachi',
+      nameKey: 'Jama Masjid Ghafooria (Pakola)',
+      addressKey: 'Manikjee Street, Garden East, Karachi',
+      pin: '44006600',
+      city: 'karachi',
+      localizedNames: {
+        'english': 'Jama Masjid Ghafooria (Pakola)',
+        'urdu': 'جامع مسجد غفوریہ (پاکولا)',
+        'sindhi': 'جامع مسجد غفوريه (پاڪولا)',
+        'arabic': 'جامع مسجد غفورية (باكولا)',
+        'hindi': 'जामा मस्जिद ग़फ़ूरिया (पाकोला)',
+        'bengali': 'জামে মসজিদ গফুরিয়া (পাকোলা)',
+        'persian': 'مسجد جامع غفوریه (پاکولا)',
+        'turkish': 'Gafuriye Cuma Camii (Pakola)',
+        'french': 'Grande Mosquée Ghafooria (Pakola)',
+        'indonesian': 'Masjid Jami Ghafooria (Pakola)',
+      },
+      localizedAddresses: {
+        'english': 'Manikjee Street, Garden East, Karachi',
+        'urdu': 'مانک جی اسٹریٹ، گارڈن ایسٹ، کراچی',
+        'sindhi': 'ماڻڪ جي اسٽريٽ، گارڊن ايسٽ، ڪراچي',
+        'arabic': 'شارع مانيك جي، غاردن إيست، كراتشي',
+        'hindi': 'माणिक जी स्ट्रीट, गार्डन ईस्ट, कराची',
+        'bengali': 'মানিক জী স্ট্রিট, গার্ডেন ইস্ট, করাচি',
+        'persian': 'خیابان مانیک جی، گاردن ایست، کراچی',
+        'turkish': 'Manikjee Caddesi, Garden East, Karaçi',
+        'french': 'Rue Manikjee, Garden East, Karachi',
+        'indonesian': 'Jalan Manikjee, Garden East, Karachi',
+      },
+      defaultTimings: JamaatTiming(
+        fajr: '06:15 AM',
+        fajrUpdated: '09 Nov 2026',
+        zuhar: '01:30 PM',
+        asar: '04:45 PM',
+        asarUpdated: '09 Nov 2026',
+        maghrib: 'Sunset',
+        isha: '07:45 PM',
+        ishaUpdated: '09 Nov 2026',
+        jummah: '01:45 PM',
+      ),
+    ),
   ];
 
 
@@ -2825,6 +3080,7 @@ class JamaatTimesService extends ChangeNotifier {
   final Set<String> _locallyUpdatedMasjidIds = {};
   String _masterAdminPin = '25081989';
   final Map<String, String> _masjidPins = {};
+  final Map<String, bool> _locallyHiddenMasjidOverrides = {};
 
   /// Returns the baseline Gist or built-in timing for a masjid (before Firestore overlay)
   JamaatTiming? getGistBaselineTimingFor(String masjidId) {
@@ -2965,6 +3221,9 @@ class JamaatTimesService extends ChangeNotifier {
     for (final m in sukkurMasjids) {
       if (m.id == masjidId && !_deletedMasjidIds.contains(m.id)) return m;
     }
+    for (final m in karachiMasjids) {
+      if (m.id == masjidId && !_deletedMasjidIds.contains(m.id)) return m;
+    }
     return null;
   }
 
@@ -2976,11 +3235,17 @@ class JamaatTimesService extends ChangeNotifier {
     final bool isKarachi = targetCity == 'karachi';
     final bool isAll = targetCity == 'all';
 
-    final List<JamaatMasjidInfo> list = isKarachi ? [] : List.from(sukkurMasjids);
+    final List<JamaatMasjidInfo> list = isKarachi
+        ? List.from(karachiMasjids)
+        : (isAll
+            ? [...sukkurMasjids, ...karachiMasjids]
+            : List.from(sukkurMasjids));
     list.removeWhere((m) => _deletedMasjidIds.contains(m.id));
 
     for (final remote in _dynamicMasjids) {
       if (_deletedMasjidIds.contains(remote.id)) continue;
+      // Internal integration test masjids must never be shown to regular users
+      if (!includeHidden && remote.id.startsWith('test_')) continue;
       final remoteCity = JamaatMasjidInfo.resolveCity(
         id: remote.id,
         address: remote.addressKey,
@@ -3047,13 +3312,14 @@ class JamaatTimesService extends ChangeNotifier {
     required bool hide,
   }) async {
     // 1. Update in-memory dynamic masjids list
+    _locallyHiddenMasjidOverrides[masjidId] = hide;
     final index = _dynamicMasjids.indexWhere((m) => m.id == masjidId);
     if (index >= 0) {
       final m = _dynamicMasjids[index];
       _dynamicMasjids[index] = m.copyWith(isHidden: hide);
     } else {
-      // Find in built-in list
-      final builtInList = sukkurMasjids.where((m) => m.id == masjidId).toList();
+      // Find in built-in list (Sukkur or Karachi)
+      final builtInList = [...sukkurMasjids, ...karachiMasjids].where((m) => m.id == masjidId).toList();
       if (builtInList.isNotEmpty) {
         final b = builtInList.first;
         _dynamicMasjids.add(b.copyWith(
@@ -3062,9 +3328,12 @@ class JamaatTimesService extends ChangeNotifier {
           localizedNames: b.localizedNames,
           localizedAddresses: b.localizedAddresses,
           pin: _masjidPins[masjidId] ?? b.pin,
+          city: b.city,
         ));
       }
     }
+
+    notifyListeners();
 
     // 2. Persist locally in SharedPreferences
     try {
@@ -3212,6 +3481,14 @@ class JamaatTimesService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
 
+      // Restore manual developer hide/unhide overrides
+      for (final m in [...sukkurMasjids, ...karachiMasjids]) {
+        final val = prefs.getBool('masjid_hidden_${m.id}');
+        if (val != null) {
+          _locallyHiddenMasjidOverrides[m.id] = val;
+        }
+      }
+
       // 1. Restore cached Firestore live timings
       final fsCached = prefs.getString(prefKeyFirestoreCache);
       if (fsCached != null && fsCached.isNotEmpty) {
@@ -3352,7 +3629,15 @@ class JamaatTimesService extends ChangeNotifier {
             }
             final name = item['name'] ?? item['nameKey'] ?? id;
             final address = item['address'] ?? item['addressKey'] ?? 'Sukkur';
-            final isHidden = item['hidden'] == true || item['enabled'] == false || item['removed'] == true;
+            bool isHidden = item['hidden'] == true || item['enabled'] == false || item['removed'] == true;
+            if (karachiMasjids.any((m) => m.id == id)) {
+              final userOverride = _locallyHiddenMasjidOverrides[id];
+              if (userOverride != null) {
+                isHidden = userOverride;
+              } else if (item['manually_hidden'] != true) {
+                isHidden = false;
+              }
+            }
             final timing = JamaatTiming.fromJson(item);
             final localizedNames = _extractLocalizedStrings(item, 'name');
             final localizedAddresses = _extractLocalizedStrings(item, 'address');
@@ -3587,6 +3872,15 @@ class JamaatTimesService extends ChangeNotifier {
       // If incoming is Firestore (or pending local update), Firestore ALWAYS takes precedence over
       // the static Gist baseline. Live committee updates must never be superseded by Gist.
       if (isIncomingFirestore) {
+        // Never let an OLDER dated value overwrite a newer one (stale copies).
+        if (incDt != null && currDt != null && _compareCalendarDays(incDt, currDt) < 0) {
+          return PrayerMergeResult(
+            time: cleanCurr,
+            updated: currUpdated,
+            noteUr: currNoteUr.isNotEmpty ? currNoteUr : incNoteUr,
+            noteEn: currNoteEn.isNotEmpty ? currNoteEn : incNoteEn,
+          );
+        }
         return PrayerMergeResult(
           time: cleanInc,
           updated: incUpdated.isNotEmpty ? incUpdated : currUpdated,
@@ -3745,6 +4039,9 @@ class JamaatTimesService extends ChangeNotifier {
 
   static JamaatTiming? _getDefaultTimingFor(String id) {
     for (final m in sukkurMasjids) {
+      if (m.id == id) return m.defaultTimings;
+    }
+    for (final m in karachiMasjids) {
       if (m.id == id) return m.defaultTimings;
     }
     return null;
@@ -4364,7 +4661,7 @@ class JamaatTimesService extends ChangeNotifier {
           jsonMap['name'] = m.nameKey;
           jsonMap['address'] = m.addressKey;
           jsonMap['city'] = m.city;
-          if (m.isHidden || m.city == 'karachi') {
+          if (m.isHidden) {
             jsonMap['hidden'] = true;
           }
           final pin = _masjidPins[m.id] ?? m.pin;
@@ -4465,7 +4762,15 @@ class JamaatTimesService extends ChangeNotifier {
                   if (rawMap.containsKey('name') || rawMap.containsKey('names')) {
                     final name = rawMap['name']?.toString() ?? masjidId;
                     final address = rawMap['address']?.toString() ?? 'Sukkur';
-                    final isHidden = rawMap['hidden'] == true;
+                    bool isHidden = rawMap['hidden'] == true;
+                    if (karachiMasjids.any((m) => m.id == masjidId)) {
+                      final userOverride = _locallyHiddenMasjidOverrides[masjidId];
+                      if (userOverride != null) {
+                        isHidden = userOverride;
+                      } else {
+                        isHidden = false;
+                      }
+                    }
                     final localizedNames = _extractLocalizedStrings(rawMap, 'name');
                     final localizedAddresses = _extractLocalizedStrings(rawMap, 'address');
                     final String city = JamaatMasjidInfo.resolveCity(
@@ -4491,7 +4796,7 @@ class JamaatTimesService extends ChangeNotifier {
                           city: city,
                         );
                       }
-                    } else if (!sukkurMasjids.any((m) => m.id == masjidId)) {
+                    } else if (!sukkurMasjids.any((m) => m.id == masjidId) && !karachiMasjids.any((m) => m.id == masjidId)) {
                       _dynamicMasjids.add(JamaatMasjidInfo(
                         id: masjidId,
                         nameKey: name,
@@ -4516,16 +4821,16 @@ class JamaatTimesService extends ChangeNotifier {
             notifyListeners();
             _persistCacheAsync('firestore_sync');
             _autoMirrorFirestoreToGistIfDeveloper();
-            if (!force) {
-              return true;
-            }
+            // The bundle is the single source of truth. Never fall through to the
+            // legacy collection, which can hold stale times and overwrite fresh ones.
+            return true;
           }
         }
       }
 
-      // Check legacy per-masjid collection if bundle failed (non-200), or when force-refresh is requested
-      // (e.g. user pulled to refresh or Developer hub opened), ensuring backward compatibility with Imams on v1.4.6.
-      if (bundleResponse.statusCode != 200 || force) {
+      // Legacy per-masjid collection is read ONLY when the bundle document does not exist yet (404).
+      // Reading it on every refresh let stale legacy values overwrite newer bundle values.
+      if (bundleResponse.statusCode == 404) {
         final separator = _firestoreCollectionUrl.toString().contains('?') ? '&' : '?';
         final freshUrl = '$_firestoreCollectionUrl${separator}t=$timestamp';
 
@@ -4691,7 +4996,7 @@ class JamaatTimesService extends ChangeNotifier {
         jsonMap['name'] = m.nameKey;
         jsonMap['address'] = m.addressKey;
         jsonMap['city'] = m.city;
-        if (m.isHidden || m.city == 'karachi') {
+        if (m.isHidden) {
           jsonMap['hidden'] = true;
         }
         final pin = _masjidPins[m.id] ?? m.pin;

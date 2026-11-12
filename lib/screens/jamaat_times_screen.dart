@@ -48,6 +48,10 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
       _lastCity = city;
       JamaatTimesService.instance.setSelectedCity(city);
       _loadPinnedMasajid(city);
+      _showFloatingSearchBar = false;
+      if (_mainScrollController.hasClients) {
+        _mainScrollController.jumpTo(0);
+      }
     }
   }
 
@@ -80,6 +84,14 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     if (widget.isActive && !oldWidget.isActive) {
       _loadRemoteTimings(force: true);
       _startLiveSyncTimer();
+      if (_mainScrollController.hasClients) {
+        final shouldShow = _mainScrollController.offset > 340;
+        if (_showFloatingSearchBar != shouldShow) {
+          setState(() {
+            _showFloatingSearchBar = shouldShow;
+          });
+        }
+      }
     } else if (!widget.isActive && oldWidget.isActive) {
       _stopLiveSyncTimer();
     }
@@ -808,6 +820,59 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
     }
   }
 
+  Color _getJamaatAccent(SettingsProvider settings) {
+    if (settings.displayTheme == DisplayTheme.defaultLight) {
+      return const Color(0xFF1B4332);
+    }
+    return settings.displayThemeAccent();
+  }
+
+  Color _getJamaatLightAccent(SettingsProvider settings, bool isDark) {
+    if (settings.displayTheme == DisplayTheme.defaultLight) {
+      return isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332);
+    }
+    return settings.displayThemeAccent();
+  }
+
+  List<Color> _getJamaatHeroGradient(SettingsProvider settings, bool isDark) {
+    if (settings.displayTheme == DisplayTheme.defaultLight) {
+      return isDark
+          ? const [Color(0xFF1E282A), Color(0xFF151C1E)]
+          : const [Color(0xFF1B4332), Color(0xFF2D6A4F)];
+    }
+    if (isDark) {
+      switch (settings.displayTheme) {
+        case DisplayTheme.emeraldMasjid:
+        case DisplayTheme.emeraldMasjidWhite:
+          return const [Color(0xFF0F5A41), Color(0xFF093E2C)];
+        case DisplayTheme.skyGlow:
+        case DisplayTheme.slateTealWhite:
+          return const [Color(0xFF1E3A45), Color(0xFF14272F)];
+        case DisplayTheme.linenStone:
+          return const [Color(0xFF7E4610), Color(0xFF5A2F08)];
+        case DisplayTheme.softOcean:
+          return const [Color(0xFF1B3645), Color(0xFF10232E)];
+        case DisplayTheme.defaultLight:
+          return const [Color(0xFF1E282A), Color(0xFF151C1E)];
+      }
+    } else {
+      switch (settings.displayTheme) {
+        case DisplayTheme.emeraldMasjid:
+        case DisplayTheme.emeraldMasjidWhite:
+          return const [Color(0xFF138D65), Color(0xFF0D6B4A)];
+        case DisplayTheme.skyGlow:
+        case DisplayTheme.slateTealWhite:
+          return const [Color(0xFF2E6679), Color(0xFF1D4552)];
+        case DisplayTheme.linenStone:
+          return const [Color(0xFFC87212), Color(0xFFA25907)];
+        case DisplayTheme.softOcean:
+          return const [Color(0xFF2C5368), Color(0xFF1A3848)];
+        case DisplayTheme.defaultLight:
+          return const [Color(0xFF1B4332), Color(0xFF2D6A4F)];
+      }
+    }
+  }
+
   void _showJamaatTableModal(
     BuildContext context,
     JamaatMasjidInfo masjid,
@@ -961,16 +1026,14 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: isDark
-                        ? [const Color(0xFF1E282A), const Color(0xFF151C1E)]
-                        : [const Color(0xFF1B4332), const Color(0xFF2D6A4F)],
+                    colors: _getJamaatHeroGradient(settings, isDark),
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: (isDark ? Colors.black : const Color(0xFF1B4332))
+                      color: (isDark ? Colors.black : _getJamaatAccent(settings))
                           .withValues(alpha: 0.25),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
@@ -1261,8 +1324,8 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: isDark
-                              ? const Color(0xFF2E7D32).withValues(alpha: 0.4)
-                              : const Color(0xFF1B4332).withValues(alpha: 0.25),
+                              ? _getJamaatAccent(settings).withValues(alpha: 0.4)
+                              : _getJamaatAccent(settings).withValues(alpha: 0.25),
                           width: 1.2,
                         ),
                       ),
@@ -1271,13 +1334,13 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                           Container(
                             padding: const EdgeInsets.all(7),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1B4332).withValues(alpha: isDark ? 0.4 : 0.12),
+                              color: _getJamaatAccent(settings).withValues(alpha: isDark ? 0.4 : 0.12),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.camera_alt_outlined,
                               size: 18,
-                              color: Color(0xFF2E7D32),
+                              color: _getJamaatAccent(settings),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -1297,7 +1360,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                     fontFamily: AppTheme.getFontForLanguage(context, lang),
-                                    color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B4332),
+                                    color: _getJamaatLightAccent(settings, isDark),
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -1429,7 +1492,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                         padding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1B4332).withValues(alpha: 0.12),
+                          color: _getJamaatAccent(settings).withValues(alpha: 0.12),
                           borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(17)),
                         ),
@@ -1442,9 +1505,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
-                                  color: isDark
-                                      ? const Color(0xFF81C784)
-                                      : const Color(0xFF1B4332),
+                                  color: _getJamaatLightAccent(settings, isDark),
                                   fontFamily: AppTheme.getFontForLanguage(
                                       context, lang),
                                 ),
@@ -1456,9 +1517,7 @@ class _JamaatTimesScreenState extends State<JamaatTimesScreen> with WidgetsBindi
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: isDark
-                                    ? const Color(0xFF81C784)
-                                    : const Color(0xFF1B4332),
+                                color: _getJamaatLightAccent(settings, isDark),
                                 fontFamily:
                                     AppTheme.getFontForLanguage(context, lang),
                               ),
@@ -3119,7 +3178,11 @@ JazakAllah Khair''';
     final settings = Provider.of<SettingsProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lang = settings.language;
-    const accent = Color(0xFF1B4332);
+    final accent = _getJamaatAccent(settings);
+    final heroGradient = _getJamaatHeroGradient(settings, isDark);
+    final isFloatingVisible = _showFloatingSearchBar &&
+        _mainScrollController.hasClients &&
+        _mainScrollController.offset > 340;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121619) : const Color(0xFFF4F6F8),
@@ -3133,13 +3196,21 @@ JazakAllah Khair''';
         title: FittedBox(
           fit: BoxFit.scaleDown,
           child: Text(
-            _t(
-              settings,
-              'Masajid Jama\'at Times (Sukkur)',
-              'اوقاتِ جماعتِ مساجد (سکھر)',
-              'مساجدن جي جماعت جا وقت (سکر)',
-              'مواقيت الجماعة للمساجد (سَكَر)',
-            ),
+            settings.isKarachi
+                ? _t(
+                    settings,
+                    'Masajid Jama\'at Times (Karachi)',
+                    'اوقاتِ جماعتِ مساجد (کراچی)',
+                    'مساجدن جي جماعت جا وقت (ڪراچي)',
+                    'مواقيت الجماعة للمساجد (كراتشي)',
+                  )
+                : _t(
+                    settings,
+                    'Masajid Jama\'at Times (Sukkur)',
+                    'اوقاتِ جماعتِ مساجد (سکھر)',
+                    'مساجدن جي جماعت جا وقت (سکر)',
+                    'مواقيت الجماعة للمساجد (سَكَر)',
+                  ),
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: settings.isRtl ? 20 : 17,
@@ -3188,21 +3259,30 @@ JazakAllah Khair''';
           RefreshIndicator(
             color: const Color(0xFF1B4332),
             onRefresh: () => _loadRemoteTimings(force: true),
-            child: SingleChildScrollView(
-              key: const PageStorageKey<String>('jamaat_main_scroll_view'),
-              controller: _mainScrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              child: Column(
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                final shouldShow = notification.metrics.pixels > 340;
+                if (shouldShow != _showFloatingSearchBar) {
+                  setState(() {
+                    _showFloatingSearchBar = shouldShow;
+                  });
+                }
+                return false;
+              },
+              child: SingleChildScrollView(
+                key: PageStorageKey<String>(
+                    'jamaat_main_scroll_view_${settings.isKarachi ? "karachi" : "sukkur"}'),
+                controller: _mainScrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
           children: [
             // ── Main Header Card ──────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: isDark
-                      ? [const Color(0xFF1E282A), const Color(0xFF151C1E)]
-                      : [const Color(0xFF1B4332), const Color(0xFF2D6A4F)],
+                  colors: heroGradient,
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -3225,7 +3305,7 @@ JazakAllah Khair''';
                       borderRadius: BorderRadius.circular(16),
                       image: DecorationImage(
                         image: AssetImage(settings.isKarachi
-                            ? 'assets/images/masjid_2.jpg'
+                            ? 'assets/images/mazar_e_quaid.jpg'
                             : 'assets/images/landsdowne_bridge.jpg'),
                         fit: BoxFit.cover,
                       ),
@@ -3294,8 +3374,7 @@ JazakAllah Khair''';
                     : const Color(0xFFE8ECEF),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: const Color(0xFF1B4332)
-                      .withValues(alpha: isDark ? 0.3 : 0.15),
+                  color: accent.withValues(alpha: isDark ? 0.3 : 0.15),
                   width: 1,
                 ),
               ),
@@ -3309,14 +3388,13 @@ JazakAllah Khair''';
                         padding: const EdgeInsets.symmetric(vertical: 11),
                         decoration: BoxDecoration(
                           color: _selectedTabIndex == 0
-                              ? const Color(0xFF1B4332)
+                              ? accent
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: _selectedTabIndex == 0
                               ? [
                                   BoxShadow(
-                                    color: const Color(0xFF1B4332)
-                                        .withValues(alpha: 0.35),
+                                    color: accent.withValues(alpha: 0.35),
                                     blurRadius: 6,
                                     offset: const Offset(0, 2),
                                   )
@@ -3347,14 +3425,13 @@ JazakAllah Khair''';
                         padding: const EdgeInsets.symmetric(vertical: 11),
                         decoration: BoxDecoration(
                           color: _selectedTabIndex == 1
-                              ? const Color(0xFF1B4332)
+                              ? accent
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: _selectedTabIndex == 1
                               ? [
                                   BoxShadow(
-                                    color: const Color(0xFF1B4332)
-                                        .withValues(alpha: 0.35),
+                                    color: accent.withValues(alpha: 0.35),
                                     blurRadius: 6,
                                     offset: const Offset(0, 2),
                                   )
@@ -3400,6 +3477,7 @@ JazakAllah Khair''';
         ),
       ),
       ),
+      ),
           Positioned(
             top: 10,
             left: 16,
@@ -3407,14 +3485,14 @@ JazakAllah Khair''';
             child: AnimatedSlide(
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeInOutCubic,
-              offset: _showFloatingSearchBar
+              offset: isFloatingVisible
                   ? Offset.zero
                   : const Offset(0, -1.5),
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 200),
-                opacity: _showFloatingSearchBar ? 1.0 : 0.0,
+                opacity: isFloatingVisible ? 1.0 : 0.0,
                 child: IgnorePointer(
-                  ignoring: !_showFloatingSearchBar,
+                  ignoring: !isFloatingVisible,
                   child: _buildSearchBar(
                     context,
                     settings,
@@ -4056,7 +4134,7 @@ JazakAllah Khair''';
             color: isDark ? const Color(0xFF1E2628) : Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: const Color(0xFF1B4332)
+              color: _getJamaatAccent(settings)
                   .withValues(alpha: isDark ? 0.3 : 0.15),
               width: 1.2,
             ),
@@ -4077,9 +4155,7 @@ JazakAllah Khair''';
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: isDark
-                        ? [const Color(0xFF223033), const Color(0xFF182224)]
-                        : [const Color(0xFF1B4332), const Color(0xFF2D6A4F)],
+                    colors: _getJamaatHeroGradient(settings, isDark),
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),

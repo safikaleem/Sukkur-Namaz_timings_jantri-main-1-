@@ -44,11 +44,8 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
                 val appWidgetManager = AppWidgetManager.getInstance(context)
                 val thisAppWidget = ComponentName(context.packageName, javaClass.name)
                 val appWidgetIds = appWidgetManager.getAppWidgetIds(thisAppWidget)
+                if (appWidgetIds.isEmpty()) return
                 onUpdate(context, appWidgetManager, appWidgetIds)
-
-                if (action == ACTION_TICK || action == Intent.ACTION_USER_PRESENT || action == "android.intent.action.TIME_SET" || action == Intent.ACTION_TIME_CHANGED) {
-                    scheduleNextTick(context)
-                }
             }
         } catch (e: Exception) {
             android.util.Log.e("PrayerWidget", "FATAL CRASH in onReceive: $e")
@@ -60,6 +57,7 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
+        if (appWidgetIds.isEmpty()) return
         try {
             val language = resolveLanguage(context)
             val data = loadPrayerData(context, language)
@@ -99,8 +97,10 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val calendar = Calendar.getInstance()
 
-        // Battery optimization: tick every second only if screen is on.
-        // Otherwise, tick only at the turn of the minute.
+        // Only schedule minute ticks while the screen is interactive. When the screen is off,
+        // widgets are not visible and scheduling 1,440 AlarmManager ticks/day causes OEM battery
+        // managers (Xiaomi, Vivo, Oppo, Samsung) to throttle the app's prayer alarms.
+        // As soon as the user unlocks the phone, ACTION_USER_PRESENT updates active widgets immediately.
         val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
         val isScreenOn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
             pm.isInteractive
@@ -108,9 +108,14 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             @Suppress("DEPRECATION")
             pm.isScreenOn
         }
+        if (!isScreenOn) {
+            return
+        }
 
+        // Offset +2000ms past the minute boundary so widget redraws NEVER collide with
+        // exact prayer notifications firing at HH:MM:00.000 on the main thread.
         val msToNextTick = 60000 - (calendar.get(Calendar.SECOND) * 1000 + calendar.get(Calendar.MILLISECOND))
-        val triggerTime = System.currentTimeMillis() + msToNextTick
+        val triggerTime = System.currentTimeMillis() + msToNextTick + 2000L
 
         for (providerClass in providers) {
             val comp = ComponentName(context, providerClass)
@@ -129,25 +134,9 @@ open class PrayerWidgetProvider : AppWidgetProvider() {
             val pendingIntent = PendingIntent.getBroadcast(context, requestCode, intent, flags)
 
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    try {
-                        if (isScreenOn) {
-                            alarmManager.setExact(AlarmManager.RTC, triggerTime, pendingIntent)
-                        } else {
-                            alarmManager.set(AlarmManager.RTC, triggerTime, pendingIntent)
-                        }
-                    } catch (se: SecurityException) {
-                        alarmManager.set(AlarmManager.RTC, triggerTime, pendingIntent)
-                    }
-                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                    alarmManager.setExact(AlarmManager.RTC, triggerTime, pendingIntent)
-                } else {
-                    alarmManager.set(AlarmManager.RTC, triggerTime, pendingIntent)
-                }
+                // Use non-wakeup inexact RTC so widget refreshes never consume exact-alarm quota.
+                alarmManager.set(AlarmManager.RTC, triggerTime, pendingIntent)
             } catch (e: Exception) {
-                try {
-                    alarmManager.set(AlarmManager.RTC, triggerTime, pendingIntent)
-                } catch (e2: Exception) {}
             }
         }
     }

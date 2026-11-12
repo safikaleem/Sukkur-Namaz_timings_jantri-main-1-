@@ -172,6 +172,40 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
     return settings.translate(en, ur, sd, ar);
   }
 
+  Color _getMunajatThemeAccent(SettingsProvider settings) {
+    if (settings.displayTheme == DisplayTheme.defaultLight) {
+      return const Color(0xFF3F7A63);
+    }
+    return settings.displayThemeAccent();
+  }
+
+  List<Color> _getMunajatThemeGradient(SettingsProvider settings) {
+    if (settings.displayTheme == DisplayTheme.defaultLight) {
+      return const [Color(0xFF3F7A63), Color(0xFF2E5E4C)];
+    }
+    switch (settings.displayTheme) {
+      case DisplayTheme.emeraldMasjid:
+      case DisplayTheme.emeraldMasjidWhite:
+        return const [Color(0xFF138D65), Color(0xFF0D6B4A)];
+      case DisplayTheme.skyGlow:
+      case DisplayTheme.slateTealWhite:
+        return const [Color(0xFF2E6679), Color(0xFF1D4552)];
+      case DisplayTheme.linenStone:
+        return const [Color(0xFFC87212), Color(0xFFA25907)];
+      case DisplayTheme.softOcean:
+        return const [Color(0xFF2C5368), Color(0xFF1A3848)];
+      case DisplayTheme.defaultLight:
+        return const [Color(0xFF3F7A63), Color(0xFF2E5E4C)];
+    }
+  }
+
+  Color _getMunajatBadgeLightColor(SettingsProvider settings, bool isDark) {
+    if (settings.displayTheme == DisplayTheme.defaultLight) {
+      return isDark ? const Color(0xFF6BB396) : const Color(0xFF3F7A63);
+    }
+    return settings.displayThemeAccent();
+  }
+
   Widget _buildContinueReading(BuildContext context, SettingsProvider settings, bool isDark) {
     final lastPage = settings.munajatLastPage;
     if (lastPage == null || lastPage < 1) {
@@ -202,15 +236,15 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3F7A63), Color(0xFF2E5E4C)],
+              gradient: LinearGradient(
+                colors: _getMunajatThemeGradient(settings),
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2E5E4C).withValues(alpha: 0.25),
+                  color: _getMunajatThemeGradient(settings).last.withValues(alpha: 0.25),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -308,7 +342,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
   void _showDownloadDialog(BuildContext context, int targetPage, String title) {
     final settings = context.read<SettingsProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    const sageAccent = Color(0xFF3F7A63);
+    final sageAccent = _getMunajatThemeAccent(settings);
     double progress = MunajatDownloadService.instance.currentProgress;
     void Function(void Function())? stateUpdater;
     bool dialogClosed = false;
@@ -349,7 +383,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
                     const SizedBox(height: 16),
                     Text(
                       '${(progress * 100).toStringAsFixed(0)}%',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: sageAccent,
@@ -742,7 +776,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF3F7A63).withValues(alpha: 0.15),
+                                        color: _getMunajatThemeAccent(settings).withValues(alpha: 0.15),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
@@ -750,7 +784,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
-                                          color: isDark ? const Color(0xFF6BB396) : const Color(0xFF3F7A63),
+                                          color: _getMunajatBadgeLightColor(settings, isDark),
                                           fontFamily: AppTheme.getFontForLanguage(context, settings.language),
                                         ),
                                       ),
@@ -866,7 +900,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF3F7A63).withValues(alpha: 0.15),
+                                        color: _getMunajatThemeAccent(settings).withValues(alpha: 0.15),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
@@ -874,7 +908,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
-                                          color: isDark ? const Color(0xFF6BB396) : const Color(0xFF3F7A63),
+                                          color: _getMunajatBadgeLightColor(settings, isDark),
                                           fontFamily: AppTheme.getFontForLanguage(context, settings.language),
                                         ),
                                       ),
@@ -913,7 +947,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
     final title = _getMunajaatMaqboolTitle(settings);
     final manzilTab = settings.translate('Manzil', 'منزل', 'منزل', 'منزل');
     final favoriteTab = settings.translate('Favorite', 'پسندیدہ', 'پسنديده', 'المفضلة');
-    const sageAccent = Color(0xFF3F7A63);
+    final sageAccent = _getMunajatThemeAccent(settings);
 
     return Column(
       children: [
@@ -1053,7 +1087,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
     final noLabel = settings.translate('No.', 'نمبر', 'نمبر', 'رقم');
     final nameLabel = settings.translate('Name', 'نام', 'نالو', 'الاسم');
     final pageLabel = settings.translate('Page', 'صفحہ', 'صفحو', 'صفحة');
-    const sageAccent = Color(0xFF3F7A63);
+    final sageAccent = _getMunajatThemeAccent(settings);
 
     var list = _manzilsData;
     if (isFavoriteOnly) {
@@ -1102,7 +1136,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
                   fontSize: 14,
                   fontFamily: AppTheme.getFontForLanguage(context, settings.language),
                 ),
-                prefixIcon: const Icon(Icons.search_rounded, color: sageAccent, size: 22),
+                prefixIcon: Icon(Icons.search_rounded, color: sageAccent, size: 22),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear_rounded, size: 20),
@@ -1127,15 +1161,15 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3F7A63), Color(0xFF2E5E4C)],
+              gradient: LinearGradient(
+                colors: _getMunajatThemeGradient(settings),
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2E5E4C).withValues(alpha: 0.3),
+                  color: _getMunajatThemeGradient(settings).last.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
@@ -1290,7 +1324,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
                           child: Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF3F7A63),
+                              color: _getMunajatThemeAccent(settings),
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: isDark ? const Color(0xFF2B2C33) : Colors.white,
@@ -1350,8 +1384,8 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF3F7A63), Color(0xFF2E5E4C)],
+                        gradient: LinearGradient(
+                          colors: _getMunajatThemeGradient(settings),
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -1431,7 +1465,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
   void _showAhmiyatRamzanDownloadDialog(BuildContext context, int targetPage, String title) {
     final settings = context.read<SettingsProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    const sageAccent = Color(0xFF3F7A63);
+    final sageAccent = _getMunajatThemeAccent(settings);
     double progress = AhmiyatRamzanDownloadService.instance.currentProgress;
     void Function(void Function())? stateUpdater;
     bool dialogClosed = false;
@@ -1477,7 +1511,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
                     const SizedBox(height: 16),
                     Text(
                       '${(progress * 100).toStringAsFixed(0)}%',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: sageAccent,
@@ -1586,15 +1620,15 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3F7A63), Color(0xFF2E5E4C)],
+              gradient: LinearGradient(
+                colors: _getMunajatThemeGradient(settings),
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2E5E4C).withValues(alpha: 0.25),
+                  color: _getMunajatThemeGradient(settings).last.withValues(alpha: 0.25),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -1692,7 +1726,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
   /// Screen 3: Ahmiyat-e-Ramzan Index View (13 Chapters)
   Widget _buildAhmiyatRamzanScreen(BuildContext context, SettingsProvider settings, bool isDark) {
     final title = _getAhmiyatRamzanTitle(settings);
-    const sageAccent = Color(0xFF3F7A63);
+    final sageAccent = _getMunajatThemeAccent(settings);
 
     final searchHint = settings.translate(
       'Search Chapters or Authors...',
@@ -1838,7 +1872,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
                   fontSize: 14,
                   fontFamily: AppTheme.getFontForLanguage(context, settings.language),
                 ),
-                prefixIcon: const Icon(Icons.search_rounded, color: sageAccent, size: 22),
+                prefixIcon: Icon(Icons.search_rounded, color: sageAccent, size: 22),
                 suffixIcon: _ramzanSearchQuery.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear_rounded, size: 20),
@@ -1863,15 +1897,15 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3F7A63), Color(0xFF2E5E4C)],
+              gradient: LinearGradient(
+                colors: _getMunajatThemeGradient(settings),
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2E5E4C).withValues(alpha: 0.3),
+                  color: _getMunajatThemeGradient(settings).last.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
@@ -2021,7 +2055,7 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
                           child: Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF3F7A63),
+                              color: _getMunajatThemeAccent(settings),
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: isDark ? const Color(0xFF2B2C33) : Colors.white,
@@ -2080,8 +2114,8 @@ class _MunajatScreenState extends State<MunajatScreen> with SingleTickerProvider
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF3F7A63), Color(0xFF2E5E4C)],
+                        gradient: LinearGradient(
+                          colors: _getMunajatThemeGradient(settings),
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),

@@ -20,32 +20,46 @@ class SukkurHeader extends StatelessWidget {
     final settings = context.watch<SettingsProvider>();
     final isRtl = settings.isRtl;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final label = locationLabel(settings);
+    final isLong = label.length > 20;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (settings.usesCalculatedTimings)
-          Icon(
-            Icons.location_on,
-            size: 20,
-            color: isDark ? Colors.white70 : Colors.black87,
-          )
-        else
-          const PinIcon(size: 20),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            locationLabel(settings),
-            style: TextStyle(
-              fontSize: isRtl ? 28 : 24,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
-              letterSpacing: 0.3,
-            ),
-            overflow: TextOverflow.ellipsis,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 56),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: settings.usesCalculatedTimings
+                ? Icon(
+                    Icons.location_on,
+                    size: isLong ? 18 : 20,
+                    color: isDark ? Colors.white70 : Colors.black87,
+                  )
+                : PinIcon(size: isLong ? 18 : 20),
           ),
-        ),
-      ],
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: isLong
+                    ? (isRtl ? 20 : 17)
+                    : (isRtl ? 28 : 24),
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+                letterSpacing: 0.3,
+                height: 1.2,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

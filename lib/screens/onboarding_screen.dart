@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/settings_provider.dart';
 import '../l10n/world_translations.dart';
 import '../utils/app_theme.dart';
@@ -336,12 +337,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
         if (!isIgnoring && mounted) {
           await channel.invokeMethod('requestIgnoreBatteryOptimization');
           await _waitForResume();
-          
-          final bool hasAutoStart = await channel.invokeMethod('hasAutoStart') ?? false;
-          if (hasAutoStart && mounted) {
-             await channel.invokeMethod('requestAutoStart');
-             await _waitForResume();
-          }
+        }
+
+        final bool hasAutoStart = await channel.invokeMethod('hasAutoStart') ?? false;
+        if (hasAutoStart && mounted) {
+          await channel.invokeMethod('requestAutoStart');
+          await _waitForResume();
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('oem_autostart_configured_v1', true);
         }
       } catch (_) {}
       
@@ -351,6 +354,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with WidgetsBinding
       await Future.delayed(const Duration(milliseconds: 100));
 
       if (mounted) {
+        if (settings.liveCountdownEnabled) {
+          await NotificationService.instance.updateLiveCountdownNotification();
+        }
+        if (settings.notificationsEnabled) {
+          await NotificationService.instance.scheduleWeeklyNotifications();
+        }
         await settings.completeSetup();
       }
 

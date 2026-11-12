@@ -959,7 +959,7 @@ class _DeveloperDashboardScreenState extends State<DeveloperDashboardScreen> {
                       ),
                       const Spacer(),
                       Text(
-                        t('v1.4.8 • Production', 'v1.4.8 • پروڈکشن'),
+                        t('v1.5.0 • Production', 'v1.5.0 • پروڈکشن'),
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 11.5,

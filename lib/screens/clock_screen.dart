@@ -113,10 +113,7 @@ class _ClockScreenState extends State<ClockScreen> {
           child: Column(
           children: [
             const SizedBox(height: 12),
-            const SizedBox(
-              height: 36,
-              child: Center(child: SukkurHeader()),
-            ),
+            const Center(child: SukkurHeader()),
             const SizedBox(height: 8),
             if (settings.locationMode == LocationMode.sukkur) const DrSloganHeader(),
 

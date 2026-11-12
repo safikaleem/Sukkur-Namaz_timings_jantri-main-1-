@@ -558,6 +558,35 @@ class _QuranScreenState extends State<QuranScreen> {
     );
   }
 
+  List<Color> _getQuranThemeGradient(SettingsProvider settings, {bool is15Line = false}) {
+    if (settings.displayTheme == DisplayTheme.defaultLight) {
+      return is15Line
+          ? const [Color(0xFF4C6A75), Color(0xFF2E434D)]
+          : const [Color(0xFF3F7A63), Color(0xFF2E5E4C)];
+    }
+    switch (settings.displayTheme) {
+      case DisplayTheme.emeraldMasjid:
+      case DisplayTheme.emeraldMasjidWhite:
+        return const [Color(0xFF138D65), Color(0xFF0D6B4A)];
+      case DisplayTheme.skyGlow:
+      case DisplayTheme.slateTealWhite:
+        return const [Color(0xFF2E6679), Color(0xFF1D4552)];
+      case DisplayTheme.linenStone:
+        return const [Color(0xFFC87212), Color(0xFFA25907)];
+      case DisplayTheme.softOcean:
+        return const [Color(0xFF2C5368), Color(0xFF1A3848)];
+      case DisplayTheme.defaultLight:
+        return const [Color(0xFF3F7A63), Color(0xFF2E5E4C)];
+    }
+  }
+
+  Color _getQuranThemePrimary(SettingsProvider settings, {bool is15Line = false}) {
+    if (settings.displayTheme == DisplayTheme.defaultLight) {
+      return is15Line ? const Color(0xFF4C6A75) : const Color(0xFF3F7A63);
+    }
+    return settings.displayThemeAccent();
+  }
+
   Widget _buildScriptSelector(BuildContext context, SettingsProvider settings, bool isDark) {
     final is16Line = settings.quranType == '16_line';
     return Padding(
@@ -582,8 +611,8 @@ class _QuranScreenState extends State<QuranScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
                     gradient: is16Line
-                        ? const LinearGradient(
-                            colors: [Color(0xFF3F7A63), Color(0xFF2E5E4C)],
+                        ? LinearGradient(
+                            colors: _getQuranThemeGradient(settings, is15Line: false),
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           )
@@ -592,7 +621,7 @@ class _QuranScreenState extends State<QuranScreen> {
                     boxShadow: is16Line
                         ? [
                             BoxShadow(
-                              color: const Color(0xFF2E5E4C).withValues(alpha: 0.35),
+                              color: _getQuranThemeGradient(settings, is15Line: false).last.withValues(alpha: 0.35),
                               blurRadius: 6,
                               offset: const Offset(0, 3),
                             )
@@ -639,8 +668,10 @@ class _QuranScreenState extends State<QuranScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
                     gradient: !is16Line
-                        ? const LinearGradient(
-                            colors: [Color(0xFF4C6A75), Color(0xFF2E434D)],
+                        ? LinearGradient(
+                            colors: settings.displayTheme == DisplayTheme.defaultLight
+                                ? const [Color(0xFF4C6A75), Color(0xFF2E434D)]
+                                : _getQuranThemeGradient(settings, is15Line: true),
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           )
@@ -649,7 +680,10 @@ class _QuranScreenState extends State<QuranScreen> {
                     boxShadow: !is16Line
                         ? [
                             BoxShadow(
-                              color: const Color(0xFF2E434D).withValues(alpha: 0.35),
+                              color: (settings.displayTheme == DisplayTheme.defaultLight
+                                      ? const Color(0xFF2E434D)
+                                      : _getQuranThemeGradient(settings, is15Line: true).last)
+                                  .withValues(alpha: 0.35),
                               blurRadius: 6,
                               offset: const Offset(0, 3),
                             )
@@ -761,18 +795,15 @@ class _QuranScreenState extends State<QuranScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: settings.quranType == '15_line'
-                    ? const [Color(0xFF4C6A75), Color(0xFF2E434D)]
-                    : const [Color(0xFF3F7A63), Color(0xFF2E5E4C)],
+                colors: _getQuranThemeGradient(settings, is15Line: settings.quranType == '15_line'),
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: (settings.quranType == '15_line'
-                          ? const Color(0xFF2E434D)
-                          : const Color(0xFF2E5E4C))
+                  color: _getQuranThemeGradient(settings, is15Line: settings.quranType == '15_line')
+                      .last
                       .withValues(alpha: 0.25),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
@@ -968,7 +999,7 @@ class _QuranScreenState extends State<QuranScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       decoration: BoxDecoration(
-        color: is15Line ? const Color(0xFF4C6A75) : const Color(0xFF3F7A63),
+        color: _getQuranThemePrimary(settings, is15Line: is15Line),
         borderRadius: BorderRadius.circular(24.0),
       ),
       // Every label is scaled down to fit rather than allowed to wrap: these
@@ -1088,7 +1119,9 @@ class _QuranScreenState extends State<QuranScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.accent,
+                                  color: settings.displayTheme == DisplayTheme.defaultLight
+                                      ? const Color(0xFF3F7A63)
+                                      : AppTheme.accent,
                                   shape: BoxShape.circle,
                                   border: Border.all(color: isDark ? const Color(0xFF2B2C33) : Colors.white, width: 2),
                                 ),
@@ -1216,7 +1249,7 @@ class _QuranScreenState extends State<QuranScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: is15Line ? const Color(0xFF4C6A75) : const Color(0xFF3F7A63),
+                  color: _getQuranThemePrimary(settings, is15Line: is15Line),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: Row(
@@ -1532,7 +1565,9 @@ class _QuranScreenState extends State<QuranScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.accent,
+                                  color: settings.displayTheme == DisplayTheme.defaultLight
+                                      ? const Color(0xFF3F7A63)
+                                      : AppTheme.accent,
                                   shape: BoxShape.circle,
                                   border: Border.all(color: isDark ? const Color(0xFF2B2C33) : Colors.white, width: 2),
                                 ),
@@ -1752,6 +1787,30 @@ class _TilePills extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+    final List<Color> pillGradient;
+    final Color percentBg;
+    final Color percentTextColor;
+
+    if (settings.displayTheme == DisplayTheme.defaultLight) {
+      pillGradient = is15Line
+          ? const [Color(0xFF4C6A75), Color(0xFF2E434D)]
+          : const [Color(0xFF3F7A63), Color(0xFF2E5E4C)];
+      percentBg = is15Line ? const Color(0xFFE2E7EA) : const Color(0xFFDBEBE4);
+      percentTextColor = is15Line ? const Color(0xFF39545F) : const Color(0xFF254D3F);
+    } else {
+      pillGradient = switch (settings.displayTheme) {
+        DisplayTheme.emeraldMasjid || DisplayTheme.emeraldMasjidWhite => const [Color(0xFF138D65), Color(0xFF0D6B4A)],
+        DisplayTheme.skyGlow || DisplayTheme.slateTealWhite => const [Color(0xFF2E6679), Color(0xFF1D4552)],
+        DisplayTheme.linenStone => const [Color(0xFFC87212), Color(0xFFA25907)],
+        DisplayTheme.softOcean => const [Color(0xFF2C5368), Color(0xFF1A3848)],
+        DisplayTheme.defaultLight => const [Color(0xFF3F7A63), Color(0xFF2E5E4C)],
+      };
+      final accent = settings.displayThemeAccent();
+      percentBg = accent.withValues(alpha: 0.12);
+      percentTextColor = accent;
+    }
+
     return Flexible(
       flex: _kPillsFlex,
       child: FittedBox(
@@ -1764,14 +1823,14 @@ class _TilePills extends StatelessWidget {
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: is15Line ? const Color(0xFFE2E7EA) : const Color(0xFFDBEBE4),
+                color: percentBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 percentLabel,
                 maxLines: 1,
                 style: TextStyle(
-                  color: is15Line ? const Color(0xFF39545F) : const Color(0xFF254D3F),
+                  color: percentTextColor,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1781,9 +1840,7 @@ class _TilePills extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: is15Line
-                      ? const [Color(0xFF4C6A75), Color(0xFF2E434D)]
-                      : const [Color(0xFF3F7A63), Color(0xFF2E5E4C)],
+                  colors: pillGradient,
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),

@@ -77,7 +77,7 @@ class QuranDownloadService {
       final url = Uri.parse('$baseUrl$fileName');
       final client = HttpClient();
       final request = await client.getUrl(url);
-      request.headers.set('User-Agent', 'SukkurSalah-Android/1.4.8');
+      request.headers.set('User-Agent', 'SukkurSalah-Android/1.5.0');
       final response = await request.close();
 
       if (response.statusCode != 200) {

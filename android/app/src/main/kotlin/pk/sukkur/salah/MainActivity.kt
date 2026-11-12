@@ -24,8 +24,48 @@ class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL = "pk.sukkur.salah/native_helper"
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Mark app open immediately before super.onCreate so any concurrent
+        // PrayerAlarmReceiver broadcast suppresses overdue (>60s) alarms, and
+        // disarm stale alarms asynchronously on Dispatchers.IO without blocking UI startup.
+        PrayerAlarmGuardian.markAppOpened()
+        val appContext = applicationContext
+        CoroutineScope(Dispatchers.IO).launch {
+            PrayerAlarmGuardian.purgeStaleAndPromoteUpcoming(
+                appContext,
+                forceReschedule = false,
+                purgeOverdueAfterMs = PrayerAlarmGuardian.APP_OPEN_OVERDUE_MS
+            )
+        }
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        PrayerAlarmGuardian.markAppOpened()
+        CoroutineScope(Dispatchers.IO).launch {
+            PrayerAlarmGuardian.purgeStaleAndPromoteUpcoming(
+                applicationContext,
+                forceReschedule = false,
+                purgeOverdueAfterMs = PrayerAlarmGuardian.APP_OPEN_OVERDUE_MS
+            )
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        CoroutineScope(Dispatchers.IO).launch {
+            // Pass ignoreBatchInProgress = true so if the user closes/locks the phone
+            // after 2 seconds while Dart is mid-batch, any written ScheduledNotificationReceiver
+            // alarms are immediately promoted to PrayerAlarmReceiver + setAlarmClock() before
+            // the OEM freezes the backgrounded app process.
+            PrayerAlarmGuardian.purgeStaleAndPromoteUpcoming(
+                applicationContext,
+                forceReschedule = false,
+                purgeOverdueAfterMs = PrayerAlarmGuardian.MAX_STALE_LATENESS_MS,
+                ignoreBatchInProgress = true
+            )
+        }
     }
 
     private fun getAutoStartIntents(): List<Intent> {
@@ -235,6 +275,36 @@ class MainActivity : FlutterFragmentActivity() {
                         result.success(opened)
                     } catch (e: Exception) {
                         result.success(false)
+                    }
+                }
+                "startKeepAlive" -> {
+                    val timelineJson = call.argument<String>("timeline") ?: "[]"
+                    val channelName = call.argument<String>("channelName") ?: "نماز لائیو کاؤنٹ ڈاؤن"
+                    val staleTitle = call.argument<String>("staleTitle") ?: "Sukkur Salah"
+                    val staleBody = call.argument<String>("staleBody") ?: ""
+                    val ok = PrayerKeepAliveService.start(
+                        this@MainActivity,
+                        timelineJson = timelineJson,
+                        channelName = channelName,
+                        staleTitle = staleTitle,
+                        staleBody = staleBody,
+                    )
+                    result.success(ok)
+                }
+                "stopKeepAlive" -> {
+                    PrayerKeepAliveService.stop(this@MainActivity)
+                    result.success(true)
+                }
+                "syncPrayerAlarms" -> {
+                    val force = call.argument<Boolean>("force") ?: true
+                    CoroutineScope(Dispatchers.IO).launch {
+                        PrayerAlarmGuardian.purgeStaleAndPromoteUpcoming(
+                            applicationContext,
+                            forceReschedule = force
+                        )
+                        withContext(Dispatchers.Main) {
+                            result.success(true)
+                        }
                     }
                 }
                 else -> {

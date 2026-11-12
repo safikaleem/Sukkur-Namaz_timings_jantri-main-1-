@@ -902,6 +902,11 @@ class SettingsProvider extends ChangeNotifier {
       }
     }
     _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+    if (!(prefs.getBool('live_countdown_default_v3') ?? false)) {
+      await prefs.setBool('live_countdown_default_v3', true);
+      await prefs.setBool('live_countdown_default_v2', true);
+      await prefs.setBool('live_countdown_enabled', true);
+    }
     _liveCountdownEnabled = prefs.getBool('live_countdown_enabled') ?? true;
     _hasCompletedSetup = prefs.getBool('has_completed_setup') ?? false;
     _hijriAdjustment = prefs.getInt('hijri_adjustment') ?? 0;
@@ -1586,8 +1591,8 @@ class SettingsProvider extends ChangeNotifier {
       }
 
       await prefs.setBool('live_countdown_enabled', true);
-      NotificationService.instance.stopLiveCountdownTimer();
-      await NotificationService.instance.cancelLiveCountdown();
+      NotificationService.instance.startLiveCountdownTimer();
+      await NotificationService.instance.updateLiveCountdownNotification();
 
       WidgetService.updateWidget();
       if (_notificationsEnabled) {

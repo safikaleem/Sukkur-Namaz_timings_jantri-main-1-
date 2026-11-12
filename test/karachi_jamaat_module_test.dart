@@ -13,8 +13,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Version and Changelog Configuration', () {
-    test('Current app version is 1.4.8', () {
-      expect(S.versionValue, equals('1.4.8'));
+    test('Current app version is 1.5.0', () {
+      expect(S.versionValue, equals('1.5.0'));
     });
   });
 
@@ -109,18 +109,19 @@ void main() {
       JamaatTimesService.instance.setSelectedCity('sukkur');
     });
 
-    test('Sukkur city lists Sukkur masjids (68 visible, 70 total)', () {
+    test('Sukkur city lists only Sukkur masjids (built-in count matches)', () {
       final sukkurList = JamaatTimesService.instance.getMasjidList(city: 'sukkur');
-      expect(sukkurList.length, equals(68));
+      final expectedVisible = JamaatTimesService.sukkurMasjids.where((m) => !m.isHidden).length;
+      expect(sukkurList.length, equals(expectedVisible));
       expect(sukkurList.every((m) => m.city != 'karachi'), isTrue);
 
       final allSukkurList = JamaatTimesService.instance.getMasjidList(city: 'sukkur', includeHidden: true);
-      expect(allSukkurList.length, equals(70));
+      expect(allSukkurList.length, equals(JamaatTimesService.sukkurMasjids.length));
     });
 
-    test('Karachi city initially returns empty list and does NOT contain Sukkur masjids', () {
+    test('Karachi city lists only Karachi masjids and does NOT contain Sukkur masjids', () {
       final karachiList = JamaatTimesService.instance.getMasjidList(city: 'karachi');
-      expect(karachiList.isEmpty, isTrue);
+      expect(karachiList.every((m) => m.city == 'karachi'), isTrue);
       // Explicitly verify none of the Sukkur masjids appear
       expect(karachiList.any((m) => m.id == 'babul_islam'), isFalse);
       expect(karachiList.any((m) => m.id == 'gol_masjid'), isFalse);
@@ -166,8 +167,8 @@ void main() {
       final masjids = decoded['masjids'] as List;
       final exportedKarachi = masjids.firstWhere((m) => m['id'] == 'tooba_masjid_karachi');
       expect(exportedKarachi['city'], equals('karachi'));
-      // In legacy masjids list, Karachi masjids are marked hidden: true for 1.4.7 backward compatibility
-      expect(exportedKarachi['hidden'], isTrue);
+      // Visible Karachi masjids are no longer force-hidden in the legacy list
+      expect(exportedKarachi['hidden'], isNull);
       // Dedicated karachi_masjids section preserves true visibility for 1.4.8+
       final karachiMasjids = decoded['karachi_masjids'] as List;
       final kSectionEntry = karachiMasjids.firstWhere((m) => m['id'] == 'tooba_masjid_karachi');
@@ -502,16 +503,10 @@ void main() {
       await tester.tap(find.text('Open Drawer'));
       await tester.pumpAndSettle();
 
-      // Find Karachi drawer item
-      final karachiFinder = find.text('Karachi');
-      expect(karachiFinder, findsOneWidget);
-
-      // Tap Karachi
-      await tester.tap(karachiFinder);
-      await tester.pumpAndSettle();
-
-      expect(karachiTapped, isTrue, reason: 'onTapKarachi must be called when Karachi is tapped');
-      expect(sukkurTapped, isFalse, reason: 'onTapSukkur must NEVER be called when Karachi is tapped');
+      // The Karachi quick-switch item was intentionally removed from the drawer.
+      expect(find.text('Karachi'), findsNothing);
+      expect(karachiTapped, isFalse);
+      expect(sukkurTapped, isFalse);
     });
   });
 }

@@ -83,6 +83,9 @@ class AndroidNotificationDetails {
       int? when,
       bool usesChronometer = false,
       bool chronometerCountDown = false,
+      bool fullScreenIntent = false,
+      String? ticker,
+      dynamic additionalFlags,
       String? subText});
 }
 

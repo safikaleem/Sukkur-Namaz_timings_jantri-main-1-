@@ -20,6 +20,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
     <queries>
@@ -70,7 +71,7 @@
 
     <application
         android:label="Sukkur Salah"
-        android:name="${applicationName}"
+        android:name=".MainApplication"
         android:icon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true">
@@ -93,43 +94,21 @@
             </intent-filter>
         </activity>
 
-        <!-- Flutter notification plugin receiver -->
-        <!-- MUST be exported=true & directBootAware=true: AlarmManager delivers intents to this receiver
-             on Samsung One UI, Vivo, and Infinix/Tecno XOS/HiOS OEM builds only if exported. -->
+        <!-- Native prayer alarm receiver with 15-min staleness guard, WakeLock & chained AlarmClock promotion -->
         <receiver
-            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:name="pk.sukkur.salah.PrayerAlarmReceiver"
             android:directBootAware="true"
             android:enabled="true"
             android:exported="true" />
+
+        <!-- Flutter notification plugin receiver: disabled as an OS broadcast target so AlarmManager
+             can NEVER fire it behind PrayerAlarmReceiver's back without our staleness filter & WakeLock.
+             PrayerAlarmReceiver invokes ScheduledNotificationReceiver().onReceive() directly in Kotlin. -->
         <receiver
-            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
             android:directBootAware="true"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
-                <action android:name="android.intent.action.TIME_SET" />
-                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
-                <action android:name="android.intent.action.TIME_CHANGED" />
-                <!-- Transsion (Infinix XOS / Tecno HiOS) specific boot action -->
-                <action android:name="com.transsion.intent.action.BOOT_COMPLETED" />
-                <!-- Vivo Funtouch OS specific boot action -->
-                <action android:name="com.vivo.action.BOOT_COMPLETED" />
-                <!-- Samsung One UI specific boot action -->
-                <action android:name="com.samsung.intent.action.BOOT_COMPLETED" />
-                <!-- Xiaomi MIUI specific boot action -->
-                <action android:name="miui.intent.action.OP_BOOT_COMPLETED" />
-                <!-- Oppo ColorOS specific boot action -->
-                <action android:name="com.oppo.action.BOOT_COMPLETED" />
-                <!-- Huawei EMUI specific boot action -->
-                <action android:name="com.huawei.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
-                <action android:name="android.intent.action.REBOOT" />
-            </intent-filter>
-        </receiver>
+            android:enabled="false"
+            android:exported="false" />
 
         <meta-data
             android:name="flutterEmbedding"
@@ -262,6 +241,17 @@
             android:directBootAware="true"
             android:exported="false" />
 
+        <!-- Foreground service keeping next-prayer countdown alive so OEM task killers do not force-stop alarms -->
+        <service
+            android:name="pk.sukkur.salah.PrayerKeepAliveService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Ongoing prayer countdown notification to prevent OEM task killers from force-stopping scheduled prayer alarms" />
+        </service>
+
         <!-- Restores the ringer if the device reboots mid auto-silent window -->
         <receiver
             android:name="pk.sukkur.salah.BootReceiver"
@@ -286,6 +276,14 @@
                 <action android:name="com.huawei.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.REBOOT" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIME_CHANGED" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.USER_PRESENT" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+                <action android:name="pk.sukkur.salah.ACTION_KEEPALIVE_TICK" />
+                <action android:name="pk.sukkur.salah.ACTION_KEEPALIVE_DISMISSED" />
             </intent-filter>
         </receiver>
     </application>

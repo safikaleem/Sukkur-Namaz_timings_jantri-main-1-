@@ -259,65 +259,78 @@ class _AhmiyatRamzanReaderScreenState extends State<AhmiyatRamzanReaderScreen> {
                         ),
                       ),
                       Expanded(
-                        child: Directionality(
-                          textDirection: TextDirection.ltr,
-                          child: PdfView(
-                            controller: _pdfController!,
-                            scrollDirection: Axis.horizontal,
-                            reverse: true,
-                            physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
-                            renderer: (PdfPage page) {
-                              final media = MediaQuery.maybeOf(context);
-                              final targetWidth = media != null
-                                  ? (media.size.width * media.devicePixelRatio).clamp(800.0, 1400.0)
-                                  : page.width * 1.5;
-                              final scale = targetWidth / page.width;
-                              return page.render(
-                                width: targetWidth,
-                                height: page.height * scale,
-                                format: PdfPageImageFormat.jpeg,
-                                backgroundColor: '#ffffff',
-                                quality: 90,
-                              );
-                            },
-                            builders: PdfViewBuilders<DefaultBuilderOptions>(
-                              options: const DefaultBuilderOptions(),
-                              pageBuilder: (context, pageImage, index, document) =>
-                                  PhotoViewGalleryPageOptions(
-                                imageProvider: PdfPageImageProvider(
-                                  pageImage,
-                                  index,
-                                  document.id,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final viewportSize = Size(constraints.maxWidth, constraints.maxHeight);
+                            return Directionality(
+                              textDirection: TextDirection.ltr,
+                              child: PdfView(
+                                controller: _pdfController!,
+                                scrollDirection: Axis.horizontal,
+                                reverse: true,
+                                physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
+                                renderer: (PdfPage page) {
+                                  final media = MediaQuery.maybeOf(context);
+                                  final targetWidth = media != null
+                                      ? (media.size.width * media.devicePixelRatio).clamp(800.0, 1400.0)
+                                      : page.width * 1.5;
+                                  final scale = targetWidth / page.width;
+                                  return page.render(
+                                    width: targetWidth,
+                                    height: page.height * scale,
+                                    format: PdfPageImageFormat.jpeg,
+                                    backgroundColor: '#ffffff',
+                                    quality: 90,
+                                  );
+                                },
+                                builders: PdfViewBuilders<DefaultBuilderOptions>(
+                                  options: const DefaultBuilderOptions(),
+                                  pageBuilder: (context, pageImage, index, document) =>
+                                      PhotoViewGalleryPageOptions.customChild(
+                                    child: SizedBox(
+                                      width: viewportSize.width,
+                                      height: viewportSize.height,
+                                      child: Image(
+                                        image: PdfPageImageProvider(
+                                          pageImage,
+                                          index,
+                                          document.id,
+                                        ),
+                                        fit: BoxFit.fill,
+                                        filterQuality: FilterQuality.high,
+                                      ),
+                                    ),
+                                    childSize: viewportSize,
+                                    minScale: PhotoViewComputedScale.contained * 1.0,
+                                    maxScale: PhotoViewComputedScale.contained * 3.5,
+                                    initialScale: PhotoViewComputedScale.contained * 1.0,
+                                    heroAttributes: PhotoViewHeroAttributes(tag: '${document.id}-$index'),
+                                    onTapUp: (context, details, controllerValue) {
+                                      _toggleChrome();
+                                    },
+                                  ),
                                 ),
-                                filterQuality: FilterQuality.high,
-                                minScale: PhotoViewComputedScale.contained * 1.0,
-                                maxScale: PhotoViewComputedScale.contained * 3.5,
-                                initialScale: PhotoViewComputedScale.contained * 1.0,
-                                heroAttributes: PhotoViewHeroAttributes(tag: '${document.id}-$index'),
-                                onTapUp: (context, details, controllerValue) {
-                                  _toggleChrome();
+                                onPageChanged: (page) {
+                                  if (mounted) {
+                                    setState(() {
+                                      _currentPage = page;
+                                    });
+                                    context.read<SettingsProvider>().updateAhmiyatRamzanReadingPosition(page);
+                                    if (_isChromeVisible) {
+                                      _startAutoHideTimer();
+                                    }
+                                  }
+                                },
+                                onDocumentLoaded: (doc) {
+                                  if (mounted) {
+                                    setState(() {
+                                      _totalPages = doc.pagesCount;
+                                    });
+                                  }
                                 },
                               ),
-                            ),
-                            onPageChanged: (page) {
-                              if (mounted) {
-                                setState(() {
-                                  _currentPage = page;
-                                });
-                                context.read<SettingsProvider>().updateAhmiyatRamzanReadingPosition(page);
-                                if (_isChromeVisible) {
-                                  _startAutoHideTimer();
-                                }
-                              }
-                            },
-                            onDocumentLoaded: (doc) {
-                              if (mounted) {
-                                setState(() {
-                                  _totalPages = doc.pagesCount;
-                                });
-                              }
-                            },
-                          ),
+                            );
+                          },
                         ),
                       ),
                     ],

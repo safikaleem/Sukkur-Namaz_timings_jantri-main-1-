@@ -229,7 +229,14 @@ class _TimingsShareModalState extends State<_TimingsShareModal> {
       buffer.writeln('نماز اور جماعت کے اوقات جاننے کے لیے Play Store سے ابھی Sukkur Salah ایپلیکیشن ڈاؤن لوڈ کریں');
     } else {
       final d = widget.dayTiming;
-      buffer.writeln('🕌 سکھر صلاة • اوقاتِ نماز');
+      final isKarachi = widget.settings.isKarachi ||
+          (widget.settings.cityName?.toLowerCase() == 'karachi') ||
+          (widget.settings.cityName == 'کراچی');
+      if (isKarachi) {
+        buffer.writeln('🕌 اوقاتِ نماز برائے کراچی • Karachi');
+      } else {
+        buffer.writeln('🕌 سکھر صلاة • اوقاتِ نماز');
+      }
       buffer.writeln('📅 ${_formatDate(widget.date)}');
       buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
       if (d != null) {
@@ -243,7 +250,7 @@ class _TimingsShareModalState extends State<_TimingsShareModal> {
       buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
       buffer.writeln('سکھر صلاة (ایپلیکیشن)');
       buffer.writeln('نماز کے اوقات جاننے کے لیے Play Store سے ابھی Sukkur Salah ایپلیکیشن ڈاؤن لوڈ کریں');
-      if (!widget.isMasjid) {
+      if (!widget.isMasjid && !isKarachi) {
         buffer.writeln('مسجد باب الاسلام، اناج بازار، سکھر');
       }
     }
@@ -706,6 +713,9 @@ class TimingsShareCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSukkur = settings.locationMode == LocationMode.sukkur;
+    final isKarachi = settings.isKarachi ||
+        (settings.cityName?.toLowerCase() == 'karachi') ||
+        (settings.cityName == 'کراچی');
     final cityName = settings.cityName ?? 'سکھر';
     final hijriStr = HijriConverter.hijriForDate(date, adjustment: settings.hijriAdjustment, language: 'urdu');
 
@@ -791,6 +801,30 @@ class TimingsShareCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 textDirection: TextDirection.rtl,
               ),
+          ] else if (isKarachi) ...[
+            const Text(
+              'اوقاتِ نماز برائے کراچی',
+              style: TextStyle(
+                fontFamily: AppTheme.urduFont,
+                fontSize: 20,
+                color: Color(0xFF8B6508),
+                fontWeight: FontWeight.bold,
+                height: 1.3,
+              ),
+              textAlign: TextAlign.center,
+              textDirection: TextDirection.rtl,
+            ),
+            const SizedBox(height: 2),
+            const Text(
+              'Karachi',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F3E2E),
+                letterSpacing: 0.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ] else ...[
             const Text(
               'سکھر صلاة • Sukkur Salah',
@@ -1006,8 +1040,8 @@ class TimingsShareCard extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
 
-                // Row 3: Masjid Babul Islam, Anaj Bazar, Sukkur (Only for general prayer times card, not in jamat times card)
-                if (!isMasjid) ...[
+                // Row 3: Masjid Babul Islam, Anaj Bazar, Sukkur (Only for general prayer times card in Sukkur mode)
+                if (!isMasjid && isSukkur) ...[
                   const SizedBox(height: 3),
                   const Text(
                     'مسجد باب الاسلام، اناج بازار، سکھر',

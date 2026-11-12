@@ -154,10 +154,7 @@ class _TodayScreenState extends State<TodayScreen> {
             const SizedBox(height: 12),
 
             // ── Header ───────────────────────────────────────────────
-            const SizedBox(
-              height: 36,
-              child: Center(child: SukkurHeader()),
-            ),
+            const Center(child: SukkurHeader()),
 
             const SizedBox(height: 8),
             if (settings.locationMode == LocationMode.sukkur) ...[

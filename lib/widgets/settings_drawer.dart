@@ -91,29 +91,6 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                         : null,
                     onTap: widget.onTapSukkur,
                   ),
-                  // ── Karachi ─────────────────────────────────
-                  _DrawerItem(
-                    icon: Icons.location_city_rounded,
-                    label: settings.translate('Karachi', 'کراچی', 'ڪراچي', 'كراتشي'),
-                    subtitle: '(${settings.translate(
-                      'Karachi Prayer Timings & Masajid',
-                      'کراچی کے اوقاتِ نماز اور مساجد',
-                      'ڪراچي جي نمازن جا وقت ۽ مسجدون',
-                      'أوقات الصلاة والمساجد في كراتشي',
-                    )})',
-                    trailing: settings.isKarachi
-                        ? const Icon(Icons.check_circle_rounded, color: Color(0xFF2E7D32), size: 18)
-                        : null,
-                    onTap: () async {
-                      if (widget.onTapKarachi != null) {
-                        widget.onTapKarachi!();
-                      } else {
-                        Navigator.pop(context);
-                        await settings.useKarachiCity();
-                        widget.onWorldCitySelected?.call();
-                      }
-                    },
-                  ),
                   _DrawerItem(
                     icon: Icons.public_rounded,
                     label: settings.translate('World Prayer Timings', 'دنیا بھر کی نمازیں', 'دنيا جي نمازون', 'أوقات الصلاة العالمية'),
@@ -294,7 +271,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
                   // ── Current Version ───────────────────────────
                   _DrawerItem(
                     icon: Icons.new_releases_rounded,
-                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.4.8'}',
+                    label: '${settings.translate('Current version', 'موجودہ ورژن', 'موجوده ورجن', 'الإصدار الحالي')} ${_version.isNotEmpty ? _version : '1.5.0'}',
                     onTap: () => _handleVersionTap(context),
                     onLongPress: () => _showDeveloperLoginDialog(context),
                   ),
@@ -535,7 +512,7 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
   void _showWhatsNewDialog(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final versionStr = _version.isNotEmpty ? _version : '1.4.8';
+    final versionStr = _version.isNotEmpty ? _version : '1.5.0';
 
     showDialog(
       context: context,
@@ -641,67 +618,131 @@ class _SettingsDrawerState extends State<SettingsDrawer> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── 1. Karachi Masajid & 1-Tap Quick Switch (All 10 Languages) ─────────────
+                  // ── 1. Karachi Jama'at Timings (All 10 Languages) ─────────────
                   _buildNewFeatureItem(
                     context,
                     settings,
                     _getLocalizedText(settings, {
-                      'english': '🕌 Karachi Masajid & Quick Switch',
-                      'urdu': '🕌 کراچی مساجد اور فوری سوئچ',
-                      'sindhi': '🕌 ڪراچي مسجدون ۽ ترت سوئچ',
-                      'arabic': '🕌 مساجد كراتشي والتبديل السريع',
-                      'bengali': '🕌 করাচি মসজিদ ও দ্রুত পরিবর্তন',
-                      'hindi': '🕌 कराची मस्जिदें और त्वरित स्विच',
-                      'turkish': '🕌 Karaçi Camileri ve Hızlı Geçiş',
-                      'indonesian': '🕌 Masjid Karachi & Peralihan Cepat',
-                      'french': '🕌 Mosquées de Karachi et changement rapide',
-                      'persian': '🕌 مساجد کراچی و جابجایی سریع',
+                      'english': '🕌 Karachi Jama\'at Timings',
+                      'urdu': '🕌 کراچی مساجد کے اوقاتِ باجماعت',
+                      'sindhi': '🕌 ڪراچي مسجدن جا باجماعت اوقات',
+                      'arabic': '🕌 أوقات الجماعة لمساجد كراتشي',
+                      'bengali': '🕌 করাচি জামাত সময়সূচী',
+                      'hindi': '🕌 कराची जमात के समय',
+                      'turkish': '🕌 Karaçi Cemaat Vakitleri',
+                      'indonesian': '🕌 Waktu Jamaah Masjid Karachi',
+                      'french': '🕌 Horaires de Jama\'at à Karachi',
+                      'persian': '🕌 اوقات نماز جماعت مساجد کراچی',
                     }),
                     _getLocalizedText(settings, {
-                      'english': 'Switch between Sukkur (68 Masajid) and Karachi Masajid with 1 tap directly from the drawer.',
-                      'urdu': 'سائیڈ مینو سے صرف ایک ٹچ پر سکھر (68 مساجد) اور کراچی کی مساجد کے درمیان باآسانی سوئچ کریں۔',
-                      'sindhi': 'سائيڊ مينيو مان رڳو هڪ ٽچ تي سکر (68 مسجدون) ۽ ڪراچي جي مسجدن وچ ۾ آسانيءَ سان سوئچ ڪريو.',
-                      'arabic': 'التبديل بين مساجد سكر (68 مسجداً) ومساجد كراتشي بلمسة واحدة من القائمة الجانبية.',
-                      'bengali': 'ড্রয়ার থেকে মাত্র এক ট্যাপে সুক্কুর (৬৮ মসজিদ) এবং করাচি মসজিদের মধ্যে সহজে পরিবর্তন করুন।',
-                      'hindi': 'साइड मेनू से सिर्फ 1 टैप में सख्खर (68 मस्जिदें) और कराची की मस्जिदों के बीच आसानी से स्विच करें।',
-                      'turkish': 'Çekmeceden tek dokunuşla Sukkur (68 Cami) ve Karaçi Camileri arasında kolayca geçiş yapın.',
-                      'indonesian': 'Beralih antara Sukkur (68 Masjid) dan Masjid Karachi hanya dengan 1 ketukan dari laci samping.',
-                      'french': 'Basculez entre les mosquées de Sukkur (68 mosquées) et celles de Karachi en un seul clic.',
-                      'persian': 'جابجایی میان مساجد سوکور (۶۸ مسجد) و کراچی تنها با یک لمس از منوی کناری.',
+                      'english': 'Added comprehensive Jama\'at timings and search for Karachi Masajid.',
+                      'urdu': 'کراچی کی مساجد کے جامع اوقاتِ باجماعت اور تلاش کی سہولت شامل۔',
+                      'sindhi': 'ڪراچي جي مسجدن جا مڪمل باجماعت وقت ۽ ڳولا جي سهولت شامل.',
+                      'arabic': 'إضافة أوقات صلاة الجماعة والبحث الشامل لمساجد كراتشي.',
+                      'bengali': 'করাচি মসজিদের জন্য বিস্তারিত জামাতের সময়সূচী এবং অনুসন্ধান যুক্ত করা হয়েছে।',
+                      'hindi': 'कराची की मस्जिदों के लिए विस्तृत जमात समय और खोज की सुविधा शामिल।',
+                      'turkish': 'Karaçi Camileri için kapsamlı cemaat namaz vakitleri ve arama eklendi.',
+                      'indonesian': 'Penambahan jadwal salat berjamaah lengkap dan pencarian untuk Masjid-masjid Karachi.',
+                      'french': 'Ajout des horaires de prière en congrégation et recherche pour les mosquées de Karachi.',
+                      'persian': 'افزودن جدول جامع اوقات نماز جماعت و جستجوی مساجد کراچی.',
                     }),
-                    icon: Icons.location_city_rounded,
+                    icon: Icons.mosque_rounded,
                     iconColor: const Color(0xFF00796B),
                   ),
 
-                  // ── 2. Bug Fixes & Improvements (All 10 Languages) ─────────
+                  // ── 2. New Book: Ahmiyat-e-Ramzan (All 10 Languages) ────────
                   _buildNewFeatureItem(
                     context,
                     settings,
                     _getLocalizedText(settings, {
-                      'english': '🛠️ Bug Fixes & Improvements',
-                      'urdu': '🛠️ بگز کا خاتمہ اور کارکردگی میں بہتری',
-                      'sindhi': '🛠️ بگس جو خاتمو ۽ ڪارڪردگيءَ ۾ بهتري',
-                      'arabic': '🛠️ إصلاح الأخطاء وتحسين الأداء',
-                      'bengali': '🛠️ বাগ সংশোধন ও কর্মক্ষমতা বৃদ্ধি',
-                      'hindi': '🛠️ बग सुधार और बेहतर प्रदर्शन',
-                      'turkish': '🛠️ Hata Düzeltmeleri ve Performans İyileştirmeleri',
-                      'indonesian': '🛠️ Perbaikan Bug & Peningkatan Kinerja',
-                      'french': '🛠️ Corrections de bugs et améliorations des performances',
-                      'persian': '🛠️ رفع باگ‌ها و بهبود عملکرد برنامه',
+                      'english': '📖 New Book Added',
+                      'urdu': '📖 نئی کتاب کا اضافہ',
+                      'sindhi': '📖 نئين ڪتاب جو اضافو',
+                      'arabic': '📖 إضافة كتاب جديد',
+                      'bengali': '📖 নতুন বই যুক্ত হয়েছে',
+                      'hindi': '📖 नई किताब जोड़ी गई',
+                      'turkish': '📖 Yeni Kitap Eklendi',
+                      'indonesian': '📖 Buku Baru Ditambahkan',
+                      'french': '📖 Nouveau livre ajouté',
+                      'persian': '📖 کتاب جدید اضافه شد',
                     }),
                     _getLocalizedText(settings, {
-                      'english': 'Resolved app responsiveness delays, updated system optimizations, and enhanced overall app speed and stability.',
-                      'urdu': 'ایپ کی کارکردگی اور روانی میں اضافہ، سسٹم میں بہتری اور عمومی بگز کا خاتمہ۔',
-                      'sindhi': 'ايپ جي رواني ۽ ڪارڪردگيءَ ۾ سڌارو، سسٽم جي بهتري ۽ عام خرابين جو خاتمو.',
-                      'arabic': 'تحسين استجابة التطبيق وسرعته، وتحديث توافق النظام، وتعزيز الاستقرار العام.',
-                      'bengali': 'অ্যাপের গতি ও কার্যক্ষমতা বৃদ্ধি, সিস্টেমের উন্নতি এবং সার্বিক স্থিতিশীলতা নিশ্চিত করা হয়েছে।',
-                      'hindi': 'ऐप की गति और स्थिरता में सुधार, सिस्टम अनुकूलन और सामान्य बग समाधान।',
-                      'turkish': 'Uygulama yanıt süresi ve kararlılığı artırıldı, sistem optimizasyonları yapıldı ve genel performans geliştirildi.',
-                      'indonesian': 'Peningkatan kecepatan dan stabilitas aplikasi, optimalisasi sistem, dan perbaikan bug secara menyeluruh.',
-                      'french': 'Amélioration de la réactivité et de la stabilité de l\'application, optimisations système et corrections générales.',
-                      'persian': 'ارتقای پایداری و سرعت برنامه، بهینه‌سازی سازگاری سیستم و بهبود عملکرد کلی.',
+                      'english': '"Ahmiyat-e-Ramzan" (اهمیتِ رمضان) book now available.',
+                      'urdu': '"اهمیتِ رمضان" کا مکمل مطالعہ اب ایپ میں دستیاب ہے۔',
+                      'sindhi': '"اهمیتِ رمضان" جو مڪمل مطالعو هاڻي ايپ ۾ دستياب آهي.',
+                      'arabic': 'كتاب "أهمية رمضان" (اهمیتِ رمضان) متاح الآن في التطبيق.',
+                      'bengali': '"আহমিয়াত-এ-রমজান" (اهمیتِ رمضان) বইটি এখন অ্যাপে উপলব্ধ।',
+                      'hindi': '"अहमियत-ए-रमज़ान" (اهمیتِ رمضان) किताब अब ऐप में उपलब्ध है।',
+                      'turkish': '"Ahmiyat-e-Ramzan" (اهمیتِ رمضان) kitabı artık uygulamada mevcut.',
+                      'indonesian': 'Buku "Ahmiyat-e-Ramzan" (اهمیتِ رمضان) kini telah tersedia.',
+                      'french': 'Le livre "Ahmiyat-e-Ramzan" (اهمیتِ رمضان) est désormais disponible.',
+                      'persian': 'کتاب "اهمیتِ رمضان" اکنون در برنامه در دسترس است.',
                     }),
-                    icon: Icons.bug_report_outlined,
+                    icon: Icons.menu_book_rounded,
+                    iconColor: const Color(0xFFD97706),
+                  ),
+
+                  // ── 3. Prayer Notification Overhaul (All 10 Languages) ──────
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    _getLocalizedText(settings, {
+                      'english': '🔔 Prayer Notification Overhaul',
+                      'urdu': '🔔 نماز نوٹیفکیشن میں بڑی بہتری',
+                      'sindhi': '🔔 نماز نوٽيفڪيشن ۾ وڏي بهتري',
+                      'arabic': '🔔 تحديث شامل لتنبيهات الصلاة',
+                      'bengali': '🔔 নামাজের নোটিফিকেশন সংস্কার',
+                      'hindi': '🔔 नमाज़ नोटिफिकेशन में बड़ा सुधार',
+                      'turkish': '🔔 Namaz Bildirimleri Yenilendi',
+                      'indonesian': '🔔 Pembaruan Notifikasi Salat',
+                      'french': '🔔 Refonte des notifications de prière',
+                      'persian': '🔔 بازسازی سیستم اعلان نماز',
+                    }),
+                    _getLocalizedText(settings, {
+                      'english': 'Completely resolved delayed notifications and app-open alert issues; guaranteed on-time Adhan & prayer reminders across all Android devices (Infinix, Xiaomi, Vivo, Samsung, etc.).',
+                      'urdu': 'تاخیر سے نوٹیفکیشن موصول ہونے اور ایپ کھلنے پر الرٹ آنے کا مسئلہ مکمل حل؛ تمام اینڈرائڈ موبائلز پر بروقت اذان اور یاد دہانیوں کی فراہمی۔',
+                      'sindhi': 'دير سان نوٽيفڪيشن ملڻ ۽ ايپ کولڻ تي الرٽ اچڻ جو مسئلو مڪمل حل؛ سڀني موبائلن تي وقت سر اذان ۽ ياد ڏهاني جي پڪ.',
+                      'arabic': 'حل جذري لتأخر الإشعارات والتنبيه عند فتح التطبيق؛ وضمان أذان وتنبيهات في وقتها على جميع أجهزة أندرويد.',
+                      'bengali': 'বিলম্বিত নোটিফিকেশন ও অ্যাপ খোলার সময় অ্যালার্ট আসার সমস্যা সম্পূর্ণ সমাধান; সকল ডিভাইসে সময়মতো আজান ও স্মরণিকা নিশ্চিত।',
+                      'hindi': 'देर से नोटिफिकेशन आने और ऐप खोलने पर अलर्ट आने की समस्या पूरी तरह ठीक; सभी डिवाइसों पर सही समय पर अज़ान और अलर्ट।',
+                      'turkish': 'Geciken bildirimler ve uygulama açılışındaki uyarı sorunları tamamen giderildi; tüm cihazlarda zamanında ezan ve hatırlatıcı garantisi.',
+                      'indonesian': 'Masalah notifikasi terlambat dan saat buka aplikasi telah diatasi sepenuhnya; jaminan azan dan pengingat tepat waktu di semua perangkat.',
+                      'french': 'Correction complète des notifications retardées et à l\'ouverture de l\'application; rappels et adhan garantis à l\'heure sur tous les appareils.',
+                      'persian': 'رفع کامل مشکل تاخیر در اعلان‌ها و ارسال هشدار هنگام باز کردن برنامه؛ تضمین پخش بموقع اذان و یادآورها در تمام گوشی‌ها.',
+                    }),
+                    icon: Icons.notifications_active_rounded,
+                    iconColor: const Color(0xFF0D6B5E),
+                  ),
+
+                  // ── 4. Performance & Bug Fixes (All 10 Languages) ───────────
+                  _buildNewFeatureItem(
+                    context,
+                    settings,
+                    _getLocalizedText(settings, {
+                      'english': '⚡ Performance & Bug Fixes',
+                      'urdu': '⚡ کارکردگی اور بگ فکسز',
+                      'sindhi': '⚡ ڪارڪردگي ۽ بگ فڪسز',
+                      'arabic': '⚡ تحسين الأداء وإصلاح الأخطاء',
+                      'bengali': '⚡ পারফরম্যান্স ও বাগ সমাধান',
+                      'hindi': '⚡ परफॉरमेंस और बग समाधान',
+                      'turkish': '⚡ Performans ve Hata Düzeltmeleri',
+                      'indonesian': '⚡ Performa & Perbaikan Bug',
+                      'french': '⚡ Performances et corrections',
+                      'persian': '⚡ بهبود عملکرد و رفع اشکالات',
+                    }),
+                    _getLocalizedText(settings, {
+                      'english': 'Faster cold start, smoother navigation, and overall stability improvements.',
+                      'urdu': 'تیز رفتار سٹارٹ اپ، ہموار نیویگیشن اور ایپ کے استحکام میں مجموعی بہتری۔',
+                      'sindhi': 'تيز رفتار شروعات، رواني سان هلندڙ اسڪرينون ۽ ايپ جي استحڪام ۾ مجموعي سڌارو.',
+                      'arabic': 'تشغيل أسرع للتطبيق، وتنقل أكثر سلاسة، وتحسين الاستقرار العام.',
+                      'bengali': 'দ্রুত অ্যাপ চালু হওয়া, মসৃণ নেভিগেশন এবং সামগ্রিক স্থিতিশীলতা বৃদ্ধি।',
+                      'hindi': 'तेज़ ऐप स्टार्ट, स्मूथ नेविगेशन और ऐप की समग्र स्थिरता में सुधार।',
+                      'turkish': 'Daha hızlı açılış, daha akıcı geçişler ve genel kararlılık iyileştirmeleri.',
+                      'indonesian': 'Start-up lebih cepat, navigasi lebih mulus, dan peningkatan stabilitas secara menyeluruh.',
+                      'french': 'Démarrage plus rapide, navigation plus fluide et améliorations générales de la stabilité.',
+                      'persian': 'راه‌اندازی سریع‌تر، ناوبری روان‌تر و ارتقای کلی پایداری برنامه.',
+                    }),
+                    icon: Icons.bolt_rounded,
                     iconColor: AppTheme.accent,
                   ),
                 ],

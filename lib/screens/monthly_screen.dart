@@ -281,6 +281,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                   isRtl: isRtl,
                   scale: scale,
                   fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                  displayTheme: settings.displayTheme,
                 ),
               ),
               for (int i = 0; i < columnCount; i++)
@@ -293,6 +294,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                     isRtl: isRtl,
                     scale: scale,
                     fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                    displayTheme: settings.displayTheme,
                   ),
                 ),
             ],
@@ -356,6 +358,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                   isRtl: isRtl,
                   scale: scale,
                   fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                  displayTheme: settings.displayTheme,
                 ),
               ),
               for (int i = 0; i < columnCount; i++)
@@ -368,6 +371,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                     isRtl: isRtl,
                     scale: scale,
                     fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                    displayTheme: settings.displayTheme,
                   ),
                 ),
             ],
@@ -423,9 +427,10 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
     required bool isDark,
     required bool isRtl,
     required double scale,
+    required DisplayTheme displayTheme,
     String? fontFamily,
   }) {
-    final headerGradient = _getColumnGradient(columnIndex, isDark);
+    final headerGradient = _getColumnGradient(columnIndex, isDark, displayTheme);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 0.5, vertical: 4.0),
@@ -585,9 +590,35 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
     );
   }
 
-  Gradient _getColumnGradient(int index, bool isDark) {
-    final topColor = isDark ? const Color(0xFF2C4358) : const Color(0xFF46729B);
-    final bottomColor = isDark ? const Color(0xFF233647) : const Color(0xFF3B5E82);
+  Gradient _getColumnGradient(int index, bool isDark, DisplayTheme theme) {
+    Color topColor;
+    Color bottomColor;
+
+    switch (theme) {
+      case DisplayTheme.defaultLight:
+        topColor = isDark ? const Color(0xFF2C4358) : const Color(0xFF46729B);
+        bottomColor = isDark ? const Color(0xFF233647) : const Color(0xFF3B5E82);
+        break;
+      case DisplayTheme.emeraldMasjid:
+      case DisplayTheme.emeraldMasjidWhite:
+        topColor = isDark ? const Color(0xFF0F5A41) : const Color(0xFF138D65);
+        bottomColor = isDark ? const Color(0xFF093E2C) : const Color(0xFF0D6B4A);
+        break;
+      case DisplayTheme.skyGlow:
+      case DisplayTheme.slateTealWhite:
+        topColor = isDark ? const Color(0xFF204856) : const Color(0xFF2E6679);
+        bottomColor = isDark ? const Color(0xFF132E37) : const Color(0xFF1D4552);
+        break;
+      case DisplayTheme.linenStone:
+        topColor = isDark ? const Color(0xFF7E4610) : const Color(0xFFC87212);
+        bottomColor = isDark ? const Color(0xFF5A2F08) : const Color(0xFFA25907);
+        break;
+      case DisplayTheme.softOcean:
+        topColor = isDark ? const Color(0xFF1B3645) : const Color(0xFF2C5368);
+        bottomColor = isDark ? const Color(0xFF10232E) : const Color(0xFF1A3848);
+        break;
+    }
+
     return LinearGradient(
       colors: [topColor, bottomColor],
       begin: Alignment.topCenter,

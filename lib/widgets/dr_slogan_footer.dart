@@ -56,6 +56,44 @@ class DrSloganFooter extends StatelessWidget {
         settings.language == 'urdu' || settings.language == 'sindhi';
     final double lineHeight = isNastaliq ? 1.9 : 1.4;
 
+    final Color footerBg;
+    final Color footerBorder;
+
+    switch (settings.displayTheme) {
+      case DisplayTheme.defaultLight:
+        footerBg = isDark ? const Color(0xFF1A1A2E) : const Color(0xFFF0F4FF);
+        footerBorder = isDark
+            ? Colors.white.withValues(alpha: 0.10)
+            : const Color(0xFF4A6FA5).withValues(alpha: 0.25);
+        break;
+      case DisplayTheme.emeraldMasjid:
+      case DisplayTheme.emeraldMasjidWhite:
+        footerBg = isDark ? const Color(0xFF0C1B16) : const Color(0xFFEFF7F2);
+        footerBorder = isDark
+            ? const Color(0xFF0F8A5F).withValues(alpha: 0.20)
+            : const Color(0xFF0F8A5F).withValues(alpha: 0.25);
+        break;
+      case DisplayTheme.skyGlow:
+      case DisplayTheme.slateTealWhite:
+        footerBg = isDark ? const Color(0xFF121B22) : const Color(0xFFEEF4F6);
+        footerBorder = isDark
+            ? const Color(0xFF1F4D5B).withValues(alpha: 0.20)
+            : const Color(0xFF1F4D5B).withValues(alpha: 0.25);
+        break;
+      case DisplayTheme.linenStone:
+        footerBg = isDark ? const Color(0xFF1E1A16) : const Color(0xFFF8F4EE);
+        footerBorder = isDark
+            ? const Color(0xFFD97706).withValues(alpha: 0.20)
+            : const Color(0xFFD97706).withValues(alpha: 0.25);
+        break;
+      case DisplayTheme.softOcean:
+        footerBg = isDark ? const Color(0xFF101920) : const Color(0xFFEDF3F7);
+        footerBorder = isDark
+            ? const Color(0xFF1E3F50).withValues(alpha: 0.20)
+            : const Color(0xFF1E3F50).withValues(alpha: 0.25);
+        break;
+    }
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
@@ -63,14 +101,10 @@ class DrSloganFooter extends StatelessWidget {
         vertical: 6.0,
       ),
       decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF1A1A2E)
-            : const Color(0xFFF0F4FF),
+        color: footerBg,
         border: Border(
           top: BorderSide(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.10)
-                : const Color(0xFF4A6FA5).withValues(alpha: 0.25),
+            color: footerBorder,
             width: 0.8,
           ),
         ),

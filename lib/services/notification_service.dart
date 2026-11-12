@@ -154,7 +154,7 @@ class NotificationService {
   // We will create dynamic azan channels based on the selected azan index.
   static String _getAzanChannelId(int index) => 'namaz_azan_v6_$index';
 
-  Future<void> init() async {
+  Future<void> init({bool isBackgroundWorker = false}) async {
     if (kIsWeb) return;
 
     // Ensure TimingsData is loaded
@@ -171,16 +171,18 @@ class NotificationService {
       tz.setLocalLocation(tz.getLocation('Asia/Karachi'));
     }
 
-    _plugin = FlutterLocalNotificationsPlugin();
-    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosInit = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-    await _plugin!.initialize(
-      const InitializationSettings(android: androidInit, iOS: iosInit),
-    );
+    if (_plugin == null || isBackgroundWorker) {
+      _plugin = FlutterLocalNotificationsPlugin();
+      const androidInit = AndroidInitializationSettings('@drawable/ic_notification');
+      const iosInit = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+      await _plugin!.initialize(
+        const InitializationSettings(android: androidInit, iOS: iosInit),
+      );
+    }
 
     final android = _plugin!.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
@@ -188,48 +190,63 @@ class NotificationService {
     // Unawaited background cleanup: run legacy channel deletions and past due alarm cleanups
     // in an unawaited background task rather than blocking the main isolate / startup.
     unawaited(_deleteLegacyChannels(android));
-    unawaited(_purgePastDueTodayAlarms());
+    if (!isBackgroundWorker) {
+      unawaited(_purgePastDueTodayAlarms());
+    }
 
     final prefs = await SharedPreferences.getInstance();
-    // One-time migration: enable the ongoing prayer countdown status bar by default
-    // (like other prayer apps) so aggressive OEMs (Infinix XOS, Tecno HiOS, Vivo,
-    // Xiaomi) recognize Sukkur Salah as an active foreground/visible service and
-    // never deep-freeze its background alarms. Users can still turn it off anytime.
-    if (!(prefs.getBool('live_countdown_default_v2') ?? false)) {
+    // One-time migration (v3): enable the ongoing prayer countdown status bar by
+    // default (including for existing users upgrading from older builds where it
+    // defaulted to false) so aggressive OEMs (Infinix XOS, Tecno HiOS, Vivo,
+    // Xiaomi, Oppo) recognize Sukkur Salah as an active foreground service and
+    // never force-stop its background alarms. Users can still turn it off anytime.
+    if (!(prefs.getBool('live_countdown_default_v3') ?? false)) {
+      await prefs.setBool('live_countdown_default_v3', true);
       await prefs.setBool('live_countdown_default_v2', true);
-      if (!prefs.containsKey('live_countdown_enabled')) {
-        await prefs.setBool('live_countdown_enabled', true);
-      }
+      await prefs.setBool('live_countdown_enabled', true);
     }
-    final bool liveEnabled = prefs.getBool('live_countdown_enabled') ?? true;
-    if (liveEnabled) {
-      startLiveCountdownTimer();
-    } else {
-      await cancelLiveCountdown();
+    if (!isBackgroundWorker) {
+      final bool liveEnabled = prefs.getBool('live_countdown_enabled') ?? true;
+      if (liveEnabled) {
+        startLiveCountdownTimer();
+      } else {
+        await cancelLiveCountdown();
+      }
     }
   }
 
-  /// Cancels any prayer notification IDs for today whose time has already passed
-  /// by more than 5 minutes, preventing OEM-deferred alarms from dumping in a
-  /// batch when the user opens the app hours later.
+  /// Deterministic slot in `0 .. scheduleHorizonDays - 1` for a calendar date.
+  /// Unlike relative `dayOffset` (which shifts depending on which day the batch
+  /// was scheduled), this slot is invariant for any calendar date, allowing
+  /// [_purgePastDueTodayAlarms] to cancel today's exact notification ID even
+  /// when the schedule was built days ago.
+  static int dateSlotFor(DateTime date) =>
+      DateTime.utc(date.year, date.month, date.day)
+          .difference(DateTime.utc(2026, 1, 1))
+          .inDays
+          .abs() %
+      scheduleHorizonDays;
+
+  /// Disarms any overdue AlarmManager PendingIntents for today via native
+  /// [PrayerAlarmGuardian] WITHOUT calling `_plugin!.cancel(id)` (which would
+  /// call `NotificationManager.cancel(id)` and erase already-delivered prayer
+  /// notifications from the user's lock screen / status bar).
   Future<void> _purgePastDueTodayAlarms() async {
-    if (kIsWeb || _plugin == null) return;
+    if (kIsWeb || _plugin == null || _scheduleInProgress) return;
+    SharedPreferences? prefs;
     try {
-      final now = TimingsData.instance.nowForTimings();
-      final todayTiming = TimingsData.instance.timingFor(now);
-      if (todayTiming == null) return;
-      for (final prayer in todayTiming.allTimings) {
-        final prayerDt = prayer.toDateTime(date: now);
-        if (now.difference(prayerDt).inMinutes >= 5) {
-          final base = baseIds[prayer.name];
-          if (base != null) {
-            // Cancel both dayOffset 0 (scheduled today) and dayOffset 1 (scheduled yesterday for today)
-            await _plugin!.cancel(base);
-            await _plugin!.cancel(base + 1);
-          }
-        }
-      }
+      prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('alarm_batch_in_progress') ?? false) return;
     } catch (_) {}
+    try {
+      const nativeChannel = MethodChannel('pk.sukkur.salah/native_helper');
+      await nativeChannel.invokeMethod('syncPrayerAlarms', {'force': false});
+    } catch (_) {
+      try {
+        await (prefs ?? await SharedPreferences.getInstance()).setInt(
+            'alarm_batch_completed_at', DateTime.now().millisecondsSinceEpoch);
+      } catch (_) {}
+    }
   }
 
   Future<void> requestPermissions() async {
@@ -347,6 +364,16 @@ class NotificationService {
       enableVibration: false,
       showBadge: false,
     ));
+    await android.createNotificationChannel(const AndroidNotificationChannel(
+      'ch_jamaat_reminders_v2',
+      'باجماعت نماز الارم',
+      description: 'پسندیدہ مسجد کی باجماعت نماز کی یاد دہانی',
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      sound: RawResourceAndroidNotificationSound('mixkit_bell_notification_933'),
+    ));
 
     // Create a channel for each azan track
     for (int i = 0; i < azanTracks.length; i++) {
@@ -421,14 +448,24 @@ class NotificationService {
 
   /// Cancels the ids the previous run left behind that this one did not rewrite,
   /// then records the current set for next time.
+  ///
+  /// [elapsedIds] holds notification IDs for enabled prayers/reminders from
+  /// today or yesterday whose time has already passed. We must NOT call
+  /// `_plugin!.cancel(id)` on those because `flutter_local_notifications`
+  /// calls `NotificationManager.cancel(id)`, which would erase already-delivered
+  /// notifications from the user's status bar / lock screen! Native
+  /// [PrayerAlarmGuardian] cleans up their AlarmManager PendingIntents directly.
   Future<void> _dropStaleNotifications(
-      SharedPreferences prefs, Set<int> writtenIds) async {
+    SharedPreferences prefs,
+    Set<int> writtenIds, {
+    Set<int> elapsedIds = const {},
+  }) async {
     final previous = (prefs.getStringList(_scheduledIdsKey) ?? const [])
         .map(int.tryParse)
         .whereType<int>();
     int cancelCount = 0;
     for (final id in previous) {
-      if (writtenIds.contains(id)) continue;
+      if (writtenIds.contains(id) || elapsedIds.contains(id)) continue;
       try {
         await _plugin!.cancel(id);
         cancelCount++;
@@ -445,6 +482,47 @@ class NotificationService {
   }
 
   final List<Completer<void>> _pendingScheduleCompleters = [];
+
+  /// Called on app startup and lifecycle resume: if a full 14-day schedule was
+  /// already completed on the same calendar day within the last 6 hours and the
+  /// OS queue is populated, syncs via native [PrayerAlarmGuardian] without
+  /// re-running 140 `zonedSchedule` calls on every app open.
+  Future<void> scheduleWeeklyNotificationsIfNeeded() async {
+    if (kIsWeb || _plugin == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!(prefs.getBool('notifications_enabled') ?? true)) {
+        await scheduleWeeklyNotifications();
+        return;
+      }
+      final canExactNow = await canScheduleExactAlarms();
+      final notifAllowedNow = await areNotificationsEnabled();
+      final lastCanExact =
+          prefs.getBool('last_full_schedule_can_exact') ?? false;
+      final lastNotifAllowed =
+          prefs.getBool('last_full_schedule_notif_allowed') ?? false;
+      final now = TimingsData.instance.nowForTimings();
+      final todaySlot = dateSlotFor(now);
+      final lastSlot = prefs.getInt('last_full_schedule_date_slot') ?? -1;
+      final lastCompletedMs =
+          prefs.getInt('last_full_schedule_completed_at') ?? 0;
+      final ageMs = DateTime.now().millisecondsSinceEpoch - lastCompletedMs;
+
+      if (lastSlot == todaySlot &&
+          lastCompletedMs > 0 &&
+          ageMs >= 0 &&
+          ageMs < 6 * 60 * 60 * 1000 &&
+          canExactNow == lastCanExact &&
+          notifAllowedNow == lastNotifAllowed) {
+        final pending = await pendingNotifications();
+        if (pending.length >= 20) {
+          await _purgePastDueTodayAlarms();
+          return;
+        }
+      }
+    } catch (_) {}
+    await scheduleWeeklyNotifications();
+  }
 
   /// Public entry-point: debounces by 500 ms so multiple calls within a short
   /// window (toggling several settings) are coalesced into a single batch.
@@ -490,10 +568,14 @@ class NotificationService {
     if (kIsWeb || _plugin == null) return;
 
     final prefs = await SharedPreferences.getInstance();
+    const nativeChannel = MethodChannel('pk.sukkur.salah/native_helper');
     if (!(prefs.getBool('notifications_enabled') ?? true)) {
       // Switched off outright - here the clean sweep is the intent.
       await _plugin!.cancelAll();
       await prefs.remove(_scheduledIdsKey);
+      try {
+        await nativeChannel.invokeMethod('syncPrayerAlarms', {'force': true});
+      } catch (_) {}
       return;
     }
 
@@ -504,19 +586,16 @@ class NotificationService {
     final android = _plugin!.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     final canExact = await android?.canScheduleExactNotifications() ?? false;
-    // Tiered exact-alarm strategy:
-    // - Next 48 hours (dayOffset 0 & 1, ~20 alarms): use AlarmManager.setAlarmClock()
-    //   which has hardware RTC wake priority and cannot be deferred by OEM Doze/Phone Master.
-    // - Days 2..13: use setExactAndAllowWhileIdle() so we never register 150+ setAlarmClock()
-    //   calls in a single burst (which hits OEM/MediaTek/XOS alarm-clock rate limits and
-    //   causes silent fallback to batched inexactAllowWhileIdle!).
-    final nearScheduleMode = canExact
-        ? AndroidScheduleMode.alarmClock
-        : AndroidScheduleMode.inexactAllowWhileIdle;
-    final farScheduleMode = canExact
+    // IMPORTANT: Never pass AndroidScheduleMode.alarmClock directly to
+    // flutter_local_notifications (which passes a Broadcast PendingIntent as
+    // showIntent and triggers OEM alarm-clock rate limits when called 20+ times).
+    // Instead, schedule via exactAllowWhileIdle and let native PrayerAlarmGuardian
+    // promote the soonest 4 upcoming alarms (within 18h) to setAlarmClock() with a
+    // valid Activity showIntent and chain them automatically in PrayerAlarmReceiver.
+    final baseScheduleMode = canExact
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
-    debugPrint('Schedule Mode: ${canExact ? "EXACT (48h AlarmClock + 12d ExactIdle)" : "INEXACT (Fallback)"}');
+    debugPrint('Schedule Mode: ${canExact ? "EXACT (Native Guardian 4-AlarmClock Chain + ExactIdle)" : "INEXACT (Fallback)"}');
 
     final selectedAzanIndex = prefs.getInt('selected_azan_index') ?? prefs.getInt('selected_azan') ?? 3;
     final timingsLocation = _timingsLocation(prefs);
@@ -524,98 +603,157 @@ class NotificationService {
     // Ensure TimingsData is loaded (crucial for background task)
     await TimingsData.instance.load();
 
-    // Purge any already-passed prayer alarms from earlier today before scheduling new ones.
-    await _purgePastDueTodayAlarms();
+    // Signal to native MainApplication / PrayerAlarmGuardian that a batch write
+    // is in progress so it waits until the entire batch finishes before syncing.
+    await prefs.setBool('alarm_batch_in_progress', true);
+    await prefs.setInt(
+        'alarm_batch_started_at', DateTime.now().millisecondsSinceEpoch);
 
     // In the timings' own frame, so "has this prayer already passed?" is asked
-    // against the same clock the times are written in.
-    final now = TimingsData.instance.nowForTimings();
+    // against the same clock the times are written in. Re-sampled on each day
+    // iteration so an isolate paused by the OS mid-batch never uses a stale clock.
+    var now = TimingsData.instance.nowForTimings();
     // Everything this run writes, so the stale ids from the last run - and only
     // those - can be cleared at the end.
     final writtenIds = <int>{};
-    int batchCounter = 0;
+    // IDs of enabled prayers/reminders from today or yesterday whose time has
+    // already elapsed: skipped by _dropStaleNotifications so delivered
+    // notifications in the Android status bar are never wiped out.
+    final elapsedIds = <int>{};
 
-    for (int dayOffset = 0; dayOffset < scheduleHorizonDays; dayOffset++) {
-      final date = now.add(Duration(days: dayOffset));
-      final timing = TimingsData.instance.timingFor(date);
-      if (timing == null) continue;
-      final dayScheduleMode = dayOffset < 7 ? nearScheduleMode : farScheduleMode;
-
-      for (final prayer in timing.allTimings) {
-        final prefKey = _prefKeys[prayer.name];
-        if (prefKey == null) continue;
-        if (!(prefs.getBool(prefKey) ?? true)) continue;
-
-        final prayerDt = prayer.toDateTime(date: date);
-        if (prayerDt.isBefore(now)) continue;
-
-        final modeStr =
-            prefs.getString(_alertModePrefKeys[prayer.name] ?? '') ?? 'loud';
-        var mode = AlertMode.values.firstWhere(
-          (m) => m.name == modeStr,
-          orElse: () => AlertMode.loud,
-        );
-        if ((prayer.name == 'Intiha e Sehar' || prayer.name == 'Zawal') &&
-            mode == AlertMode.azan) {
-          mode = AlertMode.loud;
-        }
-
-        final tzDateTime = _atWallClock(timingsLocation, prayerDt);
-        final notifId = (baseIds[prayer.name] ?? 0) + dayOffset;
-
-        final langCode = prefs.getString('language_code') ?? 'english';
-        final isSukkurMode =
-            (prefs.getString('location_mode') ?? 'sukkur') == 'sukkur';
-        final rawTime = _formatTime12Hour(prayer.time, prayer.isPm).replaceAll(' ', '');
-
-        final alert = prayerAlert(
-          prayer: prayer,
-          language: langCode,
-          isSukkurMode: isSukkurMode,
-          rawTime: rawTime,
-        );
-        final String title = alert.$1;
-        final String body = alert.$2;
-
-        // Guard each schedule individually so one bad entry (e.g. a malformed
-        // time) skips a single notification instead of aborting the batch and
-        // leaving the user with none.
-        try {
-          await _safeZonedSchedule(
-            id: notifId,
-            title: title,
-            body: body,
-            scheduledDate: tzDateTime,
-            notificationDetails: _detailsFor(mode, selectedAzanIndex, isRtl: rtlLanguages.contains(langCode)),
-            scheduleMode: dayScheduleMode,
-          );
-          writtenIds.add(notifId);
-          batchCounter++;
-          // Yield to event loop every 3 notifications so Android Binder IPC
-          // and OEM AlarmManager queues are never flooded.
-          if (batchCounter % 3 == 0) {
-            await Future.delayed(const Duration(milliseconds: 5));
-          }
-        } catch (e) {
-          debugPrint('Failed to schedule notification $notifId: $e');
-        }
-      }
+    final yesterday = now.subtract(const Duration(days: 1));
+    final yesterdaySlot = dateSlotFor(yesterday);
+    for (final base in baseIds.values) {
+      elapsedIds.add(base + yesterdaySlot);
     }
 
-    writtenIds.addAll(
-        await _scheduleCustomReminders(prefs, now, farScheduleMode));
-    writtenIds.addAll(
-        await _scheduleWeeklyFridayNotification(prefs, now, farScheduleMode));
+    try {
+      for (int dayOffset = 0; dayOffset < scheduleHorizonDays; dayOffset++) {
+        // Refresh batch heartbeat and current time on every day iteration so if
+        // the app was backgrounded/paused mid-batch and resumed hours later,
+        // `now` reflects the real current time and never schedules past prayers.
+        await prefs.setInt(
+            'alarm_batch_started_at', DateTime.now().millisecondsSinceEpoch);
+        now = TimingsData.instance.nowForTimings();
 
-    // Only now, with every replacement safely in place, drop what this run no
-    // longer needs - a prayer switched off, a deleted reminder, a day that has
-    // fallen off the end of the horizon.
-    await _dropStaleNotifications(prefs, writtenIds);
+        final date = now.add(Duration(days: dayOffset));
+        final timing = TimingsData.instance.timingFor(date);
+        if (timing == null) continue;
+        final dayScheduleMode = baseScheduleMode;
+
+        for (final prayer in timing.allTimings) {
+          final prefKey = _prefKeys[prayer.name];
+          if (prefKey == null) continue;
+          if (!(prefs.getBool(prefKey) ?? true)) continue;
+
+          final notifId = (baseIds[prayer.name] ?? 0) + dateSlotFor(date);
+          final prayerDt = prayer.toDateTime(date: date);
+          final liveNow = TimingsData.instance.nowForTimings();
+          if (!prayerDt.isAfter(liveNow)) {
+            elapsedIds.add(notifId);
+            continue;
+          }
+
+          final modeStr =
+              prefs.getString(_alertModePrefKeys[prayer.name] ?? '') ?? 'loud';
+          var mode = AlertMode.values.firstWhere(
+            (m) => m.name == modeStr,
+            orElse: () => AlertMode.loud,
+          );
+          if ((prayer.name == 'Intiha e Sehar' || prayer.name == 'Zawal') &&
+              mode == AlertMode.azan) {
+            mode = AlertMode.loud;
+          }
+
+          final tzDateTime = _atWallClock(timingsLocation, prayerDt);
+          if (!tzDateTime.isAfter(DateTime.now())) {
+            elapsedIds.add(notifId);
+            continue;
+          }
+
+          final langCode = prefs.getString('language_code') ?? 'english';
+          final isSukkurMode =
+              (prefs.getString('location_mode') ?? 'sukkur') == 'sukkur';
+          final rawTime =
+              _formatTime12Hour(prayer.time, prayer.isPm).replaceAll(' ', '');
+
+          final alert = prayerAlert(
+            prayer: prayer,
+            language: langCode,
+            isSukkurMode: isSukkurMode,
+            rawTime: rawTime,
+          );
+          final String title = alert.$1;
+          final String body = alert.$2;
+
+          // Guard each schedule individually so one bad entry (e.g. a malformed
+          // time) skips a single notification instead of aborting the batch and
+          // leaving the user with none.
+          try {
+            final scheduled = await _safeZonedSchedule(
+              id: notifId,
+              title: title,
+              body: body,
+              scheduledDate: tzDateTime,
+              notificationDetails: _detailsFor(mode, selectedAzanIndex,
+                  isRtl: rtlLanguages.contains(langCode)),
+              scheduleMode: dayScheduleMode,
+            );
+            if (scheduled) {
+              writtenIds.add(notifId);
+            } else {
+              elapsedIds.add(notifId);
+            }
+          } catch (e) {
+            debugPrint('Failed to schedule notification $notifId: $e');
+          }
+        }
+      }
+
+      now = TimingsData.instance.nowForTimings();
+      writtenIds.addAll(await _scheduleCustomReminders(
+        prefs,
+        now,
+        baseScheduleMode,
+        elapsedIds: elapsedIds,
+      ));
+      writtenIds.addAll(await _scheduleWeeklyFridayNotification(
+          prefs, TimingsData.instance.nowForTimings(), baseScheduleMode));
+
+      // Only now, with every replacement safely in place, drop what this run no
+      // longer needs - a prayer switched off, a deleted reminder, a day that has
+      // fallen off the end of the horizon (while preserving already-delivered
+      // notifications from today/yesterday in the status bar).
+      await _dropStaleNotifications(prefs, writtenIds, elapsedIds: elapsedIds);
+
+      // Keep favorite masjid pre-Jama'at reminders synced alongside prayer notifications
+      await scheduleJamaatReminders(syncNative: false);
+
+      final doneNow = TimingsData.instance.nowForTimings();
+      final notifAllowed = await areNotificationsEnabled();
+      await prefs.setInt('last_full_schedule_date_slot', dateSlotFor(doneNow));
+      await prefs.setInt('last_full_schedule_completed_at',
+          DateTime.now().millisecondsSinceEpoch);
+      await prefs.setBool('last_full_schedule_can_exact', canExact);
+      await prefs.setBool('last_full_schedule_notif_allowed', notifAllowed);
+    } finally {
+      await prefs.setBool('alarm_batch_in_progress', false);
+      // Hand off all scheduled notifications to native PrayerAlarmGuardian so it
+      // replaces raw ScheduledNotificationReceiver PendingIntents with PrayerAlarmReceiver
+      // and promotes the soonest 4 upcoming alarms within 18h to AlarmManager.setAlarmClock().
+      try {
+        await nativeChannel.invokeMethod('syncPrayerAlarms', {'force': true});
+      } catch (_) {
+        // In WorkManager background isolate (where MainActivity MethodChannel is not attached),
+        // signal MainApplication's SharedPreferences listener to run the Guardian sync.
+        await prefs.setInt(
+            'alarm_batch_completed_at', DateTime.now().millisecondsSinceEpoch);
+      }
+    }
 
     // Schedule Auto-Silent alarms
     final autoSilentEnabled = prefs.getBool('auto_silent_enabled') ?? false;
     final customSilentEnabled = prefs.getBool('custom_silent_enabled') ?? false;
-    const nativeChannel = MethodChannel('pk.sukkur.salah/native_helper');
     if (autoSilentEnabled || customSilentEnabled) {
       final autoSilentMode = prefs.getString('auto_silent_mode') ?? 'vibrate';
       final List<Map<String, dynamic>> silentAlarms = [];
@@ -793,6 +931,13 @@ class NotificationService {
         color: const Color(0xFF0D6B5E),
         visibility: NotificationVisibility.public,
         category: AndroidNotificationCategory.alarm,
+        audioAttributesUsage: playSound
+            ? AudioAttributesUsage.alarm
+            : AudioAttributesUsage.notification,
+        // Do not set fullScreenIntent: true on targetSdk 36 — Android 14+ blocks unpermitted
+        // full-screen activity launches from background, causing OEMs to hold notifications
+        // until the app is opened. Importance.max + category alarm already shows heads-up with sound.
+        fullScreenIntent: false,
         styleInformation: const DefaultStyleInformation(true, true),
       ),
       iOS: DarwinNotificationDetails(
@@ -901,6 +1046,7 @@ class NotificationService {
             _chSilent,
             'Friday Reminders',
             channelDescription: 'Weekly reminders for Jummah',
+            icon: '@drawable/ic_notification',
             importance: Importance.defaultImportance,
             priority: Priority.defaultPriority,
             playSound: false,
@@ -932,8 +1078,11 @@ class NotificationService {
   /// Reads the user's custom reminders and schedules them across the horizon,
   /// returning every notification id it wrote.
   Future<Set<int>> _scheduleCustomReminders(
-      SharedPreferences prefs, DateTime now,
-      AndroidScheduleMode scheduleMode) async {
+    SharedPreferences prefs,
+    DateTime now,
+    AndroidScheduleMode scheduleMode, {
+    Set<int>? elapsedIds,
+  }) async {
     final written = <int>{};
     final raw = prefs.getString('custom_reminders');
     if (raw == null) return written;
@@ -947,6 +1096,8 @@ class NotificationService {
       return written;
     }
 
+    final yesterdaySlot = dateSlotFor(now.subtract(const Duration(days: 1)));
+
     for (int i = 0; i < list.length; i++) {
       final m = list[i];
       if (m is! Map) continue;
@@ -958,8 +1109,11 @@ class NotificationService {
       final timingName = _reminderPrayerToTiming[prayerName];
       if (timingName == null) continue;
 
+      elapsedIds?.add(reminderNotificationId(i, yesterdaySlot));
+
       for (int dayOffset = 0; dayOffset < scheduleHorizonDays; dayOffset++) {
-        final date = now.add(Duration(days: dayOffset));
+        final liveNow = TimingsData.instance.nowForTimings();
+        final date = liveNow.add(Duration(days: dayOffset));
         final timing = TimingsData.instance.timingFor(date);
         if (timing == null) continue;
 
@@ -972,6 +1126,7 @@ class NotificationService {
         }
         if (pt == null) continue;
 
+        final id = reminderNotificationId(i, dateSlotFor(date));
         // Built in the timings' own zone before the offset is applied, so a
         // reminder for a world city tracks that city's clock like the prayer
         // itself does. TZDateTime compares as an absolute instant, so the
@@ -980,8 +1135,10 @@ class NotificationService {
             .add(Duration(minutes: offset));
         // Against the real instant, not [now]: [now] carries the timings' own
         // wall clock, which for a watched city is not the same point in time.
-        if (tzDt.isBefore(DateTime.now())) continue;
-        final id = reminderNotificationId(i, dayOffset);
+        if (!tzDt.isAfter(DateTime.now())) {
+          elapsedIds?.add(id);
+          continue;
+        }
 
         final reminderLang = prefs.getString('language_code') ?? 'english';
         final String reminderTitle = (label == null || label.isEmpty)
@@ -992,7 +1149,7 @@ class NotificationService {
             _reminderBody(prayerName!, offset, reminderLang);
 
         try {
-          await _safeZonedSchedule(
+          final scheduled = await _safeZonedSchedule(
             id: id,
             title: rtlLanguages.contains(reminderLang)
                 ? '\u200F$reminderTitle'
@@ -1011,7 +1168,9 @@ class NotificationService {
                 icon: '@drawable/ic_notification',
                 visibility: NotificationVisibility.public,
                 sound: RawResourceAndroidNotificationSound('mixkit_bell_notification_933'),
-                category: AndroidNotificationCategory.reminder,
+                audioAttributesUsage: AudioAttributesUsage.alarm,
+                fullScreenIntent: false,
+                category: AndroidNotificationCategory.alarm,
                 styleInformation: DefaultStyleInformation(true, true),
               ),
               iOS: DarwinNotificationDetails(
@@ -1023,10 +1182,10 @@ class NotificationService {
             ),
             scheduleMode: scheduleMode,
           );
-          written.add(id);
-          // Yield periodically to keep the event loop responsive.
-          if (written.length % 3 == 0) {
-            await Future.delayed(const Duration(milliseconds: 1));
+          if (scheduled) {
+            written.add(id);
+          } else {
+            elapsedIds?.add(id);
           }
         } catch (e) {
           debugPrint('Failed to schedule reminder $id: $e');
@@ -1037,9 +1196,9 @@ class NotificationService {
   }
 
   /// Safely schedules a zoned notification with multi-level schedule mode fallback.
-  /// Primary mode is usually [AndroidScheduleMode.alarmClock]. If the OS or device policy
-  /// prevents exact alarm clock scheduling, it automatically tries exactAllowWhileIdle and inexactAllowWhileIdle.
-  Future<void> _safeZonedSchedule({
+  /// Never passes a past timestamp to `zonedSchedule` (which would cause AlarmManager
+  /// to fire `ScheduledNotificationReceiver` immediately when the user opens the app).
+  Future<bool> _safeZonedSchedule({
     required int id,
     required String title,
     required String body,
@@ -1048,18 +1207,37 @@ class NotificationService {
     required AndroidScheduleMode scheduleMode,
     DateTimeComponents? matchDateTimeComponents,
   }) async {
+    var targetDate = scheduledDate;
+    final realNow = DateTime.now();
+    if (!targetDate.isAfter(realNow)) {
+      if (matchDateTimeComponents == DateTimeComponents.dayOfWeekAndTime) {
+        while (!targetDate.isAfter(realNow)) {
+          targetDate = targetDate.add(const Duration(days: 7));
+        }
+      } else if (matchDateTimeComponents == DateTimeComponents.time) {
+        while (!targetDate.isAfter(realNow)) {
+          targetDate = targetDate.add(const Duration(days: 1));
+        }
+      } else {
+        // One-shot alarm whose time has already elapsed (e.g. if the Dart isolate
+        // was paused while backgrounded and resumed later): NEVER schedule in the past.
+        return false;
+      }
+    }
+
     try {
       await _plugin!.zonedSchedule(
         id,
         title,
         body,
-        scheduledDate,
+        targetDate,
         notificationDetails,
         androidScheduleMode: scheduleMode,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: matchDateTimeComponents,
       );
+      return true;
     } catch (e) {
       debugPrint('ZonedSchedule primary mode ($scheduleMode) failed for $id: $e');
       if (scheduleMode != AndroidScheduleMode.exactAllowWhileIdle) {
@@ -1068,14 +1246,14 @@ class NotificationService {
             id,
             title,
             body,
-            scheduledDate,
+            targetDate,
             notificationDetails,
             androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
             uiLocalNotificationDateInterpretation:
                 UILocalNotificationDateInterpretation.absoluteTime,
             matchDateTimeComponents: matchDateTimeComponents,
           );
-          return;
+          return true;
         } catch (e2) {
           debugPrint('ZonedSchedule fallback exactAllowWhileIdle failed for $id: $e2');
         }
@@ -1085,13 +1263,14 @@ class NotificationService {
         id,
         title,
         body,
-        scheduledDate,
+        targetDate,
         notificationDetails,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: matchDateTimeComponents,
       );
+      return true;
     }
   }
 
@@ -1411,6 +1590,10 @@ class NotificationService {
   Future<void> cancelAll() async {
     if (kIsWeb || _plugin == null) return;
     await _plugin!.cancelAll();
+    try {
+      const nativeChannel = MethodChannel('pk.sukkur.salah/native_helper');
+      await nativeChannel.invokeMethod('syncPrayerAlarms', {'force': true});
+    } catch (_) {}
   }
 
   /// Returns false only when the OS has notifications turned off for this app
@@ -1562,9 +1745,10 @@ class NotificationService {
   void startLiveCountdownTimer() {
     _liveTimer?.cancel();
     updateLiveCountdownNotification();
-    // On Android, usesChronometer: true natively ticks every second in SystemUI.
-    // Refreshing from Dart every 30 seconds avoids IPC flooding, notification throttling, and ANR.
-    _liveTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+    // Native PrayerKeepAliveService transitions at exact prayer boundaries and on
+    // SCREEN_ON, while usesChronometer: true ticks every second in SystemUI.
+    // A 5-minute periodic sync keeps widgets and timeline topped up with minimal IPC.
+    _liveTimer = Timer.periodic(const Duration(minutes: 5), (_) {
       updateLiveCountdownNotification();
     });
   }
@@ -1647,23 +1831,7 @@ class NotificationService {
       final headerText = state.isElapsed ? currentPrayerHeader : nextPrayerHeader;
       final title = '$mark$headerText: $prayerLocalized';
 
-      Duration duration = state.duration;
-      if (!state.isElapsed) {
-        final ms = duration.inMilliseconds;
-        final seconds = ms <= 0 ? 0 : (ms / 1000).ceil();
-        duration = Duration(seconds: seconds);
-      }
-
       final timeFormatted = '\u2066${state.prayer.displayTime} ${state.prayer.displayIsPm ? 'PM' : 'AM'}\u2069';
-
-      final String sign = state.isElapsed ? '+' : '-';
-      final String statusLabel = state.isElapsed
-          ? _getOngoingLabel(language)
-          : _getRemainingLabel(language);
-
-      final int targetWhenMs = state.isElapsed
-          ? now.subtract(state.duration).millisecondsSinceEpoch
-          : now.add(state.duration).millisecondsSinceEpoch;
 
       final channelName = worldTranslations[language]?['Lock Screen Live Countdown'] ??
           translateFor(language, 'Lock Screen Live Countdown', 'لاک اسکرین لائیو کاؤنٹ ڈاؤن', 'لاڪ اسڪرين لائيو ڪائونٽ ڊائون', 'العد التنازلي المباشر للشاشة');
@@ -1671,44 +1839,45 @@ class NotificationService {
       // Body shows clean prayer time only (status and live countdown are in the header above)
       final body = '$mark$timeFormatted';
 
-      final String subText = isRtl
-          ? '\u202A$statusLabel $sign\u202C'
-          : '$statusLabel $sign';
-
-      final androidDetails = AndroidNotificationDetails(
-        _chLiveCountdown,
-        channelName,
-        channelDescription: channelName,
-        importance: Importance.low,
-        priority: Priority.low,
-        ongoing: true,
-        onlyAlertOnce: true,
-        autoCancel: false,
-        showWhen: true,
-        when: targetWhenMs,
-        usesChronometer: true,
-        chronometerCountDown: !state.isElapsed,
-        subText: subText,
-        visibility: NotificationVisibility.public,
+      // Start/update the native Android foreground service with a 7-day timeline so
+      // aggressive OEMs (Infinix, Tecno, Vivo, Xiaomi, Oppo) treat Sukkur Salah as an
+      // active foreground service and do not force-stop its scheduled prayer alarms
+      // when swiped from Recents.
+      final timelineJson = _buildKeepAliveTimelineJson(
+        now: now,
+        language: language,
+        isRtl: isRtl,
+        mark: mark,
+        nextPrayerHeader: nextPrayerHeader,
+        currentPrayerHeader: currentPrayerHeader,
       );
+      // Persist timeline to SharedPreferences first so WorkManager background
+      // runs (where MainActivity's MethodChannel is not attached) still trigger
+      // MainApplication's SharedPreferences listener to update PrayerKeepAliveService.
+      await prefs.setString('keepalive_timeline', timelineJson);
+      await prefs.setString('keepalive_channel_name', channelName);
+      await prefs.setString('keepalive_stale_title', title);
+      await prefs.setString('keepalive_stale_body', body);
 
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: false,
-        presentBadge: false,
-        presentSound: false,
-      );
-
-      final details = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
-
-      await _plugin!.show(
-        liveCountdownId,
-        title,
-        body,
-        details,
-      );
+      try {
+        const nativeChannel = MethodChannel('pk.sukkur.salah/native_helper');
+        await nativeChannel.invokeMethod<bool>(
+          'startKeepAlive',
+          {
+            'timeline': timelineJson,
+            'channelName': channelName,
+            'staleTitle': title,
+            'staleBody': body,
+          },
+        );
+      } catch (_) {
+        // In WorkManager background isolate, MainApplication's listener on
+        // 'flutter.keepalive_sync_requested_at' handles updating PrayerKeepAliveService.
+        try {
+          await prefs.setInt('keepalive_sync_requested_at',
+              DateTime.now().millisecondsSinceEpoch);
+        } catch (_) {}
+      }
     } catch (e) {
       debugPrint('Failed to update live countdown notification: $e');
     }
@@ -1716,10 +1885,105 @@ class NotificationService {
     WidgetService.updateWidget();
   }
 
+  /// Builds a 48-hour JSON timeline of prayer countdown/elapsed segments for the
+  /// native [PrayerKeepAliveService], so the status-bar notification transitions
+  /// accurately even while the Flutter engine is not running.
+  String _buildKeepAliveTimelineJson({
+    required DateTime now,
+    required String language,
+    required bool isRtl,
+    required String mark,
+    required String nextPrayerHeader,
+    required String currentPrayerHeader,
+  }) {
+    final int epochDeltaMs =
+        DateTime.now().millisecondsSinceEpoch - now.millisecondsSinceEpoch;
+    final horizonEnd = now.add(const Duration(days: 7));
+
+    final candidates = <DateTime>{now};
+    for (int d = 0; d <= 7; d++) {
+      final date = DateTime(now.year, now.month, now.day).add(Duration(days: d));
+      final dayTiming = TimingsData.instance.timingFor(date);
+      if (dayTiming == null) continue;
+      candidates.add(DateTime(date.year, date.month, date.day, 0, 0, 1));
+      candidates.add(DateTime(date.year, date.month, date.day, 9, 30, 1));
+      for (final p in dayTiming.allTimings) {
+        final dt = p.toDateTime(date: date);
+        candidates.add(dt.subtract(const Duration(minutes: 40)));
+        candidates.add(dt.subtract(const Duration(minutes: 30)));
+        candidates.add(dt);
+        candidates.add(dt.add(const Duration(minutes: 3)));
+        candidates.add(dt.add(const Duration(minutes: 7)));
+      }
+    }
+
+    final sorted = candidates
+        .where((t) => !t.isBefore(now) && !t.isAfter(horizonEnd))
+        .toList()
+      ..sort();
+
+    final segments = <Map<String, dynamic>>[];
+    String? lastKey;
+
+    for (final probe in sorted) {
+      final dayTiming = TimingsData.instance.timingFor(probe);
+      if (dayTiming == null) continue;
+      final state = computePrayerState(probe, dayTiming);
+      if (state == null) continue;
+
+      final segKey = '${state.prayer.name}_${state.isElapsed}_${probe.day}';
+      if (segKey == lastKey) continue;
+      lastKey = segKey;
+
+      final prayerRawName = state.prayer.name;
+      final prayerLocalized = worldTranslations[language]?[prayerRawName] ??
+          translateFor(language, prayerRawName, prayerRawName, prayerRawName);
+      final headerText =
+          state.isElapsed ? currentPrayerHeader : nextPrayerHeader;
+      final segTitle = '$mark$headerText: $prayerLocalized';
+      final timeFormatted =
+          '\u2066${state.prayer.displayTime} ${state.prayer.displayIsPm ? 'PM' : 'AM'}\u2069';
+      final segBody = '$mark$timeFormatted';
+      final sign = state.isElapsed ? '+' : '-';
+      final statusLabel = state.isElapsed
+          ? _getOngoingLabel(language)
+          : _getRemainingLabel(language);
+      final segSubText =
+          isRtl ? '\u202A$statusLabel $sign\u202C' : '$statusLabel $sign';
+
+      final int whenMs = (state.isElapsed
+                  ? probe.subtract(state.duration)
+                  : probe.add(state.duration))
+              .millisecondsSinceEpoch +
+          epochDeltaMs;
+
+      segments.add({
+        'start': probe.millisecondsSinceEpoch + epochDeltaMs,
+        'title': segTitle,
+        'body': segBody,
+        'sub': segSubText,
+        'when': whenMs,
+        'down': !state.isElapsed,
+      });
+    }
+
+    return jsonEncode(segments);
+  }
+
   Future<void> cancelLiveCountdown() async {
     if (kIsWeb || _plugin == null) return;
     try {
       stopLiveCountdownTimer();
+      try {
+        const nativeChannel = MethodChannel('pk.sukkur.salah/native_helper');
+        await nativeChannel.invokeMethod('stopKeepAlive');
+      } catch (_) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('keepalive_sync_requested_at',
+              DateTime.now().millisecondsSinceEpoch);
+        } catch (_) {}
+      }
       await _plugin!.cancel(liveCountdownId);
     } catch (_) {}
   }
@@ -1735,22 +1999,39 @@ class NotificationService {
     } catch (_) {}
   }
 
-  Future<void> scheduleJamaatReminders() async {
+  Future<void> scheduleJamaatReminders({bool syncNative = true}) async {
     if (kIsWeb || _plugin == null) return;
     try {
-      await cancelJamaatReminders();
-
       final prefs = await SharedPreferences.getInstance();
       final bool enabled = prefs.getBool('jamaat_reminders_enabled') ?? false;
-      if (!enabled) return;
-
       final String favoriteId = prefs.getString('favorite_masjid_id') ?? '';
-      if (favoriteId.isEmpty) return;
+      final masjid = favoriteId.isNotEmpty
+          ? JamaatTimesService.instance.findMasjidById(favoriteId)
+          : null;
+
+      if (!enabled || favoriteId.isEmpty || masjid == null) {
+        await cancelJamaatReminders();
+        if (syncNative) {
+          try {
+            const nativeChannel = MethodChannel('pk.sukkur.salah/native_helper');
+            await nativeChannel.invokeMethod('syncPrayerAlarms', {'force': true});
+          } catch (_) {
+            try {
+              await prefs.setInt('alarm_batch_completed_at',
+                  DateTime.now().millisecondsSinceEpoch);
+            } catch (_) {}
+          }
+        }
+        return;
+      }
+
+      final canExact = await canScheduleExactAlarms();
+      final jamaatScheduleMode = canExact
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle;
+
       final int offsetMins = prefs.getInt('jamaat_reminder_offset_mins') ?? 15;
       final String language = prefs.getString('language_code') ?? 'english';
-
-      final masjid = JamaatTimesService.instance.findMasjidById(favoriteId);
-      if (masjid == null) return;
 
       final timing = JamaatTimesService.instance.getTimingFor(masjid);
       final dynamicName = masjid.getNameFor(language);
@@ -1763,8 +2044,6 @@ class NotificationService {
               masjid.getNameFor('sindhi'),
               masjid.getNameFor('arabic'),
             );
-
-      final now = DateTime.now();
 
       final Map<String, String> prayerTimes = {
         'Fajr': timing.fajr,
@@ -1789,10 +2068,11 @@ class NotificationService {
             if (isPm && h < 12) h += 12;
             if (!isPm && h == 12) h = 0;
 
+            final now = DateTime.now();
             var jamaatTime = DateTime(now.year, now.month, now.day, h, m);
             var triggerTime = jamaatTime.subtract(Duration(minutes: offsetMins));
 
-            if (triggerTime.isBefore(now)) {
+            while (!triggerTime.isAfter(now)) {
               jamaatTime = jamaatTime.add(const Duration(days: 1));
               triggerTime = triggerTime.add(const Duration(days: 1));
             }
@@ -1848,11 +2128,18 @@ class NotificationService {
             }
 
             const androidDetails = AndroidNotificationDetails(
-              'ch_jamaat_reminders',
+              'ch_jamaat_reminders_v2',
               'باجماعت نماز الارم',
               channelDescription: 'پسندیدہ مسجد کی باجماعت نماز کی یاد دہانی',
-              importance: Importance.high,
-              priority: Priority.high,
+              importance: Importance.max,
+              priority: Priority.max,
+              icon: '@drawable/ic_notification',
+              color: Color(0xFF0D6B5E),
+              visibility: NotificationVisibility.public,
+              category: AndroidNotificationCategory.alarm,
+              audioAttributesUsage: AudioAttributesUsage.alarm,
+              sound: RawResourceAndroidNotificationSound('mixkit_bell_notification_933'),
+              fullScreenIntent: false,
               playSound: true,
               enableVibration: true,
             );
@@ -1861,6 +2148,7 @@ class NotificationService {
               presentAlert: true,
               presentBadge: true,
               presentSound: true,
+              interruptionLevel: InterruptionLevel.timeSensitive,
             );
 
             const details = NotificationDetails(
@@ -1870,19 +2158,30 @@ class NotificationService {
 
             final scheduledTz = tz.TZDateTime.from(triggerTime, tz.local);
 
-            await _plugin!.zonedSchedule(
-              jamaatBaseId + idOffset,
-              title,
-              body,
-              scheduledTz,
-              details,
-              androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-              uiLocalNotificationDateInterpretation:
-                  UILocalNotificationDateInterpretation.absoluteTime,
+            await _safeZonedSchedule(
+              id: jamaatBaseId + idOffset,
+              title: title,
+              body: body,
+              scheduledDate: scheduledTz,
+              notificationDetails: details,
+              scheduleMode: jamaatScheduleMode,
+              matchDateTimeComponents: DateTimeComponents.time,
             );
           }
         } catch (_) {}
         idOffset++;
+      }
+
+      if (syncNative) {
+        try {
+          const nativeChannel = MethodChannel('pk.sukkur.salah/native_helper');
+          await nativeChannel.invokeMethod('syncPrayerAlarms', {'force': true});
+        } catch (_) {
+          try {
+            await prefs.setInt('alarm_batch_completed_at',
+                DateTime.now().millisecondsSinceEpoch);
+          } catch (_) {}
+        }
       }
     } catch (e) {
       debugPrint('Failed to schedule Jamaat reminders: $e');

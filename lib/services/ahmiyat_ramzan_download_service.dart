@@ -170,7 +170,7 @@ class AhmiyatRamzanDownloadService {
         try {
           debugPrint('Downloading Ahmiyat-e-Ramzan PDF from: $urlStr');
           final request = http.Request('GET', Uri.parse(urlStr));
-          request.headers['User-Agent'] = 'SukkurSalah-Android/1.4.8';
+          request.headers['User-Agent'] = 'SukkurSalah-Android/1.5.0';
           http.StreamedResponse response = await client.send(request).timeout(const Duration(seconds: 25));
 
           // Follow redirect if not automatically resolved
@@ -182,7 +182,7 @@ class AhmiyatRamzanDownloadService {
             final redirectUrl = response.headers['location']!;
             debugPrint('Following redirect to: $redirectUrl');
             final redirectRequest = http.Request('GET', Uri.parse(redirectUrl));
-            redirectRequest.headers['User-Agent'] = 'SukkurSalah-Android/1.4.8';
+            redirectRequest.headers['User-Agent'] = 'SukkurSalah-Android/1.5.0';
             response = await client.send(redirectRequest).timeout(const Duration(seconds: 25));
           }
 

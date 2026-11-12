@@ -120,12 +120,21 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
     );
   }
 
+  bool _isQueryRtl(String text) {
+    if (text.isEmpty) return false;
+    final trimmed = text.trimLeft();
+    if (trimmed.isEmpty) return false;
+    final code = trimmed.codeUnitAt(0);
+    return (code >= 0x0590 && code <= 0x08FF) || (code >= 0xFB1D && code <= 0xFEFC);
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
     final muted = isDark ? Colors.white54 : Colors.black54;
+    final effectiveRtl = _query.isNotEmpty ? _isQueryRtl(_query) : settings.isRtl;
 
     return Scaffold(
       backgroundColor: settings.displayThemeBg(isDark),
@@ -147,12 +156,25 @@ class _CitySearchScreenState extends State<CitySearchScreen> {
                 controller: _controller,
                 focusNode: _focus,
                 autocorrect: false,
-                textDirection: TextDirection.ltr,
-                style: TextStyle(fontSize: 24, color: textColor),
+                textDirection: effectiveRtl ? TextDirection.rtl : TextDirection.ltr,
+                textAlign: effectiveRtl ? TextAlign.right : TextAlign.left,
+                style: TextStyle(
+                  fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                  fontSize: 24,
+                  color: textColor,
+                ),
                 decoration: InputDecoration(
-                  hintText: settings.translate('Search city', 'شہر تلاش کریں',
-                      'شهر ڳوليو', 'ابحث عن مدينة'),
-                  hintStyle: TextStyle(fontSize: 24, color: muted),
+                  hintText: settings.translate(
+                    'Search city...',
+                    'شہر تلاش کریں...',
+                    'شهر ڳوليو...',
+                    'ابحث عن مدينة...',
+                  ),
+                  hintStyle: TextStyle(
+                    fontFamily: AppTheme.getFontForLanguage(context, settings.language),
+                    fontSize: 24,
+                    color: muted,
+                  ),
                   border: const UnderlineInputBorder(),
                 ),
                 onChanged: _onChanged,

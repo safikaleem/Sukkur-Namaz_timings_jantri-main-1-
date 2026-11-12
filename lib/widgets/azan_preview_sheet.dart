@@ -21,6 +21,7 @@ class _AzanPreviewSheetState extends State<AzanPreviewSheet> {
   @override
   void initState() {
     super.initState();
+    _player.setReleaseMode(ReleaseMode.stop);
     _player.onPlayerComplete.listen((_) {
       if (mounted) setState(() => _playingIndex = null);
     });
@@ -28,8 +29,8 @@ class _AzanPreviewSheetState extends State<AzanPreviewSheet> {
 
   @override
   void dispose() {
-    _player.stop();
-    _player.dispose();
+    _player.stop().catchError((_) {});
+    _player.dispose().catchError((_) {});
     super.dispose();
   }
 

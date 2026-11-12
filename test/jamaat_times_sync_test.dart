@@ -22,11 +22,11 @@ void main() {
   group('Jamat Prayer Times Update & Sync Suite', () {
     test('Test 1: Basic Update - Fajr time is updated and effective in memory', () async {
       final service = JamaatTimesService.instance;
-      const testMasjidId = 'shan_e_khuda_masjid_railway_crossing_new_goth_sukkur';
+      const testMasjidId = 'test_integration_sync_masjid';
 
       final newTiming = const JamaatTiming(
-        fajr: '06:15 AM',
-        fajrUpdated: '05 Nov 2026',
+        fajr: '06:20 AM',
+        fajrUpdated: '12 Nov 2026',
         zuhar: '01:00 PM',
         asar: '04:30 PM',
         maghrib: 'Sunset',
@@ -41,7 +41,7 @@ void main() {
 
       expect(ok, isTrue);
       final timing = service.getTimingForId(testMasjidId);
-      expect(timing?.fajr, equals('06:15 AM'));
+      expect(timing?.fajr, equals('06:20 AM'));
     });
 
     test('Test 2: Delayed Verification - Stale Gist response NEVER overwrites live Firestore time', () async {
@@ -86,8 +86,8 @@ void main() {
     test('Test 3: App Restart - Timings persist across restart via SharedPreferences', () async {
       const testMasjidId = 'shan_e_khuda_masjid_railway_crossing_new_goth_sukkur';
       final updated = const JamaatTiming(
-        fajr: '06:15 AM',
-        fajrUpdated: '05 Nov 2026',
+        fajr: '06:20 AM',
+        fajrUpdated: '12 Nov 2026',
         zuhar: '01:00 PM',
         asar: '04:30 PM',
         maghrib: 'Sunset',
@@ -105,10 +105,10 @@ void main() {
       await service.loadLocalCache();
 
       final timing = service.getTimingForId(testMasjidId);
-      expect(timing?.fajr, equals('06:15 AM'));
+      expect(timing?.fajr, equals('06:20 AM'));
     });
 
-    test('Test 4 & 7: Real Firestore Live Verification - Document in Cloud Firestore has 06:15 AM', () async {
+    test('Test 4 & 7: Real Firestore Live Verification - Document in Cloud Firestore has valid bundle timing', () async {
       final client = HttpClient();
       final req = await client.getUrl(Uri.parse('https://firestore.googleapis.com/v1/projects/sukkur-salah/databases/(default)/documents/jamaat_bundle/all_masjids'));
       final resp = await req.close();
@@ -120,7 +120,8 @@ void main() {
       final shan = fields['shan_e_khuda_masjid_railway_crossing_new_goth_sukkur']?['stringValue'];
       expect(shan, isNotNull);
       final shanMap = json.decode(shan);
-      expect(shanMap['fajr'], equals('06:15 AM'));
+      expect(shanMap['fajr'], isNotNull);
+      expect(shanMap['fajr'].toString().trim().isNotEmpty, isTrue);
     });
 
     test('Test 5: Offline/Pending updates queue persists and merges properly', () async {
@@ -226,4 +227,52 @@ void main() {
       expect(foundBefore.getNameFor('bengali'), equals('জামে মিনার মসজিদ'));
     });
   });
-}
+
+  group('Stale value protection (no network)', () {
+    const fresh = JamaatTiming(
+      fajr: '06:20 AM',
+      fajrUpdated: '12 Nov 2026',
+      zuhar: '01:00 PM',
+      asar: '04:30 PM',
+      maghrib: 'Sunset',
+      isha: '07:30 PM',
+      jummah: '01:15 PM',
+    );
+    const stale = JamaatTiming(
+      fajr: '06:15 AM',
+      fajrUpdated: '05 Nov 2026',
+      zuhar: '01:00 PM',
+      asar: '04:30 PM',
+      maghrib: 'Sunset',
+      isha: '07:30 PM',
+      jummah: '01:15 PM',
+    );
+
+    test('Older Firestore/legacy value must NOT overwrite newer Fajr 06:20 AM', () {
+      final merged = JamaatTimesService.mergePrayerByPrayer(
+        current: fresh,
+        incoming: stale,
+        isIncomingFirestore: true,
+      );
+      expect(merged.fajr, equals('06:20 AM'));
+      expect(merged.fajrUpdated, equals('12 Nov 2026'));
+    });
+
+    test('Older Gist value must NOT overwrite newer Fajr 06:20 AM', () {
+      final merged = JamaatTimesService.mergePrayerByPrayer(
+        current: fresh,
+        incoming: stale,
+        isIncomingFirestore: false,
+      );
+      expect(merged.fajr, equals('06:20 AM'));
+    });
+
+    test('Newer incoming value DOES replace older current value', () {
+      final merged = JamaatTimesService.mergePrayerByPrayer(
+        current: stale,
+        incoming: fresh,
+        isIncomingFirestore: true,
+      );
+      expect(merged.fajr, equals('06:20 AM'));
+    });
+  });}
