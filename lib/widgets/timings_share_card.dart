@@ -6,11 +6,13 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import '../data/timings_data.dart';
 import '../l10n/world_translations.dart';
 import '../l10n/world_translations_extra.dart';
 import '../models/namaz_timing.dart';
 import '../providers/settings_provider.dart';
 import '../services/jamaat_times_service.dart';
+import '../services/multilingual_city_aliases.dart';
 import '../utils/app_theme.dart';
 import '../utils/hijri_converter.dart';
 import '../utils/web_download_helper.dart';
@@ -82,6 +84,23 @@ class _TimingsShareModal extends StatefulWidget {
 class _TimingsShareModalState extends State<_TimingsShareModal> {
   final GlobalKey _cardKey = GlobalKey();
   bool _isProcessing = false;
+  late DateTime _selectedDate;
+  late DayTiming? _currentDayTiming;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = widget.date;
+    _currentDayTiming = widget.dayTiming;
+  }
+
+  void _selectDate(DateTime newDate) {
+    if (DateUtils.isSameDay(_selectedDate, newDate)) return;
+    setState(() {
+      _selectedDate = newDate;
+      _currentDayTiming = TimingsData.instance.timingFor(newDate);
+    });
+  }
 
   Future<Uint8List?> _captureCardBytes() async {
     final boundary = _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
@@ -228,16 +247,18 @@ class _TimingsShareModalState extends State<_TimingsShareModal> {
       buffer.writeln('سکھر صلاة (ایپلیکیشن)');
       buffer.writeln('نماز اور جماعت کے اوقات جاننے کے لیے Play Store سے ابھی Sukkur Salah ایپلیکیشن ڈاؤن لوڈ کریں');
     } else {
-      final d = widget.dayTiming;
-      final isKarachi = widget.settings.isKarachi ||
-          (widget.settings.cityName?.toLowerCase() == 'karachi') ||
-          (widget.settings.cityName == 'کراچی');
-      if (isKarachi) {
-        buffer.writeln('🕌 اوقاتِ نماز برائے کراچی • Karachi');
+      final d = _currentDayTiming ?? widget.dayTiming;
+      final isSukkur = widget.settings.locationMode == LocationMode.sukkur;
+      final cityPair = TimingsShareCard.getCityNames(widget.settings);
+      final cityUrdu = cityPair.urdu;
+      final cityEnglish = cityPair.english;
+
+      if (isSukkur) {
+        buffer.writeln('🕌 مستند اوقاتِ نماز برائے سکھر • Sukkur');
       } else {
-        buffer.writeln('🕌 سکھر صلاة • اوقاتِ نماز');
+        buffer.writeln('🕌 اوقاتِ نماز برائے $cityUrdu • $cityEnglish');
       }
-      buffer.writeln('📅 ${_formatDate(widget.date)}');
+      buffer.writeln('📅 ${_formatDate(_selectedDate)}');
       buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
       if (d != null) {
         final timings = d.allTimings;
@@ -250,7 +271,7 @@ class _TimingsShareModalState extends State<_TimingsShareModal> {
       buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
       buffer.writeln('سکھر صلاة (ایپلیکیشن)');
       buffer.writeln('نماز کے اوقات جاننے کے لیے Play Store سے ابھی Sukkur Salah ایپلیکیشن ڈاؤن لوڈ کریں');
-      if (!widget.isMasjid && !isKarachi) {
+      if (!widget.isMasjid && isSukkur) {
         buffer.writeln('مسجد باب الاسلام، اناج بازار، سکھر');
       }
     }
@@ -273,6 +294,79 @@ class _TimingsShareModalState extends State<_TimingsShareModal> {
     final dName = days[date.weekday - 1];
     final mName = months[date.month - 1];
     return '$dName، ${date.day} $mName ${date.year}ء';
+  }
+
+  static String _formatDatePill(DateTime d, String lang) {
+    const urduMonths = ['جنوری', 'فروری', 'مارچ', 'اپریل', 'مئی', 'جون', 'جولائی', 'اگست', 'ستمبر', 'اکتوبر', 'نومبر', 'دسمبر'];
+    const urduDays = ['پیر', 'منگل', 'بدھ', 'جمعرات', 'جمعہ', 'ہفتہ', 'اتوار'];
+    const engMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const engDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    if (lang == 'english') {
+      return '${engDays[d.weekday - 1]}، ${d.day} ${engMonths[d.month - 1]}';
+    } else {
+      return '${urduDays[d.weekday - 1]}، ${d.day} ${urduMonths[d.month - 1]}';
+    }
+  }
+
+  Widget _buildDateOption({
+    required DateTime date,
+    required bool isSelected,
+    required bool isDark,
+    required String? font,
+  }) {
+    final lang = widget.settings.language;
+    final dateText = _formatDatePill(date, lang);
+
+    return InkWell(
+      onTap: () => _selectDate(date),
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF0F5A44)
+              : (isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF0F5A44)
+                : (isDark ? Colors.white12 : Colors.black12),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.calendar_today_rounded,
+              size: 14,
+              color: isSelected
+                  ? Colors.white
+                  : (isDark ? Colors.white70 : Colors.black87),
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                dateText,
+                style: TextStyle(
+                  fontFamily: font,
+                  fontSize: 13.5,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected
+                      ? Colors.white
+                      : (isDark ? Colors.white70 : Colors.black87),
+                ),
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // ── Translations for all 10 languages ─────────────────────────────────
@@ -424,6 +518,17 @@ class _TimingsShareModalState extends State<_TimingsShareModal> {
     final isRtl = _isRtl(lang);
     final isUrdu = lang == 'urdu';
 
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+
+    final date1 = (DateUtils.isSameDay(widget.date, today) || DateUtils.isSameDay(widget.date, tomorrow))
+        ? today
+        : DateTime(widget.date.year, widget.date.month, widget.date.day);
+    final date2 = (DateUtils.isSameDay(widget.date, today) || DateUtils.isSameDay(widget.date, tomorrow))
+        ? tomorrow
+        : date1.add(const Duration(days: 1));
+
     return Container(
       height: screenH * 0.90,
       decoration: BoxDecoration(
@@ -471,6 +576,35 @@ class _TimingsShareModalState extends State<_TimingsShareModal> {
 
           const Divider(height: 1),
 
+          // Date options (Today & Tomorrow dates only, without "Today" / "Tomorrow" labels)
+          if (!widget.isMasjid) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+              child: Row(
+                textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+                children: [
+                  Expanded(
+                    child: _buildDateOption(
+                      date: date1,
+                      isSelected: DateUtils.isSameDay(_selectedDate, date1),
+                      isDark: isDark,
+                      font: font,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildDateOption(
+                      date: date2,
+                      isSelected: DateUtils.isSameDay(_selectedDate, date2),
+                      isDark: isDark,
+                      font: font,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           // Card preview (Scrollable)
           Expanded(
             child: SingleChildScrollView(
@@ -481,10 +615,10 @@ class _TimingsShareModalState extends State<_TimingsShareModal> {
                   child: RepaintBoundary(
                     key: _cardKey,
                     child: TimingsShareCard(
-                      dayTiming: widget.dayTiming,
+                      dayTiming: _currentDayTiming,
                       masjid: widget.masjid,
                       masjidTiming: widget.masjidTiming,
-                      date: widget.date,
+                      date: _selectedDate,
                       settings: widget.settings,
                       isMasjid: widget.isMasjid,
                     ),
@@ -710,13 +844,473 @@ class TimingsShareCard extends StatelessWidget {
     return masjid.addressKey;
   }
 
+  static const Map<String, String> _englishToUrdu = {
+    // Pakistan - Major Cities
+    'karachi': 'کراچی',
+    'lahore': 'لاہور',
+    'islamabad': 'اسلام آباد',
+    'rawalpindi': 'راولپنڈی',
+    'faisalabad': 'فیصل آباد',
+    'multan': 'ملتان',
+    'peshawar': 'پشاور',
+    'quetta': 'کوئٹہ',
+    'sialkot': 'سیالکوٹ',
+    'gujranwala': 'گوجرانوالہ',
+    'gujrat': 'گجرات',
+    'hyderabad': 'حیدرآباد',
+    'larkana': 'لاڑکانہ',
+    'sukkur': 'سکھر',
+    'nawabshah': 'نواب شاہ',
+    'shaheed benazirabad': 'شہید بینظیر آباد',
+    'mirpur khas': 'میرپور خاص',
+    'mirpurkhas': 'میرپور خاص',
+    'mardan': 'مردان',
+    'kasur': 'قصور',
+    'rahim yar khan': 'رحیم یار خان',
+    'okara': 'اوکاڑہ',
+    'vehari': 'وہاڑی',
+    'khanewal': 'خانیوال',
+    'dera ghazi khan': 'ڈیرہ غازی خان',
+    'dg khan': 'ڈیرہ غازی خان',
+    'd.g. khan': 'ڈیرہ غازی خان',
+    'dera ismail khan': 'ڈیرہ اسماعیل خان',
+    'di khan': 'ڈیرہ اسماعیل خان',
+    'd.i. khan': 'ڈیرہ اسماعیل خان',
+    'muzaffarabad': 'مظفر آباد',
+    'gilgit': 'گلگت',
+    'skardu': 'سکردو',
+    'bahawalpur': 'بہاولپور',
+    'sargodha': 'سرگودھا',
+    'sheikhupura': 'شیخوپورہ',
+    'jhang': 'جھنگ',
+    'chiniot': 'چنیوٹ',
+    'abbottabad': 'ایبٹ آباد',
+    'mansehra': 'مانسہرہ',
+    'mingora': 'مینگورہ',
+    'swat': 'سوات',
+    'kohat': 'کوہاٹ',
+    'bannu': 'بنوں',
+    'shikarpur': 'شکارپور',
+    'khairpur': 'خیرپور',
+    'jacobabad': 'جیکب آباد',
+    'ghotki': 'گھوٹکی',
+    'badin': 'بدین',
+    'thatta': 'ٹھٹھہ',
+    'mirpur': 'میرپور',
+    'kotli': 'کوٹلی',
+    'turbat': 'تربت',
+    'gwadar': 'گوادر',
+    'hub': 'حب',
+    'zhob': 'ژوب',
+    'chaman': 'چمن',
+    'attock': 'اٹک',
+    'chakwal': 'چکوال',
+    'jhelum': 'جہلم',
+    'mandi bahauddin': 'منڈی بہاؤالدین',
+    'hafizabad': 'حافظ آباد',
+    'toba tek singh': 'ٹوبہ ٹیک سنگھ',
+    'sahiwal': 'ساہیوال',
+    'pakpattan': 'پاکپتن',
+    'bahawalnagar': 'بہاولنگر',
+    'lodhran': 'لودھراں',
+    'muzaffargarh': 'مظفر گڑھ',
+    'layyah': 'لیہ',
+    'bhakkar': 'بھکر',
+    'mianwali': 'میانوالی',
+    'khushab': 'خوشاب',
+    'wazirabad': 'وزیر آباد',
+    'kamoke': 'کامونکے',
+    'muridke': 'مریدکے',
+    'swabi': 'صوابی',
+    'charsadda': 'چارسدہ',
+    'nowshera': 'نوشہرہ',
+    'dadu': 'دادو',
+    'tando adam': 'ٹنڈو آدم',
+    'tando allahyar': 'ٹنڈو الہٰ یار',
+    'umerkot': 'عمرکوٹ',
+    'kotri': 'کوٹری',
+    'pano aqil': 'پنوعاقل',
+    'pannu aqil': 'پنوعاقل',
+    'kandhkot': 'کندھ کوٹ',
+    'kashmore': 'کشمور',
+    'shahdadkot': 'شہداد کوٹ',
+    'khuzdar': 'خضدار',
+    'sibi': 'سبی',
+    'haripur': 'ہری پور',
+    'batkhela': 'بٹ خیلہ',
+
+    // Islamic & Middle Eastern Cities
+    'makkah': 'مکہ مکرمہ',
+    'mecca': 'مکہ مکرمہ',
+    'madinah': 'مدینہ منورہ',
+    'medina': 'مدینہ منورہ',
+    'riyadh': 'ریاض',
+    'jeddah': 'جدہ',
+    'dammam': 'دمام',
+    'khobar': 'الخبر',
+    'dubai': 'دبئی',
+    'abu dhabi': 'ابوظہبی',
+    'sharjah': 'شارجہ',
+    'ajman': 'عجمان',
+    'doha': 'دوحہ',
+    'muscat': 'مسقط',
+    'manama': 'منامہ',
+    'kuwait': 'کویت سٹی',
+    'kuwait city': 'کویت سٹی',
+    'cairo': 'قاہرہ',
+    'alexandria': 'اسکندریہ',
+    'istanbul': 'استنبول',
+    'ankara': 'انقرہ',
+    'bursa': 'بورصہ',
+    'konya': 'قونیہ',
+    'tehran': 'تہران',
+    'mashhad': 'مشہد',
+    'isfahan': 'اصفہان',
+    'baghdad': 'بغداد',
+    'basra': 'بصرہ',
+    'najaf': 'نجف اشرف',
+    'karbala': 'کربلا معلی',
+    'erbil': 'اربیل',
+    'damascus': 'دمشق',
+    'aleppo': 'حلب',
+    'amman': 'عمان',
+    'beirut': 'بیروت',
+    'jerusalem': 'القدس',
+    'al-quds': 'القدس',
+    'gaza': 'غزہ',
+    'sana\'a': 'صنعاء',
+    'sanaa': 'صنعاء',
+    'kabul': 'کابل',
+    'kandahar': 'قندھار',
+    'herat': 'ہرات',
+    'tashkent': 'تاشقند',
+    'samarkand': 'سمرقند',
+    'bukhara': 'بخارا',
+    'baku': 'باکو',
+
+    // South & East Asia
+    'delhi': 'دہلی',
+    'new delhi': 'نئی دہلی',
+    'mumbai': 'ممبئی',
+    'kolkata': 'کولکتہ',
+    'chennai': 'چنئی',
+    'bengaluru': 'بنگلور',
+    'bangalore': 'بنگلور',
+    'hyderabad (india)': 'حیدرآباد دکن',
+    'lucknow': 'لکھنؤ',
+    'agra': 'آگرہ',
+    'aligarh': 'علی گڑھ',
+    'srinagar': 'سری نگر',
+    'jammu': 'جموں',
+    'dhaka': 'ڈھاکہ',
+    'chittagong': 'چٹاگانگ',
+    'sylhet': 'سلہٹ',
+    'colombo': 'کولمبو',
+    'kuala lumpur': 'کوالالمپور',
+    'jakarta': 'جکارتہ',
+    'surabaya': 'سورابایا',
+    'singapore': 'سنگاپور',
+    'bangkok': 'بنکاک',
+    'beijing': 'بیجنگ',
+    'shanghai': 'شنگھائی',
+    'tokyo': 'ٹوکیو',
+    'seoul': 'سیول',
+
+    // Europe, Americas, Australia, Africa
+    'london': 'لندن',
+    'birmingham': 'برمنگھم',
+    'manchester': 'مانچسٹر',
+    'bradford': 'بریڈفورڈ',
+    'leeds': 'لیڈز',
+    'glasgow': 'گلاسگو',
+    'paris': 'پیرس',
+    'berlin': 'برلن',
+    'frankfurt': 'فرینکفرٹ',
+    'munich': 'میونخ',
+    'rome': 'روم',
+    'milan': 'میلان',
+    'madrid': 'میڈرڈ',
+    'barcelona': 'بارسلونا',
+    'amsterdam': 'ایمسٹرڈیم',
+    'brussels': 'برسلز',
+    'vienna': 'ویانا',
+    'zurich': 'زیورخ',
+    'geneva': 'جنیوا',
+    'stockholm': 'اسٹاک ہوم',
+    'oslo': 'اوسلو',
+    'copenhagen': 'کوپن ہیگن',
+    'moscow': 'ماسکو',
+    'new york': 'نیویارک',
+    'chicago': 'شکاگو',
+    'los angeles': 'لاس اینجلس',
+    'houston': 'ہیوسٹن',
+    'dallas': 'ڈیلاس',
+    'washington': 'واشنگٹن',
+    'toronto': 'ٹورنٹو',
+    'montreal': 'مانٹریال',
+    'vancouver': 'وینکوور',
+    'sydney': 'سڈنی',
+    'melbourne': 'میلبورن',
+    'perth': 'پرتھ',
+    'auckland': 'آکلینڈ',
+    'johannesburg': 'جوہانسبرگ',
+    'cape town': 'کیپ ٹاؤن',
+
+    // China & East Asian Major Cities
+    'guiyang': 'گوئی یانگ',
+    'guangzhou': 'گوانگژو',
+    'shenzhen': 'شینزین',
+    'chengdu': 'چینگدو',
+    'wuhan': 'وہان',
+    'tianjin': 'تیانجین',
+    'hangzhou': 'ہانگژو',
+    'chongqing': 'چونگ کنگ',
+    'nanjing': 'نانجنگ',
+    'xian': 'شیان',
+    "xi'an": 'شیان',
+    'harbin': 'ہاربن',
+    'kunming': 'کنمنگ',
+    'dalian': 'ڈالیان',
+    'qingdao': 'چنگڈاؤ',
+    'shenyang': 'شینیانگ',
+    'jinan': 'جینان',
+    'changsha': 'چانگشا',
+    'fuzhou': 'فوزو',
+    'urumqi': 'ارومچی',
+    'lhasa': 'لہاسا',
+    'haikou': 'ہائیکو',
+    'taipei': 'تائی پے',
+    'hong kong': 'ہانگ کانگ',
+    'macau': 'مکاؤ',
+  };
+
+  static String _transliterateEnglishToUrdu(String input) {
+    final s = input.trim();
+    if (s.isEmpty) return '';
+    final words = s.split(RegExp(r'\s+'));
+    return words.map(_transliterateWord).join(' ');
+  }
+
+  static String _transliterateWord(String word) {
+    final w = word.toLowerCase().trim();
+    if (w.isEmpty) return '';
+
+    if (_englishToUrdu.containsKey(w)) {
+      return _englishToUrdu[w]!;
+    }
+
+    final rules = [
+      ['tion', 'شن'],
+      ['sion', 'شن'],
+      ['land', 'لینڈ'],
+      ['ville', 'ول'],
+      ['burgh', 'برگ'],
+      ['burg', 'برگ'],
+      ['ford', 'فورڈ'],
+      ['port', 'پورٹ'],
+      ['field', 'فیلڈ'],
+      ['wood', 'وڈ'],
+      ['town', 'ٹاؤن'],
+      ['city', 'سٹی'],
+      ['ton', 'ٹن'],
+      ['yang', 'یانگ'],
+      ['ying', 'ینگ'],
+      ['yong', 'یونگ'],
+      ['yuan', 'یوان'],
+      ['jiang', 'جیانگ'],
+      ['xiang', 'شیانگ'],
+      ['liang', 'لیانگ'],
+      ['guang', 'گوانگ'],
+      ['huang', 'ہوانگ'],
+      ['zhang', 'ژانگ'],
+      ['shang', 'شانگ'],
+      ['chang', 'چانگ'],
+      ['gui', 'گوئی'],
+      ['zhou', 'ژو'],
+      ['chen', 'چین'],
+      ['shen', 'شین'],
+      ['zheng', 'ژینگ'],
+      ['feng', 'فینگ'],
+      ['meng', 'مینگ'],
+      ['peng', 'پینگ'],
+      ['teng', 'تینگ'],
+      ['deng', 'ڈینگ'],
+      ['geng', 'گینگ'],
+      ['keng', 'کینگ'],
+      ['heng', 'ہینگ'],
+      ['ling', 'لنگ'],
+      ['ming', 'منگ'],
+      ['ning', 'ننگ'],
+      ['ping', 'پنگ'],
+      ['ting', 'ٹنگ'],
+      ['qing', 'چنگ'],
+      ['xing', 'شنگ'],
+      ['jing', 'جنگ'],
+      ['ding', 'ڈنگ'],
+      ['sch', 'ش'],
+      ['tch', 'چ'],
+      ['kh', 'خ'],
+      ['gh', 'غ'],
+      ['sh', 'ش'],
+      ['ch', 'چ'],
+      ['zh', 'ژ'],
+      ['th', 'تھ'],
+      ['ph', 'ف'],
+      ['bh', 'بھ'],
+      ['dh', 'دھ'],
+      ['jh', 'جھ'],
+      ['ck', 'ک'],
+      ['qu', 'کو'],
+      ['ng', 'نگ'],
+      ['ee', 'ی'],
+      ['oo', 'و'],
+      ['ou', 'او'],
+      ['ai', 'ائی'],
+      ['ay', 'ے'],
+      ['ey', 'ے'],
+      ['ea', 'ی'],
+      ['oa', 'و'],
+      ['ia', 'یا'],
+      ['io', 'یو'],
+      ['ua', 'وا'],
+      ['ue', 'وے'],
+      ['ui', 'وئی'],
+    ];
+
+    final sb = StringBuffer();
+    int i = 0;
+    while (i < w.length) {
+      bool matched = false;
+      for (final r in rules) {
+        if (w.startsWith(r[0], i)) {
+          sb.write(r[1]);
+          i += r[0].length;
+          matched = true;
+          break;
+        }
+      }
+      if (matched) continue;
+
+      final c = w[i];
+      final isFirst = (i == 0);
+      final isLast = (i == w.length - 1);
+
+      switch (c) {
+        case 'a':
+          sb.write(isFirst ? 'آ' : 'ا');
+          break;
+        case 'e':
+          sb.write(isFirst ? 'ای' : (isLast ? 'ہ' : 'ی'));
+          break;
+        case 'i':
+          sb.write(isFirst ? 'ای' : 'ی');
+          break;
+        case 'o':
+          sb.write(isFirst ? 'او' : 'و');
+          break;
+        case 'u':
+          sb.write(isFirst ? 'او' : 'و');
+          break;
+        case 'y':
+          sb.write(isFirst ? 'ی' : 'ی');
+          break;
+        case 'b': sb.write('ب'); break;
+        case 'c':
+          if (i + 1 < w.length && (w[i+1] == 'e' || w[i+1] == 'i' || w[i+1] == 'y')) {
+            sb.write('س');
+          } else {
+            sb.write('ک');
+          }
+          break;
+        case 'd': sb.write('ڈ'); break;
+        case 'f': sb.write('ف'); break;
+        case 'g': sb.write('گ'); break;
+        case 'h': sb.write('ہ'); break;
+        case 'j': sb.write('ج'); break;
+        case 'k': sb.write('ک'); break;
+        case 'l': sb.write('ل'); break;
+        case 'm': sb.write('م'); break;
+        case 'n': sb.write('ن'); break;
+        case 'p': sb.write('پ'); break;
+        case 'q': sb.write('ق'); break;
+        case 'r': sb.write('ر'); break;
+        case 's': sb.write('س'); break;
+        case 't': sb.write('ٹ'); break;
+        case 'v': sb.write('و'); break;
+        case 'w': sb.write('و'); break;
+        case 'x': sb.write('کس'); break;
+        case 'z': sb.write('ز'); break;
+        default:
+          if (c != "'" && c != "-") {
+            sb.write(c);
+          }
+      }
+      i++;
+    }
+
+    return sb.toString();
+  }
+
+  static ({String urdu, String english}) getCityNames(SettingsProvider settings) {
+    if (settings.isKarachi ||
+        (settings.cityName?.toLowerCase() == 'karachi') ||
+        (settings.cityName == 'کراچی') ||
+        (settings.cityName == 'ڪراچي')) {
+      return (urdu: 'کراچی', english: 'Karachi');
+    }
+
+    final raw = settings.cityName?.trim();
+    if (raw == null || raw.isEmpty) {
+      return (urdu: 'سکھر', english: 'Sukkur');
+    }
+
+    final cityClean = raw.split(',').first.trim();
+    final lower = cityClean.toLowerCase();
+
+    if (_englishToUrdu.containsKey(lower)) {
+      return (urdu: _englishToUrdu[lower]!, english: _formatEnglishCity(cityClean));
+    }
+
+    for (final entry in _englishToUrdu.entries) {
+      if (entry.value == cityClean || entry.value == raw) {
+        return (urdu: entry.value, english: _formatEnglishCity(entry.key));
+      }
+    }
+
+    final hasUrduChars = RegExp(r'[\u0600-\u06FF]').hasMatch(cityClean);
+    if (hasUrduChars) {
+      final matches = MultilingualCityAliases.getMatchingEnglishCities(cityClean);
+      final eng = matches.isNotEmpty ? matches.first : cityClean;
+      return (urdu: cityClean, english: _formatEnglishCity(eng));
+    } else {
+      final normalized = MultilingualCityAliases.normalize(cityClean);
+      for (final entry in _englishToUrdu.entries) {
+        if (MultilingualCityAliases.normalize(entry.key) == normalized) {
+          return (urdu: entry.value, english: _formatEnglishCity(cityClean));
+        }
+      }
+      final transliterated = _transliterateEnglishToUrdu(cityClean);
+      return (urdu: transliterated, english: _formatEnglishCity(cityClean));
+    }
+  }
+
+  static String _formatEnglishCity(String name) {
+    if (name.isEmpty) return '';
+    if (RegExp(r'[\u0600-\u06FF]').hasMatch(name)) return name;
+
+    return name
+        .split(' ')
+        .where((word) => word.isNotEmpty)
+        .map((word) => word[0].toUpperCase() + (word.length > 1 ? word.substring(1).toLowerCase() : ''))
+        .join(' ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSukkur = settings.locationMode == LocationMode.sukkur;
-    final isKarachi = settings.isKarachi ||
-        (settings.cityName?.toLowerCase() == 'karachi') ||
-        (settings.cityName == 'کراچی');
-    final cityName = settings.cityName ?? 'سکھر';
+    final cityPair = getCityNames(settings);
+    final cityUrdu = cityPair.urdu;
+    final cityEnglish = cityPair.english;
     final hijriStr = HijriConverter.hijriForDate(date, adjustment: settings.hijriAdjustment, language: 'urdu');
 
     return Container(
@@ -801,9 +1395,9 @@ class TimingsShareCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 textDirection: TextDirection.rtl,
               ),
-          ] else if (isKarachi) ...[
+          ] else if (isSukkur) ...[
             const Text(
-              'اوقاتِ نماز برائے کراچی',
+              'مستند اوقاتِ نماز برائے سکھر',
               style: TextStyle(
                 fontFamily: AppTheme.urduFont,
                 fontSize: 20,
@@ -816,7 +1410,19 @@ class TimingsShareCard extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             const Text(
-              'Karachi',
+              '(جنتری حضرت ڈاکٹر حفیظ اللہ صاحب قدس اللہ سرہٗ)',
+              style: TextStyle(
+                fontFamily: AppTheme.urduFont,
+                fontSize: 13,
+                color: Color(0xFF4A6B5D),
+                height: 1.2,
+              ),
+              textAlign: TextAlign.center,
+              textDirection: TextDirection.rtl,
+            ),
+            const SizedBox(height: 2),
+            const Text(
+              'Sukkur',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -826,22 +1432,11 @@ class TimingsShareCard extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ] else ...[
-            const Text(
-              'سکھر صلاة • Sukkur Salah',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0F3E2E),
-                letterSpacing: 0.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 2),
             Text(
-              isSukkur ? 'مستند اوقاتِ نماز برائے سکھر' : 'اوقاتِ نماز برائے $cityName',
+              'اوقاتِ نماز برائے $cityUrdu',
               style: const TextStyle(
                 fontFamily: AppTheme.urduFont,
-                fontSize: 18,
+                fontSize: 20,
                 color: Color(0xFF8B6508),
                 fontWeight: FontWeight.bold,
                 height: 1.3,
@@ -849,18 +1444,17 @@ class TimingsShareCard extends StatelessWidget {
               textAlign: TextAlign.center,
               textDirection: TextDirection.rtl,
             ),
-            if (isSukkur)
-              const Text(
-                '(جنتری حضرت ڈاکٹر حفیظ اللہ صاحب قدس اللہ سرہٗ)',
-                style: TextStyle(
-                  fontFamily: AppTheme.urduFont,
-                  fontSize: 13,
-                  color: Color(0xFF4A6B5D),
-                  height: 1.2,
-                ),
-                textAlign: TextAlign.center,
-                textDirection: TextDirection.rtl,
+            const SizedBox(height: 2),
+            Text(
+              cityEnglish,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F3E2E),
+                letterSpacing: 0.5,
               ),
+              textAlign: TextAlign.center,
+            ),
           ],
 
           const SizedBox(height: 8),

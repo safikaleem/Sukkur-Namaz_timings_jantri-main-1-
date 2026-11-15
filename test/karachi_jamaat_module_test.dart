@@ -13,8 +13,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Version and Changelog Configuration', () {
-    test('Current app version is 1.5.0', () {
-      expect(S.versionValue, equals('1.5.0'));
+    test('Current app version is 1.5.1', () {
+      expect(S.versionValue, equals('1.5.1'));
     });
   });
 

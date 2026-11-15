@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import '../providers/settings_provider.dart';
+import '../services/city_localizer.dart';
 import '../services/city_search.dart';
 import '../utils/app_theme.dart';
 import '../utils/world_location.dart';
@@ -729,7 +730,7 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
     final hours = abs ~/ 60;
     final mins = abs % 60;
     final span = mins == 0 ? '$hours' : '$hours:${mins.toString().padLeft(2, '0')}';
-    final city = settings.cityName ?? '';
+    final city = CityLocalizer.localize(settings.cityName ?? '', settings.language);
     // Two separate translate() calls rather than one with a conditional key:
     // the coverage test only sees a literal first argument, and a key it cannot
     // see is a key that silently falls back to English for every world language.
@@ -912,8 +913,9 @@ class _WorldPrayersScreenState extends State<WorldPrayersScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                city,
+                CityLocalizer.localize(city, settings.language),
                 style: TextStyle(
+                  fontFamily: AppTheme.getFontForLanguage(context, settings.language),
                   fontSize: 16,
                   color: active ? textColor : muted,
                   fontWeight: FontWeight.w600,
