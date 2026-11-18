@@ -30,6 +30,7 @@ import 'utils/app_theme.dart';
 import 'widgets/settings_drawer.dart';
 import 'package:workmanager/workmanager.dart';
 import 'services/announcement_service.dart';
+import 'services/shortcut_service.dart';
 import 'services/update_service.dart';
 
 @pragma('vm:entry-point')
@@ -181,11 +182,16 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   DateTime? _lastScheduled;
   DateTime? _lastSyncTime;
   NotificationHealth? _notifHealth;
+  StreamSubscription<String>? _shortcutSub;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    ShortcutService.instance.init();
+    _shortcutSub = ShortcutService.instance.onShortcutTriggered.listen((action) {
+      _navigateToShortcut(action);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initStartupServices();
       AnnouncementService.checkForAnnouncement(context);
@@ -214,6 +220,12 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
         NotificationService.instance.scheduleWeeklyNotificationsIfNeeded();
       }
       WidgetService.updateWidget();
+      unawaited(ShortcutService.instance.syncDynamicShortcuts(settings.language));
+      ShortcutService.instance.getInitialShortcut().then((action) {
+        if (action != null && mounted) {
+          _navigateToShortcut(action);
+        }
+      });
       Workmanager().initialize(
         callbackDispatcher,
       );
@@ -270,8 +282,33 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _shortcutSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _navigateToShortcut(String action) {
+    int? targetIndex;
+    switch (action) {
+      case 'qibla':
+        targetIndex = 7;
+        break;
+      case 'quran':
+        targetIndex = 4;
+        break;
+      case 'tasbeeh':
+        targetIndex = 6;
+        break;
+      case 'today':
+        targetIndex = 1;
+        break;
+    }
+    if (targetIndex != null && mounted) {
+      setState(() {
+        _visitedIndices.add(targetIndex!);
+        _currentIndex = targetIndex;
+      });
+    }
   }
 
   @override
@@ -284,6 +321,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     // Reschedule on resume if the calendar date changed or >= 12 hours have passed,
     // ensuring upcoming prayer alarms are always fresh even if WorkManager was delayed by OEM battery managers.
     if (state == AppLifecycleState.resumed && !kIsWeb) {
+      NotificationService.instance.dismissDeliveredNotifications();
       final now = DateTime.now();
       final lastSched = _lastScheduled;
       if (lastSched == null ||

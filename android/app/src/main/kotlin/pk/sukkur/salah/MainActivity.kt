@@ -1,16 +1,20 @@
 package pk.sukkur.salah
 
 import android.app.AlarmManager
+import android.app.Notification
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import androidx.activity.enableEdgeToEdge
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -22,6 +26,19 @@ import kotlinx.coroutines.withContext
 
 class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL = "pk.sukkur.salah/native_helper"
+    private var methodChannel: MethodChannel? = null
+    private var pendingShortcutAction: String? = null
+
+    private fun extractShortcutAction(intent: Intent?): String? {
+        if (intent == null) return null
+        val extra = intent.getStringExtra("shortcut_action")
+        if (!extra.isNullOrEmpty()) return extra
+        val data = intent.data
+        if (data != null && data.scheme == "sukkursalah" && data.host == "shortcut") {
+            return data.getQueryParameter("action")
+        }
+        return null
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Mark app open immediately before super.onCreate so any concurrent
@@ -35,20 +52,34 @@ class MainActivity : FlutterFragmentActivity() {
                 forceReschedule = false,
                 purgeOverdueAfterMs = PrayerAlarmGuardian.APP_OPEN_OVERDUE_MS
             )
+            dismissDeliveredPrayerNotifications(appContext)
         }
+        pendingShortcutAction = extractShortcutAction(intent)
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val action = extractShortcutAction(intent)
+        if (action != null) {
+            pendingShortcutAction = action
+            methodChannel?.invokeMethod("onShortcutTriggered", action)
+        }
     }
 
     override fun onResume() {
         super.onResume()
         PrayerAlarmGuardian.markAppOpened()
+        val appContext = applicationContext
         CoroutineScope(Dispatchers.IO).launch {
             PrayerAlarmGuardian.purgeStaleAndPromoteUpcoming(
-                applicationContext,
+                appContext,
                 forceReschedule = false,
                 purgeOverdueAfterMs = PrayerAlarmGuardian.APP_OPEN_OVERDUE_MS
             )
+            dismissDeliveredPrayerNotifications(appContext)
         }
     }
 
@@ -116,7 +147,9 @@ class MainActivity : FlutterFragmentActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+        val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        methodChannel = channel
+        channel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "scheduleAutoSilent" -> {
                     val alarms = call.argument<List<Map<String, Any>>>("alarms")
@@ -307,6 +340,26 @@ class MainActivity : FlutterFragmentActivity() {
                         }
                     }
                 }
+                "dismissDeliveredPrayerNotifications" -> {
+                    val appContext = applicationContext
+                    CoroutineScope(Dispatchers.IO).launch {
+                        dismissDeliveredPrayerNotifications(appContext)
+                    }
+                    result.success(true)
+                }
+                "getInitialShortcut" -> {
+                    val action = pendingShortcutAction
+                    pendingShortcutAction = null
+                    result.success(action)
+                }
+                "updateDynamicShortcuts" -> {
+                    val shortcutsList = call.argument<List<Map<String, String>>>("shortcuts") ?: emptyList()
+                    val appContext = applicationContext
+                    CoroutineScope(Dispatchers.IO).launch {
+                        updateDynamicShortcuts(appContext, shortcutsList)
+                    }
+                    result.success(true)
+                }
                 else -> {
                     result.notImplemented()
                 }
@@ -377,6 +430,99 @@ class MainActivity : FlutterFragmentActivity() {
             for (day in 0..6) {
                 cancelAutoSilentAlarm(context, base + day)
                 cancelAutoSilentAlarm(context, base + 100 + day)
+            }
+        }
+    }
+
+    private fun updateDynamicShortcuts(context: Context, shortcutsList: List<Map<String, String>>) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) return
+        try {
+            val shortcutManager = context.getSystemService(android.content.pm.ShortcutManager::class.java) ?: return
+            val newShortcuts = mutableListOf<android.content.pm.ShortcutInfo>()
+            for (item in shortcutsList) {
+                val id = item["id"] ?: continue
+                val shortLabel = item["shortLabel"] ?: id
+                val longLabel = item["longLabel"] ?: shortLabel
+                val iconRes = when (id) {
+                    "qibla" -> R.drawable.ic_shortcut_qibla
+                    "quran" -> R.drawable.ic_shortcut_quran
+                    "tasbeeh" -> R.drawable.ic_shortcut_tasbeeh
+                    "today" -> R.drawable.ic_shortcut_today
+                    else -> R.drawable.ic_notification
+                }
+
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    setComponent(ComponentName(context, MainActivity::class.java))
+                    data = Uri.parse("sukkursalah://shortcut?action=$id")
+                    putExtra("shortcut_action", id)
+                }
+
+                val shortcut = android.content.pm.ShortcutInfo.Builder(context, id)
+                    .setShortLabel(shortLabel)
+                    .setLongLabel(longLabel)
+                    .setIcon(Icon.createWithResource(context, iconRes))
+                    .setIntent(intent)
+                    .build()
+                newShortcuts.add(shortcut)
+            }
+            if (newShortcuts.isNotEmpty()) {
+                shortcutManager.dynamicShortcuts = newShortcuts
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to update dynamic shortcuts: $e")
+        }
+    }
+
+    companion object {
+        private const val TAG = "MainActivity"
+
+        /**
+         * Dismisses already-delivered prayer/reminder notifications from the status bar / lock screen
+         * when the user opens or resumes the app.
+         *
+         * Crucially:
+         * 1. Only calls NotificationManager.cancel() — NEVER touches AlarmManager, so future alarms remain armed.
+         * 2. Skips ongoing notifications (such as the persistent Live Countdown notification).
+         */
+        fun dismissDeliveredPrayerNotifications(context: Context) {
+            try {
+                val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    val activeNotifications = nm.activeNotifications ?: return
+                    for (sbn in activeNotifications) {
+                        if (sbn.isOngoing) continue
+                        val flags = sbn.notification.flags
+                        if ((flags and Notification.FLAG_ONGOING_EVENT) != 0 ||
+                            (flags and Notification.FLAG_FOREGROUND_SERVICE) != 0) {
+                            continue
+                        }
+                        if (sbn.id == PrayerKeepAliveService.NOTIF_ID || sbn.id == 99999) continue
+                        if (sbn.tag != null) {
+                            nm.cancel(sbn.tag, sbn.id)
+                        } else {
+                            nm.cancel(sbn.id)
+                        }
+                    }
+                } else {
+                    val candidateIds = mutableListOf<Int>()
+                    val baseIds = listOf(100, 150, 200, 300, 400, 450, 500, 600, 700, 800)
+                    for (base in baseIds) {
+                        for (slot in 0..13) {
+                            candidateIds.add(base + slot)
+                        }
+                    }
+                    for (i in 0..10) {
+                        candidateIds.add(70000 + i)
+                    }
+                    for (id in 9000..9999) {
+                        candidateIds.add(id)
+                    }
+                    for (id in candidateIds) {
+                        nm.cancel(id)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to dismiss delivered prayer notifications: $e")
             }
         }
     }

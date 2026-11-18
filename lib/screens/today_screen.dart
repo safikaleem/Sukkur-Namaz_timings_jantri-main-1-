@@ -145,6 +145,7 @@ class _TodayScreenState extends State<TodayScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isTodaySelected = DateUtils.isSameDay(_selectedDate, DateTime.now());
     final isSmall = MediaQuery.of(context).size.height < 680;
+    final appFont = AppTheme.getFontForLanguage(context, settings.language);
 
     return Scaffold(
       backgroundColor: settings.displayThemeBg(isDark),
@@ -188,6 +189,7 @@ class _TodayScreenState extends State<TodayScreen> {
                         Text(
                           _getDayName(_selectedDate, settings.language),
                           style: TextStyle(
+                            fontFamily: appFont,
                             fontSize: settings.isRtl ? 19 : 16,
                             fontWeight: FontWeight.w700,
                             color: isDark ? Colors.white : Colors.black87,
@@ -212,6 +214,7 @@ class _TodayScreenState extends State<TodayScreen> {
                                       )
                                     : HijriConverter.hijriForDate(_selectedDate, adjustment: hijriAdj, language: settings.language),
                                 style: TextStyle(
+                                  fontFamily: appFont,
                                   fontSize: settings.isRtl ? 16 : 13,
                                   fontWeight: FontWeight.w500,
                                   color: AppTheme.accent,
@@ -220,6 +223,7 @@ class _TodayScreenState extends State<TodayScreen> {
                               TextSpan(
                                 text: ' (${settings.translate('Hijri date updates after Maghrib', 'ہجری تاریخ مغرب کے بعد تبدیل ہوگی', 'هجري تاريخ مغرب کان پوءِ بدلجندي', 'يتغير التاریخ الهجري بعد المغرب')})',
                                 style: TextStyle(
+                                  fontFamily: appFont,
                                   fontSize: settings.isRtl ? 11 : 10,
                                   fontWeight: FontWeight.w400,
                                   color: isDark ? Colors.white38 : Colors.black38,
@@ -232,6 +236,7 @@ class _TodayScreenState extends State<TodayScreen> {
                         Text(
                           _formatDate(_selectedDate, settings.language),
                           style: TextStyle(
+                            fontFamily: appFont,
                             fontSize: settings.isRtl ? 14 : 12,
                             color: isDark ? Colors.white54 : Colors.black54,
                           ),

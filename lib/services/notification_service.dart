@@ -32,6 +32,7 @@ class NotificationService {
   /// Guard flag: prevents a second batch from starting while one is still
   /// writing alarms to the platform, which would double the IPC load.
   bool _scheduleInProgress = false;
+  bool _rescheduleRequested = false;
 
   FlutterLocalNotificationsPlugin? _plugin;
 
@@ -192,6 +193,7 @@ class NotificationService {
     unawaited(_deleteLegacyChannels(android));
     if (!isBackgroundWorker) {
       unawaited(_purgePastDueTodayAlarms());
+      unawaited(dismissDeliveredNotifications());
     }
 
     final prefs = await SharedPreferences.getInstance();
@@ -247,6 +249,17 @@ class NotificationService {
             'alarm_batch_completed_at', DateTime.now().millisecondsSinceEpoch);
       } catch (_) {}
     }
+  }
+
+  /// Closes any already-delivered transient prayer/reminder notifications
+  /// from the Android status bar / lock screen when opening or resuming the app,
+  /// without cancelling future AlarmManager alarms or the ongoing live countdown.
+  Future<void> dismissDeliveredNotifications() async {
+    if (kIsWeb) return;
+    try {
+      const nativeChannel = MethodChannel('pk.sukkur.salah/native_helper');
+      await nativeChannel.invokeMethod('dismissDeliveredPrayerNotifications');
+    } catch (_) {}
   }
 
   Future<void> requestPermissions() async {
@@ -526,9 +539,17 @@ class NotificationService {
 
   /// Public entry-point: debounces by 500 ms so multiple calls within a short
   /// window (toggling several settings) are coalesced into a single batch.
-  Future<void> scheduleWeeklyNotifications() async {
+  Future<void> scheduleWeeklyNotifications({bool immediate = false}) async {
     if (kIsWeb || _plugin == null) return;
     _scheduleDebounce?.cancel();
+    if (immediate) {
+      try {
+        await _doScheduleWeeklyNotifications();
+      } catch (e) {
+        debugPrint('Error in scheduleWeeklyNotifications: $e');
+      }
+      return;
+    }
     final completer = Completer<void>();
     _pendingScheduleCompleters.add(completer);
     _scheduleDebounce = Timer(const Duration(milliseconds: 500), () async {
@@ -552,14 +573,22 @@ class NotificationService {
   /// The real scheduling work — runs at most once per debounce window.
   Future<void> _doScheduleWeeklyNotifications() async {
     if (kIsWeb || _plugin == null) return;
-    // If a batch is already in flight, skip — the in-flight one will
-    // pick up the latest prefs anyway.
-    if (_scheduleInProgress) return;
+    // If a batch is already in flight, mark reschedule requested so the loop reruns
+    // with the latest preferences immediately upon completion.
+    if (_scheduleInProgress) {
+      _rescheduleRequested = true;
+      return;
+    }
     _scheduleInProgress = true;
     try {
-      await _scheduleWeeklyNotificationsCore();
+      do {
+        _rescheduleRequested = false;
+        await _scheduleWeeklyNotificationsCore();
+        await updateLiveCountdownNotification();
+      } while (_rescheduleRequested);
     } finally {
       _scheduleInProgress = false;
+      _rescheduleRequested = false;
     }
   }
 

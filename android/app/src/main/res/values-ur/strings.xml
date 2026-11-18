@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">سکھر صلاۃ</string>
+    <string name="shortcut_qibla_short">قبلہ</string>
+    <string name="shortcut_qibla_long">قبلہ رخ</string>
+    <string name="shortcut_quran_short">قرآن</string>
+    <string name="shortcut_quran_long">قرآن مجید</string>
+    <string name="shortcut_tasbeeh_short">تسبیح</string>
+    <string name="shortcut_tasbeeh_long">تسبیح کاؤنٹر</string>
+    <string name="shortcut_today_short">اوقات</string>
+    <string name="shortcut_today_long">آج کے اوقات</string>
+</resources>

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../widgets/sukkur_header.dart';
+import '../widgets/clock_date_display.dart';
 import '../data/timings_data.dart';
 import '../models/namaz_timing.dart';
 import '../utils/app_theme.dart';
@@ -96,10 +97,20 @@ class _ClockScreenState extends State<ClockScreen> {
     return '+ ${m.toString().padLeft(2, '0')} : ${s.toString().padLeft(2, '0')}';
   }
 
+  DateTime? get _maghribTime {
+    return _today?.allTimings
+        .where((p) => p.name == 'Maghrib')
+        .map((p) => p.toDateTime(date: _now))
+        .firstOrNull;
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
+    _now = TimingsData.instance.nowForTimings();
+    _computeNextPrayer();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isSukkur = settings.locationMode == LocationMode.sukkur;
     // Clock accent follows the selected display theme (matches the style picker preview).
     final accent = AppTheme.accent;
 
@@ -113,22 +124,63 @@ class _ClockScreenState extends State<ClockScreen> {
           child: Column(
           children: [
             const SizedBox(height: 12),
-            const Center(child: SukkurHeader()),
+            if (isSukkur)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    const Center(child: SukkurHeader()),
+                    Align(
+                      alignment: settings.isRtl
+                          ? Alignment.topLeft
+                          : Alignment.topRight,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.36,
+                        ),
+                        child: ClockDateDisplay(
+                          now: _now,
+                          maghribTime: _maghribTime,
+                          settings: settings,
+                          isDark: isDark,
+                          isCompact: true,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              const Center(child: SukkurHeader()),
             const SizedBox(height: 8),
-            if (settings.locationMode == LocationMode.sukkur) const DrSloganHeader(),
+            if (isSukkur) const DrSloganHeader(),
 
             // ── Flexible middle — clock + prayer info ──────────────────
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  // Clock fills ~52% of available height, capped at 260px
+                  final clockFactor = isSukkur ? 0.52 : 0.44;
+                  final clockCap = isSukkur ? 260.0 : 230.0;
                   final clockSize = math
-                      .min(constraints.maxWidth - 40, constraints.maxHeight * 0.52)
-                      .clamp(150.0, 260.0);
+                      .min(constraints.maxWidth - 40, constraints.maxHeight * clockFactor)
+                      .clamp(130.0, clockCap);
 
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
+                      if (!isSukkur)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2, bottom: 4),
+                          child: ClockDateDisplay(
+                            now: _now,
+                            maghribTime: _maghribTime,
+                            settings: settings,
+                            isDark: isDark,
+                            isCompact: false,
+                          ),
+                        ),
+
                       // ── Analog clock ─────────────────────────────────
                       AnalogClockWidget(
                         now: _now,

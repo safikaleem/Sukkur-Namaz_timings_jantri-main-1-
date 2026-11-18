@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sukkur_prayer_timings/l10n/world_translations.dart';
 import '../services/hijri_sync_service.dart';
 import '../services/notification_service.dart';
+import '../services/shortcut_service.dart';
 import '../services/widget_service.dart';
 import '../utils/alert_mode.dart';
 import '../utils/app_theme.dart';
@@ -355,10 +357,13 @@ class SettingsProvider extends ChangeNotifier {
     // The whole schedule is pinned to one clock or the other, so it all has to
     // be rewritten - as does the widget, which reads the same preference.
     await TimingsData.instance.syncWorldTimingsToCache();
-    WidgetService.updateWidget();
+    await WidgetService.updateWidget();
     if (_notificationsEnabled) {
-      await NotificationService.instance.scheduleWeeklyNotifications();
+      await NotificationService.instance.scheduleWeeklyNotifications(immediate: true);
+    } else {
+      await NotificationService.instance.updateLiveCountdownNotification();
     }
+    notifyListeners();
   }
 
   /// BCP-47 code for the current app language, for asking the platform
@@ -435,21 +440,20 @@ class SettingsProvider extends ChangeNotifier {
     if (_locationMode == mode) return;
     _locationMode = mode;
     notifyListeners();
-    Future.delayed(const Duration(milliseconds: 150), () async {
-      // Something may have overridden the mode inside the delay - notably a
-      // rejected Sukkur selection handing the timings back to the Jantri.
-      // Writing the stale mode here would undo that.
-      if (_locationMode != mode) return;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('location_mode', mode.name);
-      if (mode == LocationMode.world) {
-        await TimingsData.instance.syncWorldTimingsToCache();
-      }
-      WidgetService.updateWidget();
-      if (_notificationsEnabled) {
-        await NotificationService.instance.scheduleWeeklyNotifications();
-      }
-    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('location_mode', mode.name);
+    if (mode == LocationMode.world) {
+      await TimingsData.instance.syncWorldTimingsToCache();
+    } else {
+      await prefs.remove('world_timings_cache');
+    }
+    await WidgetService.updateWidget();
+    if (_notificationsEnabled) {
+      await NotificationService.instance.scheduleWeeklyNotifications(immediate: true);
+    } else {
+      await NotificationService.instance.updateLiveCountdownNotification();
+    }
+    notifyListeners();
   }
 
   /// True once world mode actually has a city to calculate for. Both halves
@@ -479,9 +483,11 @@ class SettingsProvider extends ChangeNotifier {
     // Otherwise the home-screen widget would keep serving the last calculated
     // month; with no cache it falls back to the bundled Jantri asset.
     await prefs.remove('world_timings_cache');
-    WidgetService.updateWidget();
+    await WidgetService.updateWidget();
     if (_notificationsEnabled) {
-      await NotificationService.instance.scheduleWeeklyNotifications();
+      await NotificationService.instance.scheduleWeeklyNotifications(immediate: true);
+    } else {
+      await NotificationService.instance.updateLiveCountdownNotification();
     }
     notifyListeners();
   }
@@ -503,9 +509,11 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.remove('city_name');
     await prefs.remove('city_timezone');
     await prefs.remove('world_timings_cache');
-    WidgetService.updateWidget();
+    await WidgetService.updateWidget();
     if (_notificationsEnabled) {
-      await NotificationService.instance.scheduleWeeklyNotifications();
+      await NotificationService.instance.scheduleWeeklyNotifications(immediate: true);
+    } else {
+      await NotificationService.instance.updateLiveCountdownNotification();
     }
     notifyListeners();
   }
@@ -543,6 +551,7 @@ class SettingsProvider extends ChangeNotifier {
     _latitude = lat;
     _longitude = lng;
     _cityName = city;
+    _locationMode = LocationMode.world;
     // Both are pure lookups on the coordinates, so they can be resolved now and
     // are on file before anything asks for a timing.
     _cityTimezone = WorldLocation.timezoneNameFor(lat, lng);
@@ -554,29 +563,29 @@ class SettingsProvider extends ChangeNotifier {
           WorldLocation.defaultCalculationMethod(_cityTimezone, lat, lng);
     }
     notifyListeners();
-    Future.delayed(const Duration(milliseconds: 150), () async {
-      // Superseded within the delay - don't resurrect a cleared location.
-      if (_latitude != lat || _longitude != lng) return;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble('latitude', lat);
-      await prefs.setDouble('longitude', lng);
-      await prefs.setString('city_name', city);
-      await prefs.setString('calculation_method', _calculationMethod);
-      // Written before the sync below, which reads it back to place the city
-      // on its own clock rather than the phone's.
-      final zone = _cityTimezone;
-      if (zone != null) {
-        await prefs.setString('city_timezone', zone);
-      } else {
-        await prefs.remove('city_timezone');
-      }
-      await TimingsData.instance.syncWorldTimingsToCache();
-      WidgetService.updateWidget();
-      if (_notificationsEnabled) {
-        await NotificationService.instance.scheduleWeeklyNotifications();
-      }
-      notifyListeners();
-    });
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('location_mode', LocationMode.world.name);
+    await prefs.setDouble('latitude', lat);
+    await prefs.setDouble('longitude', lng);
+    await prefs.setString('city_name', city);
+    await prefs.setString('calculation_method', _calculationMethod);
+    // Written before the sync below, which reads it back to place the city
+    // on its own clock rather than the phone's.
+    final zone = _cityTimezone;
+    if (zone != null) {
+      await prefs.setString('city_timezone', zone);
+    } else {
+      await prefs.remove('city_timezone');
+    }
+    await TimingsData.instance.syncWorldTimingsToCache();
+    await WidgetService.updateWidget();
+    if (_notificationsEnabled) {
+      await NotificationService.instance.scheduleWeeklyNotifications(immediate: true);
+    } else {
+      await NotificationService.instance.updateLiveCountdownNotification();
+    }
+    notifyListeners();
     return true;
   }
 
@@ -587,33 +596,33 @@ class SettingsProvider extends ChangeNotifier {
     // picking another city must not quietly overwrite it.
     _calculationMethodManual = true;
     notifyListeners();
-    Future.delayed(const Duration(milliseconds: 150), () async {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('calculation_method', method);
-      await prefs.setBool('calculation_method_manual', true);
-      await TimingsData.instance.syncWorldTimingsToCache();
-      WidgetService.updateWidget();
-      if (_notificationsEnabled) {
-        await NotificationService.instance.scheduleWeeklyNotifications();
-      }
-      notifyListeners();
-    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('calculation_method', method);
+    await prefs.setBool('calculation_method_manual', true);
+    await TimingsData.instance.syncWorldTimingsToCache();
+    await WidgetService.updateWidget();
+    if (_notificationsEnabled) {
+      await NotificationService.instance.scheduleWeeklyNotifications(immediate: true);
+    } else {
+      await NotificationService.instance.updateLiveCountdownNotification();
+    }
+    notifyListeners();
   }
 
   Future<void> setAsrMethod(String method) async {
     if (_asrMethod == method) return;
     _asrMethod = method;
     notifyListeners();
-    Future.delayed(const Duration(milliseconds: 150), () async {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('asr_method', method);
-      await TimingsData.instance.syncWorldTimingsToCache();
-      WidgetService.updateWidget();
-      if (_notificationsEnabled) {
-        await NotificationService.instance.scheduleWeeklyNotifications();
-      }
-      notifyListeners();
-    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('asr_method', method);
+    await TimingsData.instance.syncWorldTimingsToCache();
+    await WidgetService.updateWidget();
+    if (_notificationsEnabled) {
+      await NotificationService.instance.scheduleWeeklyNotifications(immediate: true);
+    } else {
+      await NotificationService.instance.updateLiveCountdownNotification();
+    }
+    notifyListeners();
   }
 
   Future<void> setAutoSilentPrayerEnabled(String prayer, bool value) async {
@@ -1223,6 +1232,7 @@ class SettingsProvider extends ChangeNotifier {
       // before refreshing the widgets - otherwise it stays in the old script.
       await _relocaliseCityName();
       WidgetService.updateWidget();
+      unawaited(ShortcutService.instance.syncDynamicShortcuts(langCode));
       await NotificationService.instance.updateLiveCountdownNotification();
       if (_notificationsEnabled) {
         await NotificationService.instance.scheduleWeeklyNotifications();

@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#0D6B5E"
+        android:pathData="M24,2 C11.85,2 2,11.85 2,24 C2,36.15 11.85,46 24,46 C36.15,46 46,36.15 46,24 C46,11.85 36.15,2 24,2 Z" />
+    <!-- Tasbeeh Beads in loop -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="
+        M24,10 A2,2 0 1 0 24,14 A2,2 0 1 0 24,10 Z
+        M18,12 A2,2 0 1 0 18,16 A2,2 0 1 0 18,12 Z
+        M30,12 A2,2 0 1 0 30,16 A2,2 0 1 0 30,12 Z
+        M13,16 A2,2 0 1 0 13,20 A2,2 0 1 0 13,16 Z
+        M35,16 A2,2 0 1 0 35,20 A2,2 0 1 0 35,16 Z
+        M11,22 A2,2 0 1 0 11,26 A2,2 0 1 0 11,22 Z
+        M37,22 A2,2 0 1 0 37,26 A2,2 0 1 0 37,22 Z
+        M13,28 A2,2 0 1 0 13,32 A2,2 0 1 0 13,28 Z
+        M35,28 A2,2 0 1 0 35,32 A2,2 0 1 0 35,28 Z
+        M18,32 A2,2 0 1 0 18,36 A2,2 0 1 0 18,32 Z
+        M30,32 A2,2 0 1 0 30,36 A2,2 0 1 0 30,32 Z
+        M24,33 A2,2 0 1 0 24,37 A2,2 0 1 0 24,33 Z" />
+    <!-- Imamah & Tassel -->
+    <path
+        android:fillColor="#F6C562"
+        android:pathData="M23,37 H25 V40 L24,42 L23,40 Z M22,42 H26 V44 H22 Z" />
+</vector>

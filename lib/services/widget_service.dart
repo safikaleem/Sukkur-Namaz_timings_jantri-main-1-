@@ -66,6 +66,7 @@ class WidgetService {
         }
       }
       await prefs.setString('location_string', locationStr);
+      await HomeWidget.saveWidgetData('location_string', locationStr);
 
 
       // Ensure TimingsData is loaded (crucial for background task)

@@ -1,0 +1,27 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#0D6B5E"
+        android:pathData="M24,2 C11.85,2 2,11.85 2,24 C2,36.15 11.85,46 24,46 C36.15,46 46,36.15 46,24 C46,11.85 36.15,2 24,2 Z" />
+    <!-- Compass Ring -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:pathData="M24,10 C16.27,10 10,16.27 10,24 C10,31.73 16.27,38 24,38 C31.73,38 38,31.73 38,24 C38,16.27 31.73,10 24,10 Z" />
+    <!-- Needle North/Qibla -->
+    <path
+        android:fillColor="#F6C562"
+        android:pathData="M24,13 L28,24 L24,22 L20,24 Z" />
+    <!-- Needle South -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M24,35 L28,24 L24,26 L20,24 Z" />
+    <!-- Center Pivot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,22 A2,2 0 1 0 24,26 A2,2 0 1 0 24,22 Z" />
+</vector>

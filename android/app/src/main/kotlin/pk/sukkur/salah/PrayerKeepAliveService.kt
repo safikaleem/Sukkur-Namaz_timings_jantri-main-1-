@@ -83,6 +83,7 @@ class PrayerKeepAliveService : Service() {
                 .putString(KEY_STALE_BODY, staleBody)
                 .apply()
             scheduleNextBoundaryAlarmStatic(context)
+            refreshNotificationStatic(context)
             return launch(context)
         }
 

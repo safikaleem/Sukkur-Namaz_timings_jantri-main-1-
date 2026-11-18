@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="qibla"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_qibla"
+        android:shortcutShortLabel="@string/shortcut_qibla_short"
+        android:shortcutLongLabel="@string/shortcut_qibla_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="pk.sukkur.salah"
+            android:targetClass="pk.sukkur.salah.MainActivity"
+            android:data="sukkursalah://shortcut?action=qibla">
+            <extra
+                android:name="shortcut_action"
+                android:value="qibla" />
+        </intent>
+        <capability android:name="actions.intent.OPEN_APP_FEATURE" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="quran"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_quran"
+        android:shortcutShortLabel="@string/shortcut_quran_short"
+        android:shortcutLongLabel="@string/shortcut_quran_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="pk.sukkur.salah"
+            android:targetClass="pk.sukkur.salah.MainActivity"
+            android:data="sukkursalah://shortcut?action=quran">
+            <extra
+                android:name="shortcut_action"
+                android:value="quran" />
+        </intent>
+        <capability android:name="actions.intent.OPEN_APP_FEATURE" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="tasbeeh"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_tasbeeh"
+        android:shortcutShortLabel="@string/shortcut_tasbeeh_short"
+        android:shortcutLongLabel="@string/shortcut_tasbeeh_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="pk.sukkur.salah"
+            android:targetClass="pk.sukkur.salah.MainActivity"
+            android:data="sukkursalah://shortcut?action=tasbeeh">
+            <extra
+                android:name="shortcut_action"
+                android:value="tasbeeh" />
+        </intent>
+        <capability android:name="actions.intent.OPEN_APP_FEATURE" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="today"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_today"
+        android:shortcutShortLabel="@string/shortcut_today_short"
+        android:shortcutLongLabel="@string/shortcut_today_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="pk.sukkur.salah"
+            android:targetClass="pk.sukkur.salah.MainActivity"
+            android:data="sukkursalah://shortcut?action=today">
+            <extra
+                android:name="shortcut_action"
+                android:value="today" />
+        </intent>
+        <capability android:name="actions.intent.OPEN_APP_FEATURE" />
+    </shortcut>
+</shortcuts>
